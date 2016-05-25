@@ -403,7 +403,7 @@ bool CrySetFileAttributes(const char* lpFileName, uint32 dwFileAttributes)
 
 	#endif // CRY_PLATFORM_WINAPI
 
-	#if CRY_PLATFORM_WINAPI || CRY_PLATFORM_LINUX
+	#if CRY_PLATFORM_WINAPI || CRY_PLATFORM_LINUX || CRY_PLATFORM_APPLE
 //////////////////////////////////////////////////////////////////////////
 void CryFindEngineRootFolder(unsigned int engineRootPathSize, char* szEngineRootPath)
 {
