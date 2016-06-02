@@ -6,9 +6,9 @@
 #include <sys/time.h>
 #include <pthread.h>
 
-+#ifdef CRY_PLATFORM_APPLE
-+#include <dispatch/dispatch.h>
-+#else
+#ifdef CRY_PLATFORM_APPLE
+#include <dispatch/dispatch.h>
+#else
 #include <semaphore.h>
 #endif
 
