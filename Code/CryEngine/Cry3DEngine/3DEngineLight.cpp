@@ -110,18 +110,14 @@ void CLightEntity::SetLightProperties(const CDLight& light)
 
 const PodArray<CDLight*>* C3DEngine::GetStaticLightSources()
 {
-	// tmp solution since .h files are checked out
-	PodArray<CDLight*>& lstLights = m_tmpLstLights;
-	;
-	lstLights.Clear();
+	m_tmpLstLights.Clear();
 
-	for (int i = 0; i < m_lstStaticLights.Count(); i++)
+	for (ILightSource* pStaticLight : m_lstStaticLights)
 	{
-		CDLight& light = m_lstStaticLights[i]->GetLightProperties();
-		lstLights.Add(&light);
+		m_tmpLstLights.Add(&pStaticLight->GetLightProperties());
 	}
 
-	return &lstLights;
+	return &m_tmpLstLights;
 }
 
 void C3DEngine::FindPotentialLightSources(const SRenderingPassInfo& passInfo)
@@ -1394,4 +1390,30 @@ void C3DEngine::OnCasterDeleted(IShadowCaster* pCaster)
 		// remove from per object shadows list
 		RemovePerObjectShadow(pCaster);
 	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+void C3DEngine::CheckAddLight(CDLight* pLight, const SRenderingPassInfo& passInfo)
+{
+	if (pLight->m_Id < 0)
+	{
+		GetRenderer()->EF_ADDDlight(pLight, passInfo);
+		assert(pLight->m_Id >= 0);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+float C3DEngine::GetLightAmount(CDLight* pLight, const AABB& objBox)
+{
+	// find amount of light
+	float fDist = sqrt_tpl(Distance::Point_AABBSq(pLight->m_Origin, objBox));
+	float fLightAttenuation = (pLight->m_Flags & DLF_DIRECTIONAL) ? 1.f : 1.f - (fDist) / (pLight->m_fRadius);
+	if (fLightAttenuation < 0)
+		fLightAttenuation = 0;
+
+	float fLightAmount =
+		(pLight->m_Color.r + pLight->m_Color.g + pLight->m_Color.b) * 0.233f +
+		(pLight->GetSpecularMult()) * 0.1f;
+
+	return fLightAmount * fLightAttenuation;
 }

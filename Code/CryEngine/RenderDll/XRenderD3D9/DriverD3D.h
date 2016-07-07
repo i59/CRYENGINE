@@ -695,7 +695,8 @@ public:
 
 	virtual void         GetModelViewMatrix(float* mat) override;
 	virtual void         GetProjectionMatrix(float* mat) override;
-	virtual void         SetMatrices(float* pProjMat, float* pViewMat) override;
+	virtual void         GetCameraZeroMatrix(float* mat) override;
+	virtual void         SetMatrices(float* pProjMat, float* pViewMat, float* pZeroMat) override;
 
 	void                 DrawQuad(float x0, float y0, float x1, float y1, const ColorF& color, float z = 1.0f, float s0 = 0, float t0 = 0, float s1 = 1, float t1 = 1);
 	void                 DrawQuad3D(const Vec3& v0, const Vec3& v1, const Vec3& v2, const Vec3& v3, const ColorF& color,
@@ -1299,7 +1300,7 @@ private:
 	virtual void                             EnablePipelineProfiler(bool bEnable) override;
 
 	// Called before starting drawing new frame
-	virtual void ClearPerFrameData() override;
+	virtual void ClearPerFrameData(const SRenderingPassInfo& passInfo) override;
 #if CRY_PLATFORM_WINDOWS
 public:
 	// Called to inspect window messages sent to this renderer's windows

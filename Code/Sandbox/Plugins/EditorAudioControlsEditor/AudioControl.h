@@ -54,6 +54,12 @@ public:
 	CATLControl*    GetParent() const { return m_pParent; }
 	void            SetParent(CATLControl* pParent);
 
+	float           GetRadius() const { return m_radius; }
+	void            SetRadius(float radius);
+
+	float           GetOcclusionFadeOutDistance() const { return m_occlusionFadeOutDistance; }
+	void            SetOcclusionFadeOutDistance(float fadeOutArea);
+
 	size_t          ChildCount() const                      { return m_children.size(); }
 	CATLControl*    GetChild(uint index) const              { return m_children[index]; }
 	void            AddChild(CATLControl* pChildControl)    { m_children.push_back(pChildControl); }
@@ -78,9 +84,6 @@ public:
 	void            Serialize(Serialization::IArchive& ar);
 
 private:
-	void SetId(CID id);
-	void SetType(EACEControlType type);
-
 	CID                        m_id;
 	EACEControlType            m_type;
 	string                     m_name;
@@ -88,6 +91,8 @@ private:
 	std::vector<ConnectionPtr> m_connectedControls;
 	std::vector<CATLControl*>  m_children;
 	CATLControl*               m_pParent;
+	float                      m_radius;
+	float                      m_occlusionFadeOutDistance;
 	bool                       m_bAutoLoad;
 	bool                       m_bModified;
 
@@ -97,6 +102,8 @@ private:
 	void         AddRawXMLConnection(XmlNodeRef xmlNode, bool bValid, int platformIndex = -1);
 	XMLNodeList& GetRawXMLConnections(int platformIndex = -1);
 	std::map<int, XMLNodeList> m_connectionNodes;
+
+	bool                       m_modifiedSignalEnabled;
 };
 
 typedef std::shared_ptr<CATLControl> ATLControlPtr;

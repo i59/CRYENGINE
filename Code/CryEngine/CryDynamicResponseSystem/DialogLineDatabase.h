@@ -82,23 +82,24 @@ public:
 	bool InitFromFiles(const char* szFilePath);
 
 	//will return nullptr if there is no line with this ID
-	const CDialogLine* GetLineByID(CHashedString lineID, int* pOutPriority = nullptr);
+	const CDialogLine* GetLineByID(const CHashedString& lineID, int* pOutPriority = nullptr);
 
 	//////////////////////////////////////////////////////////
 	// IDialogLineDatabase implementation
 	virtual bool                             Save(const char* szFilePath) override;
-	virtual uint32                           GetLineSetCount() override;
+	virtual uint32                           GetLineSetCount() const override;
 	virtual DRS::IDialogLineSet*             GetLineSetByIndex(uint32 index) override;
 	virtual const DRS::IDialogLineSet* const GetLineSetById(const CHashedString& lineID) const override;
 	virtual DRS::IDialogLineSet*             InsertLineSet(uint32 index) override;
 	virtual void                             RemoveLineSet(uint32 index) override;
+	virtual bool                             ExecuteScript(uint32 index) override;
 	virtual void                             Serialize(Serialization::IArchive& ar) override;
 	virtual void                             SerializeLinesHistory(Serialization::IArchive& ar) override;
 	//////////////////////////////////////////////////////////
 
 private:
-	CHashedString GenerateUniqueId(const string& root);
-
+	CHashedString GenerateUniqueId(const string& root) const;
+	
 	typedef std::vector<CDialogLineSet> DialogLineSetList;
 	DialogLineSetList  m_lineSets;
 

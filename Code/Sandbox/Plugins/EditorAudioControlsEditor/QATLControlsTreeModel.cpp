@@ -7,7 +7,6 @@
 
 #include <QtUtil.h>
 #include <QStandardItem>
-#include <QMessageBox>
 
 #include "AudioControl.h"
 #include "AudioControlsEditorPlugin.h"
@@ -18,6 +17,8 @@
 #include "IEditor.h"
 #include "QATLControlsTreeModel.h"
 #include "QAudioControlTreeWidget.h"
+
+#include "Controls/QuestionDialog.h"
 
 namespace ACE
 {
@@ -218,6 +219,18 @@ CATLControl* QATLTreeModel::GetControlFromIndex(QModelIndex index)
 	return nullptr;
 }
 
+void QATLTreeModel::OnControlAdded(CATLControl* pControl)
+{
+	if (pControl)
+	{
+		QStandardItem* pItem = GetItemFromControlID(pControl->GetId());
+		if (pItem)
+		{
+			SetItemAsDirty(pItem);
+		}
+	}
+}
+
 void QATLTreeModel::OnControlModified(CATLControl* pControl)
 {
 	if (pControl)
@@ -230,6 +243,42 @@ void QATLTreeModel::OnControlModified(CATLControl* pControl)
 			{
 				pItem->setText(sNewName);
 			}
+			SetItemAsDirty(pItem);
+		}
+	}
+}
+
+void QATLTreeModel::OnControlRemoved(CATLControl* pControl)
+{
+	if (pControl)
+	{
+		QStandardItem* pItem = GetItemFromControlID(pControl->GetId());
+		if (pItem)
+		{
+			SetItemAsDirty(pItem);
+		}
+	}
+}
+
+void QATLTreeModel::OnConnectionAdded(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl)
+{
+	if (pControl)
+	{
+		QStandardItem* pItem = GetItemFromControlID(pControl->GetId());
+		if (pItem)
+		{
+			SetItemAsDirty(pItem);
+		}
+	}
+}
+
+void QATLTreeModel::OnConnectionRemoved(CATLControl* pControl, IAudioSystemItem* pMiddlewareControl)
+{
+	if (pControl)
+	{
+		QStandardItem* pItem = GetItemFromControlID(pControl->GetId());
+		if (pItem)
+		{
 			SetItemAsDirty(pItem);
 		}
 	}
@@ -319,11 +368,9 @@ bool QATLTreeModel::dropMimeData(const QMimeData* pData, Qt::DropAction action, 
 								QStandardItem* pItem = pTargetItem->child(i);
 								if (pItem && (pItem->data(eDataRole_Type) == eItemType_Folder) && (QString::compare(droppedFolderName, pItem->text(), Qt::CaseInsensitive) == 0))
 								{
-									QMessageBox messageBox;
-									messageBox.setStandardButtons(QMessageBox::Ok);
-									messageBox.setWindowTitle("Audio Controls Editor");
-									messageBox.setText("This destination already contains a folder named '" + droppedFolderName + "'.");
-									messageBox.exec();
+									QString msg("This destination already contains a folder named '%1'.");
+									msg = msg.arg(droppedFolderName);
+									CQuestionDialog::SCritical("Audio Controls Editor", msg);
 									return false;
 								}
 							}

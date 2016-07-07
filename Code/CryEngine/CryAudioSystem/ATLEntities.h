@@ -40,6 +40,8 @@ struct SATLXMLTags
 	static char const* const szATLInternalNameAttribute;
 	static char const* const szATLTypeAttribute;
 	static char const* const szATLConfigGroupAttribute;
+	static char const* const szATLRadiusAttribute;
+	static char const* const szATLOcclusionFadeOutDistanceAttribute;
 
 	static char const* const szATLDataLoadType;
 };
@@ -56,8 +58,10 @@ struct SATLInternalControlIDs
 	static AudioControlId        objectDopplerRtpcId;
 	static AudioControlId        objectVelocityRtpcId;
 	static AudioSwitchStateId    ignoreStateId;
-	static AudioSwitchStateId    singleRayStateId;
-	static AudioSwitchStateId    multiRayStateId;
+	static AudioSwitchStateId    adaptiveStateId;
+	static AudioSwitchStateId    lowStateId;
+	static AudioSwitchStateId    mediumStateId;
+	static AudioSwitchStateId    highStateId;
 	static AudioSwitchStateId    onStateId;
 	static AudioSwitchStateId    offStateId;
 	static AudioPreloadRequestId globalPreloadRequestId;
@@ -273,16 +277,18 @@ public:
 
 	typedef std::vector<CATLTriggerImpl const*, STLSoundAllocator<CATLTriggerImpl const*>> ImplPtrVec;
 
-	explicit CATLTrigger(AudioControlId const audioTriggerId, EAudioDataScope const dataScope, ImplPtrVec const& implPtrs, float const maxRadius)
+	explicit CATLTrigger(AudioControlId const audioTriggerId, EAudioDataScope const dataScope, ImplPtrVec const& implPtrs, float const maxRadius, float const occlusionFadeOutDistance)
 		: TATLControl(audioTriggerId, dataScope)
 		, m_implPtrs(implPtrs)
 		, m_maxRadius(maxRadius)
+		, m_occlusionFadeOutDistance(occlusionFadeOutDistance)
 	{}
 
 	virtual ~CATLTrigger() {}
 
 	ImplPtrVec const m_implPtrs;
 	float const      m_maxRadius;
+	float const      m_occlusionFadeOutDistance;
 };
 
 class CATLRtpcImpl : public CATLControlImpl

@@ -9,10 +9,8 @@ public:
 
 	explicit CFlowNode_AudioRtpc(SActivationInfo* pActInfo)
 		: m_value(0.0f)
-		, m_rtpcId(INVALID_AUDIO_CONTROL_ID)
 	{}
 
-	//////////////////////////////////////////////////////////////////////////
 	~CFlowNode_AudioRtpc() {}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -103,15 +101,14 @@ public:
 
 private:
 
-	static float const EPSILON;
-
 	//////////////////////////////////////////////////////////////////////////
 	void GetRtpcId(SActivationInfo* const pActInfo)
 	{
 		string const& rtpcName = GetPortString(pActInfo, eIn_RtpcName);
+
 		if (!rtpcName.empty())
 		{
-			gEnv->pAudioSystem->GetAudioRtpcId(rtpcName.c_str(), m_rtpcId);
+			gEnv->pAudioSystem->GetAudioRtpcId(rtpcName.c_str(), m_requestData.audioRtpcId);
 		}
 	}
 
@@ -122,7 +119,7 @@ private:
 		// We always need to set the value as it could have been manipulated by another entity.
 		m_value = value;
 
-		if (pEntity != NULL)
+		if (pEntity != nullptr)
 		{
 			SetOnProxy(pEntity, m_value);
 		}
@@ -135,12 +132,11 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	void Init(SActivationInfo* const pActInfo)
 	{
-		if (gEnv->pAudioSystem != NULL)
+		if (gEnv->pAudioSystem != nullptr)
 		{
 			GetRtpcId(pActInfo);
 
 			m_request.pData = &m_requestData;
-			m_requestData.audioRtpcId = m_rtpcId;
 
 			float const value = GetPortFloat(pActInfo, eIn_RtpcValue);
 			SetValue(pActInfo->pEntity, value);
@@ -154,7 +150,7 @@ private:
 
 		if (pIEntityAudioProxy != nullptr)
 		{
-			pIEntityAudioProxy->SetRtpcValue(m_rtpcId, value);
+			pIEntityAudioProxy->SetRtpcValue(m_requestData.audioRtpcId, value);
 		}
 	}
 
@@ -165,10 +161,8 @@ private:
 		gEnv->pAudioSystem->PushRequest(m_request);
 	}
 
-	//////////////////////////////////////////////////////////////////////////
-	float          m_value;
-	AudioControlId m_rtpcId;
-	SAudioRequest  m_request;
+	float         m_value;
+	SAudioRequest m_request;
 	SAudioObjectRequestData<eAudioObjectRequestType_SetRtpcValue> m_requestData;
 };
 

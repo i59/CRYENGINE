@@ -2,16 +2,18 @@
 
 #include "stdafx.h"
 #include "ATL.h"
-#include "ATLComponents.h"
-#include "AudioSystemImpl_NULL.h"
-#include "SoundCVars.h"
+#include "AudioImpl.h"
+#include "AudioCVars.h"
 #include "AudioProxy.h"
+#include "ATLAudioObject.h"
 #include <CrySystem/ISystem.h>
 #include <CryPhysics/IPhysics.h>
 #include <CryRenderer/IRenderer.h>
 #include <CryRenderer/IRenderAuxGeom.h>
+#include <CryString/CryPath.h>
 
 using namespace CryAudio::Impl;
+using namespace CryAudio::Impl::Null;
 
 ///////////////////////////////////////////////////////////////////////////
 inline EAudioRequestResult ConvertToRequestResult(EAudioRequestStatus const eAudioRequestStatus)
@@ -59,7 +61,7 @@ CAudioTranslationLayer::CAudioTranslationLayer()
 	, m_fileCacheMgr(m_preloadRequests)
 	, m_audioEventListenerMgr()
 	, m_xmlProcessor(m_triggers, m_rtpcs, m_switches, m_environments, m_preloadRequests, m_fileCacheMgr)
-	, m_lastMainThreadFramId(0)
+	, m_lastMainThreadFrameId(0)
 	, m_flags(eAudioInternalStates_None)
 	, m_pImpl(nullptr)
 {
@@ -93,14 +95,16 @@ bool CAudioTranslationLayer::Initialize()
 	// Add the callback for the obstruction calculation.
 	gEnv->pPhysicalWorld->AddEventClient(
 	  EventPhysRWIResult::id,
-	  &CATLAudioObject::CPropagationProcessor::OnObstructionTest,
+	  &CPropagationProcessor::OnObstructionTest,
 	  1);
 
 	// TODO: Rather parse a "default data" type XML to import ATL required controls!
 	CAudioProxy::s_occlusionTypeSwitchId = static_cast<AudioControlId>(AudioStringToId("ObstrOcclCalcType"));
 	CAudioProxy::s_occlusionTypeStateIds[eAudioOcclusionType_Ignore] = static_cast<AudioSwitchStateId>(AudioStringToId("Ignore"));
-	CAudioProxy::s_occlusionTypeStateIds[eAudioOcclusionType_SingleRay] = static_cast<AudioSwitchStateId>(AudioStringToId("SingleRay"));
-	CAudioProxy::s_occlusionTypeStateIds[eAudioOcclusionType_MultiRay] = static_cast<AudioSwitchStateId>(AudioStringToId("MultiRay"));
+	CAudioProxy::s_occlusionTypeStateIds[eAudioOcclusionType_Adaptive] = static_cast<AudioSwitchStateId>(AudioStringToId("Adaptive"));
+	CAudioProxy::s_occlusionTypeStateIds[eAudioOcclusionType_Low] = static_cast<AudioSwitchStateId>(AudioStringToId("Low"));
+	CAudioProxy::s_occlusionTypeStateIds[eAudioOcclusionType_Medium] = static_cast<AudioSwitchStateId>(AudioStringToId("Medium"));
+	CAudioProxy::s_occlusionTypeStateIds[eAudioOcclusionType_High] = static_cast<AudioSwitchStateId>(AudioStringToId("High"));
 
 	return true;
 }
@@ -113,7 +117,7 @@ bool CAudioTranslationLayer::ShutDown()
 		// remove the callback for the obstruction calculation
 		gEnv->pPhysicalWorld->RemoveEventClient(
 		  EventPhysRWIResult::id,
-		  &CATLAudioObject::CPropagationProcessor::OnObstructionTest,
+		  &CPropagationProcessor::OnObstructionTest,
 		  1);
 	}
 
@@ -187,18 +191,31 @@ void CAudioTranslationLayer::Update(float const deltaTime)
 {
 	if (m_pImpl != nullptr)
 	{
-		if (m_lastMainThreadFramId != gEnv->nMainFrameID)
+		if (m_lastMainThreadFrameId != gEnv->nMainFrameID)
 		{
 			g_lastMainThreadFrameStartTime = gEnv->pTimer->GetFrameStartTime();
-			m_lastMainThreadFramId = gEnv->nMainFrameID;
+			m_lastMainThreadFrameId = gEnv->nMainFrameID;
+
+			if (g_audioCVars.m_tickWithMainThread > 0)
+			{
+				m_audioListenerMgr.Update(deltaTime);
+				m_audioEventMgr.Update(deltaTime);
+				m_audioObjectMgr.Update(deltaTime, m_audioListenerMgr.GetDefaultListenerAttributes());
+				m_fileCacheMgr.Update();
+
+				m_pImpl->Update(deltaTime);
+			}
 		}
 
-		m_audioListenerMgr.Update(deltaTime);
-		m_audioEventMgr.Update(deltaTime);
-		m_audioObjectMgr.Update(deltaTime, m_audioListenerMgr.GetDefaultListenerAttributes());
-		m_fileCacheMgr.Update();
+		if (g_audioCVars.m_tickWithMainThread == 0)
+		{
+			m_audioListenerMgr.Update(deltaTime);
+			m_audioEventMgr.Update(deltaTime);
+			m_audioObjectMgr.Update(deltaTime, m_audioListenerMgr.GetDefaultListenerAttributes());
+			m_fileCacheMgr.Update();
 
-		m_pImpl->Update(deltaTime);
+			m_pImpl->Update(deltaTime);
+		}
 	}
 }
 
@@ -892,17 +909,6 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(C
 
 			break;
 		}
-	case eAudioCallbackManagerRequestType_ReportProcessedObstructionRay:
-		{
-			SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportProcessedObstructionRay> const* const pRequestData =
-			  static_cast<SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportProcessedObstructionRay> const* const>(request.pData.get());
-
-			m_audioObjectMgr.ReportObstructionRay(pRequestData->audioObjectId, pRequestData->rayId);
-
-			result = eAudioRequestStatus_Success;
-
-			break;
-		}
 	case eAudioCallbackManagerRequestType_ReportStartedFile:
 		{
 			SAudioCallbackManagerRequestDataInternal<eAudioCallbackManagerRequestType_ReportStartedFile> const* const pRequestData =
@@ -968,14 +974,14 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioCallbackManagerRequest(C
 EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequestInternal const& request)
 {
 	EAudioRequestStatus result = eAudioRequestStatus_Failure;
-	CATLAudioObject* pObject = m_pGlobalAudioObject;
+	CATLAudioObject* pAudioObject = m_pGlobalAudioObject;
 
 	if (request.audioObjectId != INVALID_AUDIO_OBJECT_ID)
 	{
-		pObject = m_audioObjectMgr.LookupId(request.audioObjectId);
+		pAudioObject = m_audioObjectMgr.LookupId(request.audioObjectId);
 	}
 
-	if (pObject != nullptr)
+	if (pAudioObject != nullptr)
 	{
 		SAudioObjectRequestDataInternalBase const* const pBaseRequestData =
 		  static_cast<SAudioObjectRequestDataInternalBase const* const>(request.pData.get());
@@ -991,7 +997,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 
 				if (pTrigger != nullptr)
 				{
-					result = PrepUnprepTriggerAsync(pObject, pTrigger, true);
+					result = PrepUnprepTriggerAsync(pAudioObject, pTrigger, true);
 				}
 				else
 				{
@@ -1009,7 +1015,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 
 				if (pTrigger != nullptr)
 				{
-					result = PrepUnprepTriggerAsync(pObject, pTrigger, false);
+					result = PrepUnprepTriggerAsync(pAudioObject, pTrigger, false);
 				}
 				else
 				{
@@ -1026,7 +1032,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 				if (pRequestData != nullptr && !pRequestData->file.empty())
 				{
 					result = PlayFile(
-					  pObject,
+					  pAudioObject,
 					  pRequestData->file.c_str(),
 					  pRequestData->usedAudioTriggerId,
 					  pRequestData->bLocalized,
@@ -1044,7 +1050,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 
 				if (pRequestData != nullptr && !pRequestData->file.empty())
 				{
-					result = StopFile(pObject, pRequestData->file.c_str());
+					result = StopFile(pAudioObject, pRequestData->file.c_str());
 				}
 
 				break;
@@ -1059,7 +1065,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 				if (pTrigger != nullptr)
 				{
 					result = ActivateTrigger(
-					  pObject,
+					  pAudioObject,
 					  pTrigger,
 					  pRequestData->timeUntilRemovalInMS,
 					  request.pOwner,
@@ -1083,7 +1089,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 
 				if (pTrigger != nullptr)
 				{
-					result = StopTrigger(pObject, pTrigger);
+					result = StopTrigger(pAudioObject, pTrigger);
 				}
 				else
 				{
@@ -1094,7 +1100,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 			}
 		case eAudioObjectRequestType_StopAllTriggers:
 			{
-				StopAllTriggers(pObject);
+				StopAllTriggers(pAudioObject);
 
 				result = eAudioRequestStatus_Success;
 
@@ -1102,13 +1108,13 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 			}
 		case eAudioObjectRequestType_SetTransformation:
 			{
-				if (pObject != m_pGlobalAudioObject)
+				if (pAudioObject != m_pGlobalAudioObject)
 				{
 					SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetTransformation> const* const pRequestData =
 					  static_cast<SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetTransformation> const* const>(request.pData.get());
 
-					pObject->SetTransformation(pRequestData->transformation);
-					result = m_pImpl->Set3DAttributes(pObject->GetImplDataPtr(), pObject->Get3DAttributes());
+					pAudioObject->SetTransformation(pRequestData->transformation);
+					result = m_pImpl->Set3DAttributes(pAudioObject->GetImplDataPtr(), pAudioObject->Get3DAttributes());
 				}
 				else
 				{
@@ -1128,7 +1134,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 
 				if (pRtpc != nullptr)
 				{
-					result = SetRtpc(pObject, pRtpc, pRequestData->value);
+					result = SetRtpc(pAudioObject, pRtpc, pRequestData->value);
 				}
 
 				break;
@@ -1147,7 +1153,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 
 					if (pState != nullptr)
 					{
-						result = SetSwitchState(pObject, pState);
+						result = SetSwitchState(pAudioObject, pState);
 					}
 				}
 
@@ -1162,7 +1168,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 			}
 		case eAudioObjectRequestType_SetEnvironmentAmount:
 			{
-				if (pObject != m_pGlobalAudioObject)
+				if (pAudioObject != m_pGlobalAudioObject)
 				{
 					result = eAudioRequestStatus_FailureInvalidControlId;
 					SAudioObjectRequestDataInternal<eAudioObjectRequestType_SetEnvironmentAmount> const* const pRequestData =
@@ -1172,7 +1178,7 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 
 					if (pEnvironment != nullptr)
 					{
-						result = SetEnvironment(pObject, pEnvironment, pRequestData->amount);
+						result = SetEnvironment(pAudioObject, pEnvironment, pRequestData->amount);
 					}
 				}
 				else
@@ -1184,18 +1190,16 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 			}
 		case eAudioObjectRequestType_ResetEnvironments:
 			{
-				result = ResetEnvironments(pObject);
+				result = ResetEnvironments(pAudioObject);
 				break;
 			}
 		case eAudioObjectRequestType_ReleaseObject:
 			{
 				result = eAudioRequestStatus_Failure;
 
-				AudioObjectId const nObjectID = pObject->GetId();
-
-				if (nObjectID != m_globalAudioObjectId)
+				if (pAudioObject != m_pGlobalAudioObject)
 				{
-					if (ReleaseAudioObjectId(nObjectID))
+					if (ReleaseAudioObjectId(pAudioObject->GetId()))
 					{
 						result = eAudioRequestStatus_Success;
 					}
@@ -1205,6 +1209,15 @@ EAudioRequestStatus CAudioTranslationLayer::ProcessAudioObjectRequest(CAudioRequ
 					g_audioLogger.Log(eAudioLogType_Warning, "ATL received a request to release the GlobalAudioObject");
 				}
 
+				break;
+			}
+		case eAudioObjectRequestType_ProcessPhysicsRay:
+			{
+				SAudioObjectRequestDataInternal<eAudioObjectRequestType_ProcessPhysicsRay> const* const pRequestData =
+				  static_cast<SAudioObjectRequestDataInternal<eAudioObjectRequestType_ProcessPhysicsRay> const* const>(request.pData.get());
+
+				pAudioObject->ProcessPhysicsRay(pRequestData->pAudioRayInfo);
+				result = eAudioRequestStatus_Success;
 				break;
 			}
 		case eAudioObjectRequestType_None:
@@ -1277,9 +1290,9 @@ EAudioRequestStatus CAudioTranslationLayer::SetImpl(IAudioImpl* const pImpl)
 	{
 		g_audioLogger.Log(eAudioLogType_Warning, "nullptr passed to SetImpl, will run with the null implementation");
 
-		POOL_NEW_CREATE(CAudioImpl_null, pAudioImpl_null);
-		CRY_ASSERT(pAudioImpl_null != nullptr);
-		m_pImpl = pAudioImpl_null;
+		POOL_NEW_CREATE(CAudioImpl, pAudioImpl);
+		CRY_ASSERT(pAudioImpl != nullptr);
+		m_pImpl = pAudioImpl;
 	}
 
 	result = m_pImpl->Init();
@@ -1289,15 +1302,15 @@ EAudioRequestStatus CAudioTranslationLayer::SetImpl(IAudioImpl* const pImpl)
 		// The impl failed to initialize, allow it to shut down and release then fall back to the null impl.
 		g_audioLogger.Log(eAudioLogType_Error, "Failed to set the AudioImpl %s. Will run with the null implementation.", m_pImpl->GetImplementationNameString());
 
-		EAudioRequestStatus result = m_pImpl->ShutDown(); // Shut down the audio middleware.
+		result = m_pImpl->ShutDown(); // Shut down the audio middleware.
 		CRY_ASSERT(result == eAudioRequestStatus_Success);
 
 		result = m_pImpl->Release(); // Release the engine specific data.
 		CRY_ASSERT(result == eAudioRequestStatus_Success);
 
-		POOL_NEW_CREATE(CAudioImpl_null, pAudioImpl_null);
-		CRY_ASSERT(pAudioImpl_null != nullptr);
-		m_pImpl = pAudioImpl_null;
+		POOL_NEW_CREATE(CAudioImpl, pAudioImpl);
+		CRY_ASSERT(pAudioImpl != nullptr);
+		m_pImpl = pAudioImpl;
 	}
 
 	IAudioObject* const pGlobalObjectData = m_pImpl->NewGlobalAudioObject(m_globalAudioObjectId);
@@ -1482,7 +1495,6 @@ EAudioRequestStatus CAudioTranslationLayer::StopFile(
 				default:
 					break;
 				}
-
 				g_audioLogger.Log(eAudioLogType_Warning, "Request to stop a standalone audio file that is not playing! State: \"%s\"", szState);
 			}
 #endif //INCLUDE_AUDIO_PRODUCTION_CODE
@@ -1627,21 +1639,11 @@ EAudioRequestStatus CAudioTranslationLayer::ActivateTrigger(
   AudioEnumFlagsType const flags /*= INVALID_AUDIO_ENUM_FLAG_TYPE*/)
 {
 	EAudioRequestStatus result = eAudioRequestStatus_Failure;
-
-	if (pAudioObject != m_pGlobalAudioObject)
-	{
-		// If the AudioObject uses Obstruction/Occlusion then set the values before activating the trigger.
-		if (pAudioObject->CanRunObstructionOcclusion() && !m_audioObjectMgr.IsActive(pAudioObject))
-		{
-			pAudioObject->ResetObstructionOcclusion(m_audioListenerMgr.GetDefaultListenerAttributes().transformation);
-		}
-	}
-
-	AudioControlId const nATLTriggerID = pTrigger->GetId();
+	AudioControlId const audioTriggerId = pTrigger->GetId();
 
 	// Sets eATS_STARTING on this TriggerInstance to avoid
 	// reporting TriggerFinished while the events are being started.
-	pAudioObject->ReportStartingTriggerInstance(m_triggerInstanceIDCounter, nATLTriggerID);
+	pAudioObject->ReportStartingTriggerInstance(m_triggerInstanceIDCounter, audioTriggerId);
 
 	for (auto const pTriggerImpl : pTrigger->m_implPtrs)
 	{
@@ -1713,7 +1715,7 @@ EAudioRequestStatus CAudioTranslationLayer::ActivateTrigger(
 	if (result != eAudioRequestStatus_Success)
 	{
 		// No TriggerImpl generated an active event.
-		g_audioLogger.Log(eAudioLogType_Warning, "Trigger \"%s\" failed on AudioObject \"%s\" (ID: %u)", m_debugNameStore.LookupAudioTriggerName(nATLTriggerID), m_debugNameStore.LookupAudioObjectName(pAudioObject->GetId()), pAudioObject->GetId());
+		g_audioLogger.Log(eAudioLogType_Warning, "Trigger \"%s\" failed on AudioObject \"%s\" (ID: %u)", m_debugNameStore.LookupAudioTriggerName(audioTriggerId), m_debugNameStore.LookupAudioObjectName(pAudioObject->GetId()), pAudioObject->GetId());
 	}
 #endif // INCLUDE_AUDIO_PRODUCTION_CODE
 
@@ -2025,24 +2027,33 @@ EAudioRequestStatus CAudioTranslationLayer::SetInternalSwitchState(
 	{
 		if (pAudioObject != m_pGlobalAudioObject)
 		{
+			Vec3 const& audioListenerPosition = m_audioListenerMgr.GetDefaultListenerAttributes().transformation.GetPosition();
+
 			if (pInternalStateData->internalAudioSwitchStateId == SATLInternalControlIDs::ignoreStateId)
 			{
-				pAudioObject->SetObstructionOcclusionCalc(eAudioOcclusionType_Ignore);
-				SATLSoundPropagationData propagationData;
-				pAudioObject->GetPropagationData(propagationData);
-				m_pImpl->SetObstructionOcclusion(pAudioObject->GetImplDataPtr(), propagationData.obstruction, propagationData.occlusion);
+				pAudioObject->SetOcclusionType(eAudioOcclusionType_Ignore, audioListenerPosition);
+				m_pImpl->SetObstructionOcclusion(pAudioObject->GetImplDataPtr(), 0.0f, 0.0f);
 			}
-			else if (pInternalStateData->internalAudioSwitchStateId == SATLInternalControlIDs::singleRayStateId)
+			else if (pInternalStateData->internalAudioSwitchStateId == SATLInternalControlIDs::adaptiveStateId)
 			{
-				pAudioObject->SetObstructionOcclusionCalc(eAudioOcclusionType_SingleRay);
+				pAudioObject->SetOcclusionType(eAudioOcclusionType_Adaptive, audioListenerPosition);
 			}
-			else if (pInternalStateData->internalAudioSwitchStateId == SATLInternalControlIDs::multiRayStateId)
+			else if (pInternalStateData->internalAudioSwitchStateId == SATLInternalControlIDs::lowStateId)
 			{
-				pAudioObject->SetObstructionOcclusionCalc(eAudioOcclusionType_MultiRay);
+				pAudioObject->SetOcclusionType(eAudioOcclusionType_Low, audioListenerPosition);
+			}
+			else if (pInternalStateData->internalAudioSwitchStateId == SATLInternalControlIDs::mediumStateId)
+			{
+				pAudioObject->SetOcclusionType(eAudioOcclusionType_Medium, audioListenerPosition);
+			}
+			else if (pInternalStateData->internalAudioSwitchStateId == SATLInternalControlIDs::highStateId)
+			{
+				pAudioObject->SetOcclusionType(eAudioOcclusionType_High, audioListenerPosition);
 			}
 			else
 			{
-				CRY_ASSERT(false);
+				pAudioObject->SetOcclusionType(eAudioOcclusionType_Ignore, audioListenerPosition);
+				m_pImpl->SetObstructionOcclusion(pAudioObject->GetImplDataPtr(), 0.0f, 0.0f);
 			}
 		}
 	}
@@ -2258,8 +2269,8 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 		size_t const nEvents = m_audioEventMgr.GetNumActive();
 		size_t const nListeners = m_audioListenerMgr.GetNumActive();
 		size_t const nNumEventListeners = m_audioEventListenerMgr.GetNumEventListeners();
-		fSyncRays += (CATLAudioObject::CPropagationProcessor::s_totalSyncPhysRays - fSyncRays) * SMOOTHING_ALPHA;
-		fAsyncRays += (CATLAudioObject::CPropagationProcessor::s_totalAsyncPhysRays - fAsyncRays) * SMOOTHING_ALPHA * 0.1f;
+		fSyncRays += (CPropagationProcessor::s_totalSyncPhysRays - fSyncRays) * SMOOTHING_ALPHA;
+		fAsyncRays += (CPropagationProcessor::s_totalAsyncPhysRays - fAsyncRays) * SMOOTHING_ALPHA * 0.1f;
 
 		bool const bActive = true;
 		float const fColorListener[4] =
@@ -2284,6 +2295,17 @@ void CAudioTranslationLayer::DrawAudioSystemDebugInfo()
 		DrawATLComponentDebugInfo(*pAuxGeom, fPosX, fPosY);
 
 		pAuxGeom->Commit(7);
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////
+void CAudioTranslationLayer::GetAudioTriggerData(AudioControlId const audioTriggerId, SAudioTriggerData& audioTriggerData) const
+{
+	CATLTrigger const* const pTrigger = stl::find_in_map(m_triggers, audioTriggerId, nullptr);
+	if (pTrigger != nullptr)
+	{
+		audioTriggerData.radius = pTrigger->m_maxRadius;
+		audioTriggerData.occlusionFadeOutDistance = pTrigger->m_occlusionFadeOutDistance;
 	}
 }
 

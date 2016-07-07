@@ -681,3 +681,32 @@ void CRoadRenderNode::OffsetPosition(const Vec3& delta)
 	if (m_pTempData) m_pTempData->OffsetPosition(delta);
 	m_serializedData.worldSpaceBBox.Move(delta);
 }
+
+///////////////////////////////////////////////////////////////////////////////
+void CRoadRenderNode::FillBBox(AABB& aabb)
+{
+	aabb = CRoadRenderNode::GetBBox();
+}
+
+EERType CRoadRenderNode::GetRenderNodeType()
+{
+	return eERType_Road;
+}
+
+float CRoadRenderNode::GetMaxViewDist()
+{
+	if (GetMinSpecFromRenderNodeFlags(m_dwRndFlags) == CONFIG_DETAIL_SPEC)
+		return max(GetCVars()->e_ViewDistMin, CRoadRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatioDetail * GetViewDistRatioNormilized());
+
+	return max(GetCVars()->e_ViewDistMin, CRoadRenderNode::GetBBox().GetRadius() * GetCVars()->e_ViewDistRatio * GetViewDistRatioNormilized());
+}
+
+Vec3 CRoadRenderNode::GetPos(bool) const
+{
+	return m_serializedData.worldSpaceBBox.GetCenter();
+}
+
+IMaterial* CRoadRenderNode::GetMaterial(Vec3* pHitPos) const
+{
+	return m_pMaterial;
+}

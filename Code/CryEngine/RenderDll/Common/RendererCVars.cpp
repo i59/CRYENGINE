@@ -287,7 +287,6 @@ int CRendererCVars::CV_r_shadersGL4;
 int CRendererCVars::CV_r_shadersGLES3;
 #endif
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersignoreincludeschanging);
-int CRendererCVars::CV_r_shaderspreactivate;
 int CRendererCVars::CV_r_shadersAllowCompilation;
 AllocateConstIntCVar(CRendererCVars, CV_r_shadersediting);
 AllocateConstIntCVar(CRendererCVars, CV_r_shaderscompileautoactivate);
@@ -455,6 +454,7 @@ AllocateConstIntCVar(CRendererCVars, CV_r_graphstyle);
 AllocateConstIntCVar(CRendererCVars, CV_r_showbufferusage);
 
 ICVar* CRendererCVars::CV_r_ShaderCompilerServer;
+ICVar* CRendererCVars::CV_r_ShaderCompilerFolderName;
 ICVar* CRendererCVars::CV_r_ShaderCompilerFolderSuffix;
 ICVar* CRendererCVars::CV_r_ShaderEmailTags;
 ICVar* CRendererCVars::CV_r_ShaderEmailCCs;
@@ -1847,6 +1847,10 @@ void CRendererCVars::InitCVars()
 	CV_r_ShaderCompilerServer = REGISTER_STRING("r_ShaderCompilerServer", "8core5", VF_NULL,
 	                                            "Usage: r_ShaderCompilerServer localhost \n"
 	                                            "Default is 8core5 ");
+																							
+	CV_r_ShaderCompilerFolderName = REGISTER_STRING("r_ShaderCompilerFolderName", "", VF_NULL,
+	                                             "Usage: r_ShaderCompilerFolderName foldername \n"
+	                                             "Default is empty. This overwrites the default path of using the game directory name when storing shader caches.");
 
 	CV_r_ShaderCompilerFolderSuffix = REGISTER_STRING("r_ShaderCompilerFolderSuffix", "", VF_NULL,
 	                                                  "Usage: r_ShaderCompilerFolderSuffix suffix \n"
@@ -2393,8 +2397,6 @@ void CRendererCVars::InitCVars()
 
 	DefineConstIntCVar3("r_ShadersIgnoreIncludesChanging", CV_r_shadersignoreincludeschanging, 0, VF_NULL, "");
 	DefineConstIntCVar3("r_ShadersLazyUnload", CV_r_shaderslazyunload, 0, VF_NULL, "");
-
-	REGISTER_CVAR3("r_ShadersPreactivate", CV_r_shaderspreactivate, SHADERS_PREACTIVATE_DEFAULT_VAL, VF_DUMPTODISK, "");
 
 	REGISTER_CVAR3_CB("r_ShadersAllowCompilation", CV_r_shadersAllowCompilation, SHADERS_ALLOW_COMPILATION_DEFAULT_VAL, VF_NULL, "", OnChange_CV_r_ShadersAllowCompiliation);
 

@@ -176,7 +176,7 @@ void CParticleEmitter::UpdateState()
 		}
 	}
 
-	bool bUpdateState = bUpdateBounds || m_fAge >= m_fStateChangeAge;
+	bool bUpdateState = (GetRndFlags()&ERF_HIDDEN)==0 && (bUpdateBounds || m_fAge >= m_fStateChangeAge);
 	if (bUpdateState)
 	{
 		m_fStateChangeAge = fHUGE;
@@ -537,7 +537,7 @@ void CParticleEmitter::CreateIndirectEmitters(CParticleSource* pSource, CParticl
 
 void CParticleEmitter::SetLocation(const QuatTS& loc)
 {
-	if (!QuatTS::IsEquivalent(GetLocation(), loc, 0.0045f, 1e-5f))
+	if (!IsEquivalent(GetLocation(), loc, 0.0045f, 1e-5f))
 	{
 		InvalidateStaticBounds();
 		m_VisEnviron.Invalidate();

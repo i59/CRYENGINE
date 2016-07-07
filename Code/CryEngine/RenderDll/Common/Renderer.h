@@ -109,6 +109,8 @@ struct alloc_info_struct
 	void     GetMemoryUsage(ICrySizer* pSizer) const {}
 };
 
+const float TANGENT30_2 = 0.57735026918962576450914878050196f * 2;   // 2*tan(30)
+
 // Assuming 24 bits of depth precision
 #define DBT_SKY_CULL_DEPTH                    0.99999994f
 
@@ -882,7 +884,8 @@ public:
 	//for editor
 	virtual void GetModelViewMatrix(float* mat) override = 0;
 	virtual void GetProjectionMatrix(float* mat) override = 0;
-	virtual void SetMatrices(float* pProjMat, float* pViewMat) = 0;
+	virtual void GetCameraZeroMatrix(float* mat) override = 0;
+	virtual void SetMatrices(float* pProjMat, float* pViewMat, float* pZeroMat) = 0;
 
 	// NOTE: deprecated
 	virtual void ClearTargetsImmediately(uint32 nFlags) override = 0;
@@ -1021,7 +1024,7 @@ public:
 
 	virtual void                   EF_ReleaseDeferredData() override;
 	virtual SInputShaderResources* EF_CreateInputShaderResource(IRenderShaderResources* pOptionalCopyFrom = nullptr) override;
-	virtual void                   ClearPerFrameData();
+	virtual void                   ClearPerFrameData(const SRenderingPassInfo& passInfo);
 	virtual bool                   EF_UpdateDLight(SRenderLight* pDL) override;
 	void                           EF_CheckLightMaterial(CDLight* pLight, uint16 nRenderLightID, const SRenderingPassInfo& passInfo);
 
@@ -1329,7 +1332,7 @@ public:
 	Matrix44A m_IdentityMatrix;
 	Matrix44A m_ViewMatrix;
 	Matrix44A m_CameraMatrix;
-	Matrix44A m_CameraZeroMatrix[RT_COMMAND_BUF_COUNT];
+	Matrix44A m_CameraZeroMatrix;
 
 	Matrix44A m_ProjMatrix;
 	Matrix44A m_TranspOrigCameraProjMatrix;

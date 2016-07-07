@@ -537,10 +537,11 @@ enum EShapeMeshType
 
 struct SThreadInfo
 {
-	uint32              m_PersFlags; // Never reset
+	uint32              m_PersFlags;                             // Never reset
 	float               m_RealTime;
 	class CMatrixStack* m_matView;
 	class CMatrixStack* m_matProj;
+	Matrix44            m_matCameraZero;
 	CCamera             m_cam;                                   // current camera
 	CRenderCamera       m_rcam;                                  // current camera
 	int                 m_nFrameID;                              // with recursive calls, access through GetFrameID(true)
@@ -980,7 +981,7 @@ struct SCompareDist
 {
 	bool operator()(const SRendItem& a, const SRendItem& b) const
 	{
-		if (fcmp(a.fDist, b.fDist))
+		if (a.fDist == b.fDist)
 			return a.rendItemSorter.ParticleCounter() < b.rendItemSorter.ParticleCounter();
 
 		return (a.fDist > b.fDist);
@@ -992,7 +993,7 @@ struct SCompareDistInverted
 {
 	bool operator()(const SRendItem& a, const SRendItem& b) const
 	{
-		if (fcmp(a.fDist, b.fDist))
+		if (a.fDist == b.fDist)
 			return a.rendItemSorter.ParticleCounter() > b.rendItemSorter.ParticleCounter();
 
 		return (a.fDist < b.fDist);

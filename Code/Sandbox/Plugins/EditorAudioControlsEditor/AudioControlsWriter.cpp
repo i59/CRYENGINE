@@ -230,14 +230,28 @@ bool CAudioControlsWriter::IsItemModified(QModelIndex index) const
 	return false;
 }
 
-void CAudioControlsWriter::WriteControlToXML(XmlNodeRef pNode, CATLControl* pControl, const string& sPath)
+void CAudioControlsWriter::WriteControlToXML(XmlNodeRef pNode, CATLControl* pControl, const string& path)
 {
 	const EACEControlType type = pControl->GetType();
 	XmlNodeRef pChildNode = pNode->createNode(TypeToTag(type));
 	pChildNode->setAttr("atl_name", pControl->GetName());
-	if (!sPath.empty())
+	if (!path.empty())
 	{
-		pChildNode->setAttr("path", sPath);
+		pChildNode->setAttr("path", path);
+	}
+
+	if (type == eACEControlType_Trigger)
+	{
+		const float radius = pControl->GetRadius();
+		if (radius > 0.0f)
+		{
+			pChildNode->setAttr("atl_radius", radius);
+			const float fadeOutDistance = pControl->GetOcclusionFadeOutDistance();
+			if (fadeOutDistance > 0.0f)
+			{
+				pChildNode->setAttr("atl_occlusion_fadeout_distance", fadeOutDistance);
+			}
+		}
 	}
 
 	if (type == eACEControlType_Switch)

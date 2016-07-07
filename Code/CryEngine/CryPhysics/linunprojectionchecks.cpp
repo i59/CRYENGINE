@@ -299,7 +299,8 @@ int tri_box_lin_unprojection(unprojection_mode *pmode, const triangle *ptri,int 
 			t0.set(dp_x_edge1*ncontact, ncontact.len2()*tmax.y); t0.y = 1.0/t0.y;
 			pcontact->t = tmax.x*t0.y*ncontact.len2();
 			pcontact->pt = ptri->pt[i] + (ptri->pt[inc_mod3[i]]-ptri->pt[i])*t0.x*t0.y + pmode->dir*pcontact->t;
-			pcontact->n = (ncontact*pbox->Basis)*sgnnz((pt[i]-pt[dec_mod3[i]])*ncontact);
+			pcontact->n = ncontact*pbox->Basis;
+			pcontact->n *= sgnnz(pcontact->n*(pbox->center-pcontact->pt));
 			pcontact->iFeature[0] = 0xA0 | i;
 			pcontact->iFeature[1] = 0x20 | idbest&0xF;
 	}
@@ -1634,8 +1635,8 @@ int box_capsule_lin_unprojection(unprojection_mode *pmode, const box *pbox,int i
 	#define check_cap(prim,pprim,iend) \
 		sph.center = pcaps->center+pcaps->axis*pcaps->hh*(iend*2-3); sph.r = pcaps->r;	pmode->dir.zero(); \
 		if (bContact##iend = prim##_sphere_lin_unprojection(pmode, pprim,iFeature1, &sph,-1, &capcont,parea))	\
-			if (capcont.n*pcaps->axis*(iend*2-3)>0) {	\
-				pmode->dir = pcaps->axis*(iend*2-1); \
+			if (capcont.n*pcaps->axis*(iend*2-3)*pcaps->hh > pcaps->hh*0.1f) {	\
+				pmode->dir = pcaps->axis*(3-iend*2); \
 				if (bContact##iend = prim##_sphere_lin_unprojection(pmode, pprim,iFeature1, &sph,-1, &capcont,parea) && (!pcontact->t || capcont.t<pcontact->t))	\
 					*pcontact = capcont, dir_best = pmode->dir;	\
 			}	else if (bContact##iend = capcont.t>pcontact->t)	\
@@ -1868,7 +1869,7 @@ int cyl_cyl_lin_unprojection(unprojection_mode *pmode, const cylinder *pcyl1,int
 		n = axis[0]*(axis[0]*axis[1]) - axis[1];
 		if (n.len2()>sqr((real)0.01))
 			nlen = n.len();
-		else { // in case of degenerate n (ño-axis cylinders) mask it to point to center, not to plane
+		else { // in case of degenerate n (co-axis cylinders) mask it to point to center, not to plane
 			n = center[1]-center[0]; n -= pcyl[icyl]->axis*(n*pcyl[icyl]->axis);
 			if (n.len2()>0.0001f)
 				nlen = n.len();

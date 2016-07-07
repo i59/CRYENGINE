@@ -2043,10 +2043,13 @@ gpu_pfx2::IManager* CD3D9Renderer::GetGpuParticleManager()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CD3D9Renderer::ClearPerFrameData()
+void CD3D9Renderer::ClearPerFrameData(const SRenderingPassInfo& passInfo)
 {
-	CRenderer::ClearPerFrameData();
-	GetVolumetricFog().Clear();
+	CRenderer::ClearPerFrameData(passInfo);
+	if (passInfo.IsGeneralPass())
+	{
+		GetVolumetricFog().Clear();
+	}
 }
 
 static float LogMap(const float fA)
@@ -2468,19 +2471,6 @@ void CD3D9Renderer::DebugDrawStats1()
 	nSize = 0;
 	size_t nSizeD = 0;
 	size_t nSizeAll = 0;
-	for (FXCompressedShadersItor it = CHWShader::m_CompressedShaders.begin(); it != CHWShader::m_CompressedShaders.end(); ++it)
-	{
-		SHWActivatedShader* pAS = it->second;
-		for (FXCompressedShaderItor itor = pAS->m_CompressedShaders.begin(); itor != pAS->m_CompressedShaders.end(); ++itor)
-		{
-			n++;
-			SCompressedData& Data = itor->second;
-			nSize += Data.m_nSizeCompressedShader;
-			nSizeD += Data.m_nSizeDecompressedShader;
-		}
-	}
-	nSizeAll = sizeOfMapP(CHWShader::m_CompressedShaders);
-	Draw2dLabel(nX, nY += nYstep, fFSize, &col.r, false, "Compressed Shaders in memory: %d (size: %.3f Mb), Decompressed size: %.3f Mb, Overall: %.3f", n, BYTES_TO_MB(nSize), BYTES_TO_MB(nSizeD), BYTES_TO_MB(nSizeAll));
 
 	FXShaderCacheItor FXitor;
 	size_t nCache = 0;
@@ -5927,11 +5917,18 @@ void CD3D9Renderer::GetProjectionMatrix(float* mat)
 	*(Matrix44*)mat = *m_RP.m_TI[nThreadID].m_matProj->GetTop();
 }
 
-void CD3D9Renderer::SetMatrices(float* pProjMat, float* pViewMat)
+void CD3D9Renderer::GetCameraZeroMatrix(float* mat)
+{
+	int nThreadID = m_pRT->GetThreadList();
+	*(Matrix44*)mat = m_RP.m_TI[nThreadID].m_matCameraZero;
+}
+
+void CD3D9Renderer::SetMatrices(float* pProjMat, float* pViewMat, float* pZeroMat)
 {
 	int nThreadID = m_pRT->GetThreadList();
 	m_RP.m_TI[nThreadID].m_matProj->LoadMatrix((Matrix44*)pProjMat);
 	m_RP.m_TI[nThreadID].m_matView->LoadMatrix((Matrix44*)pViewMat);
+	m_RP.m_TI[nThreadID].m_matCameraZero = *((Matrix44*)pZeroMat);
 }
 
 ///////////////////////////////////////////
@@ -6092,7 +6089,7 @@ void CD3D9Renderer::SetCamera(const CCamera& cam)
 	mViewFinal.m30 = 0;
 	mViewFinal.m31 = 0;
 	mViewFinal.m32 = 0;
-	m_CameraZeroMatrix[nThreadID] = mViewFinal;
+	m_RP.m_TI[nThreadID].m_matCameraZero = mViewFinal;
 
 	if (m_RP.m_TI[nThreadID].m_PersFlags & RBPF_MIRRORCAMERA)
 		m_RP.m_TI[nThreadID].m_matView->Scale(1, -1, 1);
@@ -6834,8 +6831,9 @@ void CD3D9Renderer::Set2DMode(bool enable, int ortox, int ortoy, float znear, fl
 			m_pRenderAuxGeomD3D->SetOrthoMode(true, m);
 #endif
 		EF_PushMatrix();
-		m = m_RP.m_TI[nThreadID].m_matView->GetTop();
 		m_RP.m_TI[nThreadID].m_matView->LoadIdentity();
+
+		m_RP.m_TI[nThreadID].m_matCameraZero.SetIdentity();
 	}
 	else
 	{
@@ -6849,6 +6847,13 @@ void CD3D9Renderer::Set2DMode(bool enable, int ortox, int ortoy, float znear, fl
 #endif
 		m_RP.m_TI[nThreadID].m_matProj->Pop();
 		EF_PopMatrix();
+
+		Matrix44A mat = *m_RP.m_TI[nThreadID].m_matView->GetTop();
+		mat.m30 = 0;
+		mat.m31 = 0;
+		mat.m32 = 0;
+
+		m_RP.m_TI[nThreadID].m_matCameraZero = mat;
 	}
 	EF_SetCameraInfo();
 }
@@ -7206,10 +7211,6 @@ void CD3D9Renderer::GetMemoryUsage(ICrySizer* Sizer)
 			Name = CHWShader::mfGetClassName(eHWSC_Pixel);
 			pRL = CBaseResource::GetResourcesForClass(Name);
 			Sizer->AddObject(pRL);
-		}
-		{
-			SIZER_COMPONENT_NAME(Sizer, "Compressed Shaders");
-			Sizer->AddObject(CHWShader::m_CompressedShaders);
 		}
 
 		{

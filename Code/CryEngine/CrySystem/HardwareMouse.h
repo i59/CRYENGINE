@@ -13,7 +13,7 @@
 
    -------------------------------------------------------------------------
    History:
-   - 18:12:2006   Created by Julien Darré
+   - 18:12:2006   Created by Julien DarrÃ©
 
 *************************************************************************/
 #ifndef __HARDWAREMOUSE_H__
@@ -99,6 +99,7 @@ private:
 	float                            m_fIncX;
 	float                            m_fIncY;
 	bool                             m_bFocus;
+	bool                             m_bPrevShowState;
 	const bool                       m_allowConfine;
 
 	string                           m_curCursorPath;

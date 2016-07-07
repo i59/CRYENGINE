@@ -869,7 +869,6 @@ int CRigidEntity::Action(pe_action *_action, int bThreadSafe)
 
 		if (action->flags & constraint_no_rotation) {
 			i = RegisterConstraint(pt0,pt1,ipart[0], pBuddy,ipart[1], contact_angular|contact_constraint_3dof,flagsInfo,pConstraintEnt);
-			m_pConstraintInfos[i].pConstraintEnt = (CPhysicalEntity*)action->pConstraintEntity;
 			m_pConstraints[i].nloc=nloc; m_pConstraintInfos[i].qframe_rel[0]=qframe[0];	m_pConstraintInfos[i].qframe_rel[1]=qframe[1];
 			m_pConstraintInfos[i].id = id; m_pConstraintInfos[i].damping = damping;
 			if (!is_unused(action->maxBendTorque)) m_pConstraintInfos[i].limit=action->maxBendTorque;
@@ -1994,7 +1993,7 @@ int CRigidEntity::RegisterConstraint(const Vec3 &pt0,const Vec3 &pt1, int ipart0
 	if (i>=m_nConstraintsAlloc) {
 		entity_contact *pConstraints = m_pConstraints;
 		constraint_info *pInfos = m_pConstraintInfos;
-		int nConstraints = m_nConstraintsAlloc;
+		int nConstraints = m_nConstraintsAlloc;	// cppcheck-suppress memsetClass
 		memcpy(m_pConstraints = new entity_contact[(m_nConstraintsAlloc=(i&~7)+8)], pConstraints, nConstraints*sizeof(entity_contact));
 		memcpy(m_pConstraintInfos = new constraint_info[m_nConstraintsAlloc], pInfos, nConstraints*sizeof(constraint_info));
 		delete[] pConstraints;

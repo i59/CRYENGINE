@@ -71,7 +71,7 @@ uint32 CAttachmentManager::ParseXMLAttachmentList(CharacterAttachment* parrAttac
 			continue;                                                     //invalid
 
 		string AName = nodeAttach->getAttr("AName");
-		CryStringUtils::UnifyFilePath(AName);
+		PathUtil::UnifyFilePath(AName);
 		attach.m_strAttachmentName = AName;
 
 		nodeAttach->getAttr("Rotation", attach.m_AbsoluteDefault.q);
@@ -82,7 +82,7 @@ uint32 CAttachmentManager::ParseXMLAttachmentList(CharacterAttachment* parrAttac
 
 		attach.m_strJointName = nodeAttach->getAttr("BoneName");
 		attach.m_strBindingPath = nodeAttach->getAttr("Binding");
-		CryStringUtils::UnifyFilePath(attach.m_strBindingPath);
+		PathUtil::UnifyFilePath(attach.m_strBindingPath);
 		attach.m_strSimBindingPath = nodeAttach->getAttr("simBinding");   //only used for the cloth simulation mesh
 
 		nodeAttach->getAttr("ProxyParams", attach.m_ProxyParams);
@@ -1069,7 +1069,8 @@ int CAttachmentManager::UpdatePhysicalizedAttachment(int idx, IPhysicalEntity* p
 		int id = (pIAttachment->GetFlags() & FLAGS_ATTACH_ID_MASK) >> idbit;
 		pp.partid = m_pSkelInstance->m_pDefaultSkeleton->GetJointCount() + id;
 		pp.pMtx3x4 = &mtx;
-		pp.bRecalcBBox = !m_pSkelInstance || !m_pSkelInstance->m_SkeletonPose.m_physics.GetModelJointPointer(idx)->m_PhysInfo.pPhysGeom;
+		const CDefaultSkeleton::SJoint* pJoint = m_pSkelInstance->m_SkeletonPose.m_physics.GetModelJointPointer(iJoint);
+		pp.bRecalcBBox = !pJoint->m_PhysInfo.pPhysGeom;
 		pent->SetParams(&pp);
 	}
 	return changed;

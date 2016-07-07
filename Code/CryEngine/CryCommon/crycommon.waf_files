@@ -118,7 +118,8 @@
           "CryCore/ToolsHelpers/SettingsManagerHelpers.h",
           "CryCore/ToolsHelpers/SettingsManagerHelpers.inl",
           "CryCore/ToolsHelpers/EngineSettingsManager.h",
-          "CryCore/ToolsHelpers/EngineSettingsManager.inl"
+          "CryCore/ToolsHelpers/EngineSettingsManager.inl",
+          "CryCore/ToolsHelpers/GuidUtil.h"
         ]
       }
     ],
@@ -289,6 +290,7 @@
       "CryMath/Cry_GeoIntersect.h",
       "CryMath/Cry_GeoOverlap.h",
       "CryMath/Cry_Math.h",
+      "CryMath/Cry_Math_SSE.h",
       "CryMath/Cry_Quat.h",
       "CryMath/Cry_ValidNumber.h",
       "CryMath/Cry_Vector2.h",
@@ -387,6 +389,7 @@
       "CryAISystem/ISelectionTreeManager.h",
       "CryAISystem/VisionMapTypes.h",
       "CryAISystem/MovementStyle.h",
+      "CryAISystem/IAIBubblesSystem.h",
       {
         "BehaviorTree":[
           "CryAISystem/BehaviorTree/IBehaviorTree.h",
@@ -509,7 +512,6 @@
       "CryEntitySystem/IEntityAttributesProxy.h",
       "CryEntitySystem/IEntityClass.h",
       "CryEntitySystem/IEntityLayer.h",
-      "CryEntitySystem/IEntityPoolManager.h",
       "CryEntitySystem/IEntityProxy.h",
       "CryEntitySystem/IEntityRenderState.h",
       "CryEntitySystem/IEntityRenderState_info.h",
@@ -611,6 +613,7 @@
       "CrySerialization/DynArray.h",
       "CrySerialization/DynArrayImpl.h",
       "CrySerialization/Enum.h",
+      "CrySerialization/Gap.h",
       "CrySerialization/IArchive.h",
       "CrySerialization/IArchiveHost.h",
       "CrySerialization/IClassFactory.h",

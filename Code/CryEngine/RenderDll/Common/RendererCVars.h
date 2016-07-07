@@ -31,6 +31,7 @@ public:
 	//------------------int cvars-------------------------------
 	static ICVar* CV_r_ShowDynTexturesFilter;
 	static ICVar* CV_r_ShaderCompilerServer;
+	static ICVar* CV_r_ShaderCompilerFolderName;
 	static ICVar* CV_r_ShaderCompilerFolderSuffix;
 	static ICVar* CV_r_ShaderEmailTags;
 	static ICVar* CV_r_ShaderEmailCCs;
@@ -127,7 +128,6 @@ public:
 	static int   CV_r_shadersdurango;
 #endif
 	//  static int CV_r_envcmwrite;
-	static int CV_r_shaderspreactivate;
 	static int CV_r_shadersremotecompiler;
 	static int CV_r_shadersasynccompiling;
 	static int CV_r_shadersasyncactivation;

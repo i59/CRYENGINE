@@ -33,8 +33,13 @@ CInspectorPanel::CInspectorPanel(CATLControlsModel* pATLModel)
 
 	pMainLayout->addWidget(m_pPropertyTree);
 
+	m_pConnectionsLabel = new QLabel(tr("Connections"));
+	m_pConnectionsLabel->setObjectName("ConnectionsTitle");
+	pMainLayout->addWidget(m_pConnectionsLabel);
+
 	m_pConnectionList = new QConnectionsWidget(this);
 	pMainLayout->addWidget(m_pConnectionList);
+
 	pMainLayout->setAlignment(Qt::AlignTop);
 
 	m_pATLModel->AddListener(this);
@@ -105,7 +110,6 @@ void CInspectorPanel::OnControlModified(ACE::CATLControl* pControl)
 	{
 		m_pPropertyTree->revert();
 	}
-	m_pConnectionList->Reload();
 }
 
 }

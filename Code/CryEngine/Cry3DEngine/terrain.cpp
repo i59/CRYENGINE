@@ -30,7 +30,7 @@ void GetMemoryUsage(ICrySizer* pSizer);
 void CTerrain::AddVisSector(CTerrainNode* newsec)
 {
 	assert(newsec->m_cNewGeomMML < m_nUnitsToSectorBitShift);
-	m_lstVisSectors.Add((CTerrainNode*)newsec);
+	m_lstVisSectors.Add(newsec);
 }
 
 void CTerrain::CheckVis(const SRenderingPassInfo& passInfo)
@@ -970,4 +970,28 @@ void CTerrain::SplitWorldRectToSegments(const Rectf& worldRect, PodArray<TSegmen
 
 		segmentRects.Add(sr);
 	}
+}
+
+Vec3 CTerrain::GetTerrainSurfaceNormal(Vec3 vPos, float fRange, int nSID)
+{
+	FUNCTION_PROFILER_3DENGINE;
+
+#ifdef SEG_WORLD
+	if (nSID < 0)
+	{
+		nSID = FindSegment((int)vPos.x, (int)vPos.y);
+		Vec3 vSegOrigin = GetSegmentOrigin(nSID);
+		vPos.x -= vSegOrigin.x;
+		vPos.y -= vSegOrigin.y;
+	}
+#else
+	nSID = GetDefSID();
+#endif
+
+	fRange += 0.05f;
+	Vec3 v1 = Vec3(vPos.x - fRange, vPos.y - fRange, GetZApr(vPos.x - fRange, vPos.y - fRange, nSID));
+	Vec3 v2 = Vec3(vPos.x - fRange, vPos.y + fRange, GetZApr(vPos.x - fRange, vPos.y + fRange, nSID));
+	Vec3 v3 = Vec3(vPos.x + fRange, vPos.y - fRange, GetZApr(vPos.x + fRange, vPos.y - fRange, nSID));
+	Vec3 v4 = Vec3(vPos.x + fRange, vPos.y + fRange, GetZApr(vPos.x + fRange, vPos.y + fRange, nSID));
+	return (v3 - v2).Cross(v4 - v1).GetNormalized();
 }

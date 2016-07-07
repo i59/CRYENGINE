@@ -10,6 +10,11 @@
 #include "AudioControlsEditorPlugin.h"
 #include "ImplementationManager.h"
 #include <CrySerialization/StringList.h>
+#include <CrySerialization/Decorators/Range.h>
+#include <Serialization/Decorators/EditorActionButton.h>
+#include <CryMath/Cry_Geo.h>
+#include <Util/Math.h>
+#include <ConfigurationManager.h>
 
 namespace ACE
 {
@@ -23,11 +28,14 @@ CATLControl::CATLControl()
 	, m_bAutoLoad(true)
 	, m_bModified(false)
 	, m_pModel(nullptr)
+	, m_radius(0.0f)
+	, m_occlusionFadeOutDistance(0.0f)
+	, m_modifiedSignalEnabled(true)
 {
 }
 
-CATLControl::CATLControl(const string& controlName, CID nID, EACEControlType eType, CATLControlsModel* pModel)
-	: m_id(nID)
+CATLControl::CATLControl(const string& controlName, CID id, EACEControlType eType, CATLControlsModel* pModel)
+	: m_id(id)
 	, m_type(eType)
 	, m_name("")
 	, m_scope(0)
@@ -35,9 +43,14 @@ CATLControl::CATLControl(const string& controlName, CID nID, EACEControlType eTy
 	, m_bAutoLoad(true)
 	, m_bModified(false)
 	, m_pModel(pModel)
+	, m_radius(0.0f)
+	, m_occlusionFadeOutDistance(0.0f)
+	, m_modifiedSignalEnabled(true)
 {
+	m_modifiedSignalEnabled = false;
 	SetName(controlName);
 	m_scope = pModel->GetGlobalScope();
+	m_modifiedSignalEnabled = true;
 }
 
 CATLControl::~CATLControl()
@@ -58,26 +71,6 @@ EACEControlType CATLControl::GetType() const
 string CATLControl::GetName() const
 {
 	return m_name;
-}
-
-void CATLControl::SetId(CID id)
-{
-	if (id != m_id)
-	{
-		SignalControlAboutToBeModified();
-		m_id = id;
-		SignalControlModified();
-	}
-}
-
-void CATLControl::SetType(EACEControlType type)
-{
-	if (type != m_type)
-	{
-		SignalControlAboutToBeModified();
-		m_type = type;
-		SignalControlModified();
-	}
 }
 
 void CATLControl::SetName(const string& name)
@@ -163,8 +156,10 @@ void CATLControl::AddConnection(ConnectionPtr pConnection)
 {
 	if (pConnection)
 	{
-		SignalControlAboutToBeModified();
 		m_connectedControls.push_back(pConnection);
+
+		pConnection->signalConnectionChanged.Connect(this, &CATLControl::SignalControlModified);
+
 		IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 		if (pAudioSystemImpl)
 		{
@@ -175,7 +170,6 @@ void CATLControl::AddConnection(ConnectionPtr pConnection)
 				SignalConnectionAdded(pAudioSystemControl);
 			}
 		}
-		SignalControlModified();
 	}
 }
 
@@ -186,7 +180,6 @@ void CATLControl::RemoveConnection(ConnectionPtr pConnection)
 		auto it = std::find(m_connectedControls.begin(), m_connectedControls.end(), pConnection);
 		if (it != m_connectedControls.end())
 		{
-			SignalControlAboutToBeModified();
 			IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 			if (pAudioSystemImpl)
 			{
@@ -198,14 +191,12 @@ void CATLControl::RemoveConnection(ConnectionPtr pConnection)
 					SignalConnectionRemoved(pAudioSystemControl);
 				}
 			}
-			SignalControlModified();
 		}
 	}
 }
 
 void CATLControl::ClearConnections()
 {
-	SignalControlAboutToBeModified();
 	IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 	if (pAudioSystemImpl)
 	{
@@ -220,7 +211,6 @@ void CATLControl::ClearConnections()
 		}
 	}
 	m_connectedControls.clear();
-	SignalControlModified();
 }
 
 void CATLControl::RemoveConnection(IAudioSystemItem* pAudioSystemControl)
@@ -234,7 +224,6 @@ void CATLControl::RemoveConnection(IAudioSystemItem* pAudioSystemControl)
 		{
 			if ((*it)->GetID() == nID)
 			{
-				SignalControlAboutToBeModified();
 				IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
 				if (pAudioSystemImpl)
 				{
@@ -243,7 +232,6 @@ void CATLControl::RemoveConnection(IAudioSystemItem* pAudioSystemControl)
 				m_connectedControls.erase(it);
 
 				SignalConnectionRemoved(pAudioSystemControl);
-				SignalControlModified();
 				return;
 			}
 		}
@@ -252,7 +240,7 @@ void CATLControl::RemoveConnection(IAudioSystemItem* pAudioSystemControl)
 
 void CATLControl::SignalControlModified()
 {
-	if (m_pModel)
+	if (m_modifiedSignalEnabled && m_pModel)
 	{
 		m_pModel->OnControlModified(this);
 	}
@@ -260,7 +248,7 @@ void CATLControl::SignalControlModified()
 
 void CATLControl::SignalControlAboutToBeModified()
 {
-	if (!CUndo::IsSuspended())
+	if (m_modifiedSignalEnabled && !CUndo::IsSuspended())
 	{
 		CUndo undo("ATL Control Modified");
 		CUndo::Record(new CUndoControlModified(GetId()));
@@ -334,44 +322,116 @@ void CATLControl::LoadConnectionFromXML(XmlNodeRef xmlNode, int platformIndex)
 				AddConnection(pConnection);
 			}
 		}
+		else if (GetType() == eACEControlType_Preload && platformIndex == -1)
+		{
+			// If it's a preload connection from another middleware and the platform
+			// wasn't found (old file format) fall back to adding them to all the platforms
+			const std::vector<dll_string>& platforms = GetIEditor()->GetConfigurationManager()->GetPlatformNames();
+			const size_t count = platforms.size();
+			for (size_t i = 0; i < count; ++i)
+			{
+				AddRawXMLConnection(xmlNode, false, i);
+			}
+			return;
+		}
+
 		AddRawXMLConnection(xmlNode, pConnection != nullptr, platformIndex);
 	}
 }
 
 void CATLControl::Serialize(Serialization::IArchive& ar)
 {
-	// Name
-	string newName = m_name;
-	ar(newName, "name", "Name");
+	if (ar.openBlock("properties", "+Properties"))
+	{
+		// Name
+		string newName = m_name;
+		ar(newName, "name", "Name");
 
-	// Scope
-	Serialization::StringList scopeList;
-	ScopeInfoList scopeInfoList;
-	m_pModel->GetScopeInfoList(scopeInfoList);
-	for (auto& scope : scopeInfoList)
-	{
-		scopeList.push_back(scope.name);
-	}
-	Serialization::StringListValue selectedScope(scopeList, m_pModel->GetScopeInfo(m_scope).name);
-	Scope newScope = m_scope;
-	if (m_type != eACEControlType_State)
-	{
-		ar(selectedScope, "scope", "Scope");
-		newScope = m_pModel->GetScope(scopeList[selectedScope.index()]);
-	}
+		// Scope
+		Serialization::StringList scopeList;
+		ScopeInfoList scopeInfoList;
+		m_pModel->GetScopeInfoList(scopeInfoList);
+		for (auto& scope : scopeInfoList)
+		{
+			scopeList.push_back(scope.name);
+		}
+		Serialization::StringListValue selectedScope(scopeList, m_pModel->GetScopeInfo(m_scope).name);
+		Scope newScope = m_scope;
+		if (m_type != eACEControlType_State)
+		{
+			ar(selectedScope, "scope", "Scope");
+			newScope = m_pModel->GetScope(scopeList[selectedScope.index()]);
+		}
 
-	// Auto Load
-	bool bAutoLoad = m_bAutoLoad;
-	if (m_type == eACEControlType_Preload)
-	{
-		ar(bAutoLoad, "auto_load", "Auto Load");
-	}
+		// Auto Load
+		bool bAutoLoad = m_bAutoLoad;
+		if (m_type == eACEControlType_Preload)
+		{
+			ar(bAutoLoad, "auto_load", "Auto Load");
+		}
 
-	if (ar.isInput())
-	{
-		SetName(newName);
-		SetScope(newScope);
-		SetAutoLoad(bAutoLoad);
+		// Max Radius
+		float maxRadius = m_radius;
+		float fadeOutDistance = m_occlusionFadeOutDistance;
+		if (m_type == eACEControlType_Trigger)
+		{
+			if (ar.openBlock("radius", "Activity Radius"))
+			{
+				ar(Serialization::Range<float>(maxRadius, 0.0f, std::numeric_limits<float>::max()), "max_radius", "^");
+
+				float attenuationRadius = 0.0f;
+				IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+				if (pAudioSystemImpl)
+				{
+					float radius = 0.0f;
+					for (auto pConnection : m_connectedControls)
+					{
+						IAudioSystemItem* pItem = pAudioSystemImpl->GetControl(pConnection->GetID());
+						if (pItem)
+						{
+							attenuationRadius = std::max(attenuationRadius, pItem->GetRadius());
+						}
+					}
+				}
+
+				if (fabs(attenuationRadius - maxRadius) > FLOAT_EPSILON)
+				{
+					ar(Serialization::ActionButton([&] {
+
+							IAudioSystemEditor* pAudioSystemImpl = CAudioControlsEditorPlugin::GetImplementationManger()->GetImplementation();
+							if (pAudioSystemImpl)
+							{
+							  float radius = 0.0f;
+							  for (auto pConnection : m_connectedControls)
+							  {
+							    IAudioSystemItem* pItem = pAudioSystemImpl->GetControl(pConnection->GetID());
+							    if (pItem)
+							    {
+							      radius = std::max(radius, pItem->GetRadius());
+							    }
+							  }
+							  SetRadius(radius);
+							}
+					  }, "icons:General/Arrow_Left.ico"), "match_attenuation", "^Match");
+					ar.doc("Match the activity radius to the attenuation hinted by the middleware.");
+				}
+			}
+
+			ar(Serialization::Range<float>(fadeOutDistance, 0.0f, maxRadius), "fadeOutDistance", "Occlusion Fade-Out Distance");
+		}
+
+		if (ar.isInput())
+		{
+			SignalControlAboutToBeModified();
+			m_modifiedSignalEnabled = false; // we are manually sending the signals and don't want the other SetX functions to send anymore
+			SetName(newName);
+			SetScope(newScope);
+			SetAutoLoad(bAutoLoad);
+			SetRadius(maxRadius);
+			SetOcclusionFadeOutDistance(fadeOutDistance);
+			m_modifiedSignalEnabled = true;
+			SignalControlModified();
+		}
 	}
 }
 
@@ -384,6 +444,26 @@ void CATLControl::SetParent(CATLControl* pParent)
 	}
 }
 
+void CATLControl::SetRadius(float radius)
+{
+	if (radius != m_radius)
+	{
+		SignalControlAboutToBeModified();
+		m_radius = radius;
+		SignalControlModified();
+	}
+}
+
+void CATLControl::SetOcclusionFadeOutDistance(float fadeOutDistance)
+{
+	if (fadeOutDistance != m_occlusionFadeOutDistance)
+	{
+		SignalControlAboutToBeModified();
+		m_occlusionFadeOutDistance = fadeOutDistance;
+		SignalControlModified();
+	}
+}
+
 void CATLControl::AddRawXMLConnection(XmlNodeRef xmlNode, bool bValid, int platformIndex /*= -1*/)
 {
 	m_connectionNodes[platformIndex].push_back(SRawConnectionData(xmlNode, bValid));
@@ -393,5 +473,4 @@ XMLNodeList& CATLControl::GetRawXMLConnections(int platformIndex /*= -1*/)
 {
 	return m_connectionNodes[platformIndex];
 }
-
 }

@@ -599,10 +599,6 @@ void CTerrainNode::UpdateRenderMesh(CStripsInfo* pArrayInfo, bool bUpdateVertice
 
 		ERenderMeshType eRMType = eRMT_Dynamic;
 
-#if CRY_PLATFORM_WINDOWS
-		eRMType = eRMT_Dynamic;
-#endif
-
 		pRenderMesh = GetRenderer()->CreateRenderMeshInitialized(
 		  m_pUpdateTerrainTempData->m_lstTmpVertArray.GetElements(), m_pUpdateTerrainTempData->m_lstTmpVertArray.Count(), eVF_P2S_N4B_C4B_T1F,
 		  pArrayInfo->idx_array.GetElements(), pArrayInfo->idx_array.Count(),
@@ -1496,6 +1492,17 @@ _smart_ptr<IRenderMesh> CTerrainNode::GetSharedRenderMesh()
 
 	SVF_P2S_N4B_C4B_T1F vert;
 	ZeroStruct(vert);
+
+	vert.normal.bcolor[0] = 128l;
+	vert.normal.bcolor[1] = 128l;
+	vert.normal.bcolor[2] = 255l;
+	vert.normal.bcolor[3] = 255l;
+
+	vert.color.bcolor[0] = 255l;
+	vert.color.bcolor[1] = 0l;
+	vert.color.bcolor[2] = 255l;
+	vert.color.bcolor[3] = 255l;
+
 	PodArray<SVF_P2S_N4B_C4B_T1F> arrVertices;
 
 	for (int x = -nBorder; x <= (nDim + nBorder); x++)

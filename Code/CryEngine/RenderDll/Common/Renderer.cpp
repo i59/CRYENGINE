@@ -249,12 +249,7 @@ void CRenderer::InitRenderer()
 
 	m_ViewMatrix.SetIdentity();
 	m_CameraMatrix.SetIdentity();
-	for (int i = 0; i < RT_COMMAND_BUF_COUNT; ++i)
-	{
-		m_CameraZeroMatrix[i].SetIdentity();
-		//	m_CameraMatrixPrev[i][0].SetIdentity();
-		//		m_CameraMatrixPrev[i][1].SetIdentity();
-	}
+	m_CameraZeroMatrix.SetIdentity();
 
 	for (int i = 0; i < MAX_NUM_VIEWPORTS; ++i)
 	{
@@ -1781,7 +1776,7 @@ void CRenderer::EF_StartEf(const SRenderingPassInfo& passInfo)
 	{
 		pPostEffectMgr->OnBeginFrame(passInfo);
 	}
-	ClearPerFrameData();
+	ClearPerFrameData(passInfo);
 }
 
 void CRenderer::RT_PrepareLevelTexStreaming()
@@ -2373,7 +2368,7 @@ bool CRenderer::EF_AddDeferredDecal(const SDeferredDecal& rDecal, const SRenderi
 	return false;
 }
 
-void CRenderer::ClearPerFrameData()
+void CRenderer::ClearPerFrameData(const SRenderingPassInfo& passInfo)
 {
 }
 

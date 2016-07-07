@@ -787,20 +787,7 @@ void SRenderThread::RC_StopVideoThread()
 	EndCommand(p);
 }
 
-void SRenderThread::RC_PreactivateShaders()
-{
-	if (IsRenderThread())
-	{
-		CHWShader::RT_PreactivateShaders();
-		return;
-	}
-
-	LOADINGLOCK_COMMANDQUEUE
-	byte* p = AddCommand(eRC_PreactivateShaders, 0);
-	EndCommand(p);
-}
-
-void SRenderThread::RC_PrecacheShader(CShader* pShader, SShaderCombination& cmb, bool bForce, bool bCompressedOnly, CShaderResources* pRes)
+void SRenderThread::RC_PrecacheShader(CShader* pShader, SShaderCombination& cmb, bool bForce, CShaderResources* pRes)
 {
 	if (IsRenderLoadingThread())
 	{
@@ -813,13 +800,12 @@ void SRenderThread::RC_PrecacheShader(CShader* pShader, SShaderCombination& cmb,
 		memcpy(p, &cmb, sizeof(cmb));
 		p += sizeof(SShaderCombination);
 		AddDWORD(p, bForce);
-		AddDWORD(p, bCompressedOnly);
 		AddPointer(p, pRes);
 		EndCommandTo(p, m_CommandsLoading);
 	}
 	else if (IsRenderThread())
 	{
-		pShader->mfPrecache(cmb, bForce, bCompressedOnly, pRes);
+		pShader->mfPrecache(cmb, bForce, pRes);
 		return;
 	}
 	else
@@ -833,7 +819,6 @@ void SRenderThread::RC_PrecacheShader(CShader* pShader, SShaderCombination& cmb,
 		memcpy(p, &cmb, sizeof(cmb));
 		p += sizeof(SShaderCombination);
 		AddDWORD(p, bForce);
-		AddDWORD(p, bCompressedOnly);
 		AddPointer(p, pRes);
 		EndCommand(p);
 	}
@@ -1457,7 +1442,7 @@ void SRenderThread::RC_SetCamera()
 
 		gRenDev->GetProjectionMatrix((float*)&pData[0]);
 		gRenDev->GetModelViewMatrix((float*)&pData[sizeof(Matrix44)]);
-		*(Matrix44*)((float*)&pData[sizeof(Matrix44) * 2]) = gRenDev->m_CameraZeroMatrix[m_nCurThreadFill];
+		gRenDev->GetCameraZeroMatrix((float*)&pData[sizeof(Matrix44) * 2]);
 
 		if (gRenDev->m_RP.m_TI[m_nCurThreadFill].m_PersFlags & RBPF_OBLIQUE_FRUSTUM_CLIPPING)
 		{
@@ -2787,8 +2772,7 @@ void SRenderThread::ProcessCommands()
 
 				if (m_eVideoThreadMode == eVTM_Disabled)
 				{
-					gRenDev->SetMatrices(ProjMat.GetData(), ViewMat.GetData());
-					gRenDev->m_CameraZeroMatrix[threadId] = CameraZeroMat;
+					gRenDev->SetMatrices(ProjMat.GetData(), ViewMat.GetData(), CameraZeroMat.GetData());
 
 					gRenDev->RT_SetCameraInfo();
 				}
@@ -3009,11 +2993,6 @@ void SRenderThread::ProcessCommands()
 				SDynTexture_Shadow::RT_EntityDelete(pRN);
 			}
 			break;
-		case eRC_PreactivateShaders:
-			{
-				CHWShader::RT_PreactivateShaders();
-			}
-			break;
 		case eRC_SubmitWind:
 			{
 				const SWindGrid* pWind = ReadCommand<SWindGrid*>(n);
@@ -3025,10 +3004,9 @@ void SRenderThread::ProcessCommands()
 				CShader* pShader = ReadCommand<CShader*>(n);
 				SShaderCombination cmb = ReadCommand<SShaderCombination>(n);
 				bool bForce = ReadCommand<DWORD>(n) != 0;
-				bool bCompressedOnly = ReadCommand<DWORD>(n) != 0;
 				CShaderResources* pRes = ReadCommand<CShaderResources*>(n);
 
-				pShader->mfPrecache(cmb, bForce, bCompressedOnly, pRes);
+				pShader->mfPrecache(cmb, bForce, pRes);
 
 				SAFE_RELEASE(pRes);
 				pShader->Release();
