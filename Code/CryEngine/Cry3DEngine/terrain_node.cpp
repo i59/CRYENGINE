@@ -236,7 +236,22 @@ bool CTerrainNode::CheckVis(bool bAllInside, bool bAllowRenderIntoCBuffer, const
 		return false;
 
 	// get distances
-	m_arrfDistance[passInfo.GetRecursiveLevel()] = GetPointToBoxDistance(rCamera.GetPosition(), boxWS);
+	if (rCamera.m_pMultiCamera != nullptr)
+	{
+		float &distance = m_arrfDistance[passInfo.GetRecursiveLevel()];
+		distance = std::numeric_limits<float>::max();
+
+		for (auto it = rCamera.m_pMultiCamera->begin(); it != rCamera.m_pMultiCamera->end(); ++it)
+		{
+			float camDist = GetPointToBoxDistance(it->GetPosition(), boxWS);
+			if (camDist < distance)
+			{
+				distance = camDist;
+			}
+		}
+	}
+	else
+		m_arrfDistance[passInfo.GetRecursiveLevel()] = GetPointToBoxDistance(rCamera.GetPosition(), boxWS);
 
 	if (m_arrfDistance[passInfo.GetRecursiveLevel()] > rCamera.GetFarPlane())
 		return false; // too far
