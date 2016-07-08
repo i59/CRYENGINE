@@ -217,7 +217,7 @@ void COctreeNode::Render_Object_Nodes(bool bNodeCompletelyInFrustum, int nRender
 	if (m_nOccludedFrameId == passInfo.GetFrameID())
 		return;
 
-	if (!bNodeCompletelyInFrustum && !rCam.IsAABBVisible_EH(m_objectsBox, &bNodeCompletelyInFrustum))
+	if (!bNodeCompletelyInFrustum && !rCam.IsAABBVisible_EHM(m_objectsBox, &bNodeCompletelyInFrustum))
 		return;
 
 	const Vec3& vCamPos = rCam.GetPosition();
