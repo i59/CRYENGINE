@@ -1240,8 +1240,6 @@ void C3DEngine::UpdateRenderingCamera(const char* szCallerName, const SRendering
 	{
 		if (gEnv->IsEditor())
 			GetObjManager()->PrepareCullbufferAsync(passInfo.GetCamera());
-		else
-			assert(IsEquivalent(passInfo.GetCamera().GetViewdir(), GetObjManager()->m_CullThread.GetViewDir())); // early set camera differs from current main camera - will cause occlusion errors
 	}
 
 	/////////////////////////////////////////////////////////////////////////////
