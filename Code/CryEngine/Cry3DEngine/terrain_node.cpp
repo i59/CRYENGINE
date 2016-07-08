@@ -574,14 +574,33 @@ void CTerrainNode::CheckNodeGeomUnload(const SRenderingPassInfo& passInfo)
 {
 	FUNCTION_PROFILER_3DENGINE;
 
-	float fDistanse = GetPointToBoxDistance(passInfo.GetCamera().GetPosition(), GetBBox()) * passInfo.GetZoomFactor();
+	float distance;
+
+	// get distances
+	if (passInfo.GetCamera().m_pMultiCamera != nullptr)
+	{
+		distance = std::numeric_limits<float>::max();
+
+		for (auto it = passInfo.GetCamera().m_pMultiCamera->begin(); it != passInfo.GetCamera().m_pMultiCamera->end(); ++it)
+		{
+			float camDist = GetPointToBoxDistance(it->GetPosition(), GetBBox());
+			if (camDist < distance)
+			{
+				distance = camDist;
+			}
+		}
+
+		distance *= passInfo.GetZoomFactor();
+	}
+	else
+		distance = GetPointToBoxDistance(passInfo.GetCamera().GetPosition(), GetBBox()) * passInfo.GetZoomFactor();
 
 	int nTime = fastftol_positive(GetCurTimeSec());
 
 	// support timer reset
 	m_nLastTimeUsed = min(m_nLastTimeUsed, nTime);
 
-	if (m_nLastTimeUsed < (nTime - 16) && fDistanse > 512)
+	if (m_nLastTimeUsed < (nTime - 16) && distance > 512)
 	{
 		// try to release vert buffer if not in use int time
 		ReleaseHeightMapGeometry();
