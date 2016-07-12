@@ -100,5 +100,39 @@
 		{
 			"data_folder"      : "/data/sdk/"
 		}
+	},
+	"CryGameTemplateFPS" :
+	{
+		"code_folder"         : "Code/GameTemplates/cpp/FirstPersonShooter",
+		"game_data_dir"       : "TemplateFirstPersonShooter",
+		"game_dll_filename"   : "CryGameTemplateFPS.dll",
+
+		"executable_name"     : "TemplateFirstPersonShooter",
+
+		"product_name"        : "CRYENGINE FPS Game Template",
+
+		"durango_settings" :
+		{
+			"app_id"            : "CryGameTemplateFPS.app",
+			"package_name"      : "CryGameTemplateFPS",
+			"display_name"      : "CRYENGINE FPS Game Template",
+			"publisher"         : "Crytek",
+			"description"       : "CRYENGINE FPS Game Template",
+			"foreground_text"   : "light",
+			"background_color"  : "#6495ED",
+			"version"           : "1.0.0.0",
+			"titleid"           : "06BFF3BF",
+			"scid"              : "84d70100-5e91-4cf0-bcc9-7b2f06bff3bf",
+			"appxmanifest"      : "AppxManifest.xml",
+			"logo"              : "DurangoLogo.png",
+			"small_logo"        : "DurangoSmallLogo.png",
+			"splash_screen"     : "DurangoSplashScreen.png",
+			"store_logo"        : "DurangoStoreLogo.png"
+		},
+
+		"orbis_settings" :
+		{
+			"data_folder"      : "/data/sdk/"
+		}
 	}
 }
