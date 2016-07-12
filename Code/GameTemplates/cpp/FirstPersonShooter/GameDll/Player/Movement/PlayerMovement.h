@@ -28,6 +28,9 @@ public:
 	void Ragdollize();
 	void Dephysicalize();
 
+	// Gets the requested movement direction based on input data
+	Vec3 GetLocalMoveDirection() const;
+
 protected:
 	// Get the stats from latest physics thread update
 	void GetLatestPhysicsStats(IPhysicalEntity &physicalEntity);

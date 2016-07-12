@@ -2,6 +2,8 @@
 #include "PlayerView.h"
 
 #include "Player/Player.h"
+#include "Player/Input/PlayerInput.h"
+#include "Player/Movement/PlayerMovement.h"
 
 #include <IViewSystem.h>
 
@@ -42,10 +44,25 @@ void CPlayerView::UpdateView(SViewParams &viewParams)
 {
 	IEntity &entity = *GetEntity();
 
+	// Start with changing view rotation to the requested mouse look orientation
 	viewParams.rotation = Quat(m_pPlayer->GetInput()->GetLookOrientation());
+
+#ifdef TEMPLATE_DEBUG
+	auto inputFlags = m_pPlayer->GetInput()->GetInputFlags();
+
+	if((inputFlags & CPlayerInput::eInputFlag_DetachCamera) != 0)
+	{
+		viewParams.position += viewParams.rotation * m_pPlayer->GetMovement()->GetLocalMoveDirection();
+
+		return;
+	}
+#endif
+
+
 	viewParams.position = entity.GetWorldPos();
 
-	// Offset camera up two units
+	// The player's origin point is at its feet
+	// Offset camera upwards to meet its eyes
 	viewParams.position += entity.GetWorldRotation().GetColumn2() * m_pPlayer->GetCVars().m_playerEyeHeight;
 }
 

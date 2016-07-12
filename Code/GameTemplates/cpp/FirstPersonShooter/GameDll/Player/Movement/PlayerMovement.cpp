@@ -40,6 +40,9 @@ void CPlayerMovement::Physicalize()
 	SEntityPhysicalizeParams physParams;
 	physParams.type = PE_LIVING;
 
+	// Only physicalize the third person geometry slot
+	physParams.nSlot = CPlayer::eGeometry_ThirdPerson;
+
 	physParams.mass = 90;
 
 	pe_player_dimensions playerDimensions;
@@ -146,32 +149,13 @@ void CPlayerMovement::UpdateMovementRequest(float frameTime, IPhysicalEntity &ph
 		pe_action_move moveAction;
 		moveAction.iJump = 2;
 
-		uint32 inputFlags = m_pPlayer->GetInput()->GetInputFlags();
-
 		moveAction.dir = ZERO;
 
 		const float moveSpeed = 20.5f;
-
-		if(inputFlags & CPlayerInput::eInputFlag_MoveLeft)
-		{
-			moveAction.dir.x -= moveSpeed;
-		}
-		if(inputFlags & CPlayerInput::eInputFlag_MoveRight)
-		{
-			moveAction.dir.x += moveSpeed;
-		}
-		if(inputFlags & CPlayerInput::eInputFlag_MoveForward)
-		{
-			moveAction.dir.y += moveSpeed;
-		}
-		if(inputFlags & CPlayerInput::eInputFlag_MoveBack)
-		{
-			moveAction.dir.y -= moveSpeed;
-		}	
-	
+		moveAction.dir = GetLocalMoveDirection() * moveSpeed;
 		moveAction.dir = entityTM.TransformVector(moveAction.dir) * frameTime;
 
-		if(inputFlags & CPlayerInput::eInputFlag_Jump)
+		if(m_pPlayer->GetInput()->GetInputFlags() & CPlayerInput::eInputFlag_Jump)
 		{
 			m_bRequestedJump = true;
 		}
@@ -184,4 +168,30 @@ void CPlayerMovement::UpdateMovementRequest(float frameTime, IPhysicalEntity &ph
 
 		physicalEntity.Action(&moveAction);
 	}
+}
+
+Vec3 CPlayerMovement::GetLocalMoveDirection() const
+{
+	Vec3 moveDirection = ZERO;
+
+	uint32 inputFlags = m_pPlayer->GetInput()->GetInputFlags();
+
+	if (inputFlags & CPlayerInput::eInputFlag_MoveLeft)
+	{
+		moveDirection.x -= 1;
+	}
+	if (inputFlags & CPlayerInput::eInputFlag_MoveRight)
+	{
+		moveDirection.x += 1;
+	}
+	if (inputFlags & CPlayerInput::eInputFlag_MoveForward)
+	{
+		moveDirection.y += 1;
+	}
+	if (inputFlags & CPlayerInput::eInputFlag_MoveBack)
+	{
+		moveDirection.y -= 1;
+	}
+
+	return moveDirection;
 }

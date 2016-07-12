@@ -112,16 +112,38 @@ void CPlayerInput::OnAction(const ActionId &action, int activationMode, float va
 	{
 		m_mouseDeltaRotation.y -= value;
 	}
+#ifdef TEMPLATE_DEBUG
+	else if (!strcmp(action.c_str(), "boost"))
+	{
+		HandleInputFlagChange(eInputFlag_DetachCamera, activationMode, eInputFlagType_Toggle);
+	}
+#endif
 }
 
-void CPlayerInput::HandleInputFlagChange(EInputFlags flags, int activationMode)
+void CPlayerInput::HandleInputFlagChange(EInputFlags flags, int activationMode, EInputFlagType type)
 {
-	if(activationMode == eIS_Released)
+	switch (type)
 	{
-		m_inputFlags &= ~flags;
-	}
-	else
-	{
-		m_inputFlags |= flags;
+		case eInputFlagType_Hold:
+		{
+			if (activationMode == eIS_Released)
+			{
+				m_inputFlags &= ~flags;
+			}
+			else
+			{
+				m_inputFlags |= flags;
+			}
+		}
+		break;
+		case eInputFlagType_Toggle:
+		{
+			if (activationMode == eIS_Released)
+			{
+				// Toggle the bit(s)
+				m_inputFlags ^= flags;
+			}
+		}
+		break;
 	}
 }

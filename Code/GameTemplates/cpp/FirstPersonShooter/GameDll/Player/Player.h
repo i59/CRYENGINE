@@ -24,13 +24,13 @@ class CPlayer
 		eOutputPort_OnDeath,
 	};
 
+public:
 	enum EGeometrySlots
 	{
 		eGeometry_ThirdPerson = 0,
 		eGeometry_FirstPerson
 	};
 
-public:
 	struct SExternalCVars
 	{
 		float m_rotationSpeedYaw;

@@ -11,6 +11,12 @@ class CPlayerInput
 	: public CGameObjectExtensionHelper<CPlayerInput, ISimpleExtension>
 	, public IActionListener
 {
+	enum EInputFlagType
+	{
+		eInputFlagType_Hold = 0,
+		eInputFlagType_Toggle
+	};
+
 public:
 	typedef uint8 TInputFlags;
 
@@ -23,6 +29,10 @@ public:
 		eInputFlag_MoveBack = 1 << 3,
 
 		eInputFlag_Jump = 1 << 4,
+
+#ifdef TEMPLATE_DEBUG
+		eInputFlag_DetachCamera = 1 << 5,
+#endif
 	};
 
 public:
@@ -51,7 +61,7 @@ public:
 	const Quat &GetLookOrientation() const { return m_lookOrientation; }
 
 protected:
-	void HandleInputFlagChange(EInputFlags flags, int activationMode);
+	void HandleInputFlagChange(EInputFlags flags, int activationMode, EInputFlagType type = eInputFlagType_Hold);
 
 protected:
 	CPlayer *m_pPlayer;
