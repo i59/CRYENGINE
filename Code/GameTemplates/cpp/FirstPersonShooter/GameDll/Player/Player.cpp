@@ -112,8 +112,6 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 			// Make sure to revive player when respawning in Editor
 			if (event.nParam[0] == 1)
 			{
-				m_bAlive = false;
-
 				SetHealth(GetMaxHealth());
 			}
 			else
@@ -168,6 +166,9 @@ void CPlayer::SetHealth(float health)
 
 void CPlayer::OnSpawn(EntityId spawnerId)
 {
+	if (gEnv->IsEditing())
+		return;
+
 	SetHealth(GetMaxHealth());
 }
 

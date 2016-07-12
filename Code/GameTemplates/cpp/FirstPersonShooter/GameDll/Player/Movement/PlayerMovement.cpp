@@ -33,9 +33,6 @@ void CPlayerMovement::Physicalize()
 	SEntityPhysicalizeParams physParams;
 	physParams.type = PE_LIVING;
 
-	// Only physicalize the third person geometry slot
-	physParams.nSlot = CPlayer::eGeometry_ThirdPerson;
-
 	physParams.mass = 90;
 
 	pe_player_dimensions playerDimensions;
