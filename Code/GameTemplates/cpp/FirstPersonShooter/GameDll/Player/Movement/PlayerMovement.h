@@ -17,8 +17,6 @@ public:
 	virtual bool Init(IGameObject* pGameObject) override;
 	virtual void PostInit(IGameObject* pGameObject) override;
 
-	virtual void HandleEvent(const SGameObjectEvent &event) override;
-
 	virtual void Release() override;
 
 	virtual void Update(SEntityUpdateContext& ctx, int updateSlot) override;

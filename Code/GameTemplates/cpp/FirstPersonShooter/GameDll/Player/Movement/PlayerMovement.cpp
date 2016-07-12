@@ -26,13 +26,6 @@ void CPlayerMovement::PostInit(IGameObject *pGameObject)
 
 	// Make sure that this extension is updated regularly via the Update function below
 	pGameObject->EnableUpdateSlot(this, 0);
-
-	// Make sure we get logged collision events
-	pGameObject->EnablePhysicsEvent(true, eEPE_OnCollisionLogged);
-
-	const int requiredEvents[] = { eGFE_OnCollision };
-	pGameObject->UnRegisterExtForEvents(this, NULL, 0);
-	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
 }
 
 void CPlayerMovement::Physicalize()
@@ -111,26 +104,6 @@ void CPlayerMovement::Update(SEntityUpdateContext &ctx, int updateSlot)
 	entityTM.SetRotation33(CCamera::CreateOrientationYPR(ypr));
 	
 	entity.SetWorldTM(entityTM);
-}
-
-void CPlayerMovement::HandleEvent(const SGameObjectEvent &event)
-{
-	if (event.event == eGFE_OnCollision && !m_pPlayer->IsDead())
-	{
-		EventPhysCollision *physCollision = reinterpret_cast<EventPhysCollision *>(event.ptr);
-		Vec3 impactVelocity = physCollision->vloc[1] - physCollision->vloc[0];
-
-		float hitEnergy = max(fabs_tpl(physCollision->vloc[0].x) + fabs_tpl(physCollision->vloc[0].y) + fabs_tpl(physCollision->vloc[0].z),
-			                          physCollision->vloc[0].len2()) * physCollision->mass[0];
-
-		const float maxHitEnergy = 2000.f;
-
-		if(hitEnergy > maxHitEnergy)
-		{
-			// Kill the player
-			m_pPlayer->SetHealth(0.f);
-		}
-	}
 }
 
 void CPlayerMovement::GetLatestPhysicsStats(IPhysicalEntity &physicalEntity)
