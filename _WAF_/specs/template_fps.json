@@ -1,5 +1,5 @@
 {
-	"description"                           : "Configuration to build the Engine and the GameZero Project",
+	"description"                           : "Configuration to build the Engine and the FPS Template",
 	"valid_platforms"                       : [ "win", "durango", "orbis", "linux", "darwin", "android" ],
 	"valid_configuration"                   : [ "debug", "profile", "performance", "release" ],
 	"visual_studio_name"                    : "FPS Template",
