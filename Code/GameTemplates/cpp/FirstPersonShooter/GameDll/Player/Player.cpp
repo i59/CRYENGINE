@@ -103,6 +103,29 @@ void CPlayer::HandleEvent(const SGameObjectEvent &event)
 	}
 }
 
+void CPlayer::ProcessEvent(SEntityEvent& event)
+{
+	switch (event.event)
+	{
+		case ENTITY_EVENT_RESET:
+		{
+			// Make sure to revive player when respawning in Editor
+			if (event.nParam[0] == 1)
+			{
+				m_bAlive = false;
+
+				SetHealth(GetMaxHealth());
+			}
+			else
+			{
+				// Trigger despawning
+				SetHealth(0.f);
+			}
+		}
+		break;
+	}
+}
+
 void CPlayer::Release()
 {
 	ISimpleActor::Release();
