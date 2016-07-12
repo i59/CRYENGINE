@@ -70,6 +70,10 @@ void CGameRules::OnClientDisconnect(int channelId, EDisconnectionCause cause, co
 
 bool CGameRules::OnClientEnteredGame(int channelId, bool isReset)
 {
+	// Player is spawned when the user enters game mode in Editor, skip this
+	if (gEnv->IsEditor())
+		return true;
+
 	auto *pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
 
 	auto *pActor = pActorSystem->GetActorByChannelId(channelId);
