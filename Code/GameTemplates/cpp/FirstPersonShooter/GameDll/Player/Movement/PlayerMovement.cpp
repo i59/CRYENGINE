@@ -36,12 +36,13 @@ void CPlayerMovement::Physicalize()
 	physParams.mass = 90;
 
 	pe_player_dimensions playerDimensions;
-	playerDimensions.heightPivot = 0.f;
+	playerDimensions.sizeCollider = Vec3(0.45f, 0.45f, m_pPlayer->GetCVars().m_playerEyeHeight * 0.5f);
+	playerDimensions.heightPivot = 0;
 	playerDimensions.heightEye = 0.f;
-	playerDimensions.sizeCollider = Vec3(0.45f, 0.45f, 2.f);
-	playerDimensions.heightCollider = 0.f;
-	playerDimensions.bUseCapsule = 1;
-	
+	playerDimensions.heightCollider = 1.f;
+	playerDimensions.bUseCapsule = 0;
+	playerDimensions.groundContactEps = 0.004f;
+
 	physParams.pPlayerDimensions = &playerDimensions;
 	
 	pe_player_dynamics playerDynamics;
