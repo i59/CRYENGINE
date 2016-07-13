@@ -42,6 +42,7 @@ public:
 		float m_playerEyeHeight;
 
 		ICVar *m_pFirstPersonGeometry;
+		ICVar *m_pCameraJointName;
 	};
 
 public:

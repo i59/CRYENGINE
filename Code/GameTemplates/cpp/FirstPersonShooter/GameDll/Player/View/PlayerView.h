@@ -29,6 +29,12 @@ public:
 	virtual void PostUpdateView(SViewParams &viewParams) override {}
 	// ~IGameObjectView
 
+	void OnPlayerModelChanged();
+
 protected:
 	CPlayer *m_pPlayer;
+
+	// Identifier of the camera joint inside the Character rig
+	// We use this to move the camera position in UpdateView
+	uint32 m_cameraJointId;
 };
