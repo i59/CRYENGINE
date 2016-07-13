@@ -7,6 +7,7 @@
 class CPlayerInput;
 class CPlayerMovement;
 class CPlayerView;
+class CPlayerAnimations;
 
 class CPlayer;
 
@@ -42,6 +43,10 @@ public:
 
 		ICVar *m_pFirstPersonGeometry;
 		ICVar *m_pCameraJointName;
+
+		ICVar *m_pFirstPersonMannequinContext;
+		ICVar *m_pFirstPersonAnimationDatabase;
+		ICVar *m_pFirstPersonControllerDefinition;
 	};
 
 public:
@@ -82,6 +87,7 @@ protected:
 	CPlayerInput *m_pInput;
 	CPlayerMovement *m_pMovement;
 	CPlayerView *m_pView;
+	CPlayerAnimations *m_pAnimations;
 
 	bool m_bAlive;
 	bool m_bIsLocalClient;

@@ -4,6 +4,7 @@
 #include "Movement/PlayerMovement.h"
 #include "Input/PlayerInput.h"
 #include "View/PlayerView.h"
+#include "Animations/PlayerAnimations.h"
 
 #include "Game/GameFactory.h"
 #include "Game/GameRules.h"
@@ -25,6 +26,7 @@ class CPlayerRegistrator
 		CGameFactory::RegisterGameObjectExtension<CPlayerMovement>("PlayerMovement");
 		CGameFactory::RegisterGameObjectExtension<CPlayerInput>("PlayerInput");
 		CGameFactory::RegisterGameObjectExtension<CPlayerView>("PlayerView");
+		CGameFactory::RegisterGameObjectExtension<CPlayerAnimations>("PlayerAnimations");
 		
 		// Create flownode
 		CGameEntityNodeFactory &nodeFactory = CGameFactory::RegisterEntityFlowNode("Player");
@@ -53,6 +55,10 @@ class CPlayerRegistrator
 
 		m_pFirstPersonGeometry = REGISTER_STRING("pl_firstPersonGeometry", "Objects/Characters/Human/sdk_player/sdk_player.cdf", VF_CHEAT, "Sets the first person geometry to load");
 		m_pCameraJointName = REGISTER_STRING("pl_cameraJointName", "Bip01 Camera", VF_CHEAT, "Sets the name of the joint managing the player's view position");
+
+		m_pFirstPersonMannequinContext = REGISTER_STRING("pl_firstPersonMannequinContext", "FirstPersonCharacter", VF_CHEAT, "The name of the FP context used in Mannequin");
+		m_pFirstPersonAnimationDatabase = REGISTER_STRING("pl_firstPersonAnimationDatabase", "Animations/Mannequin/ADB/FirstPerson.adb", VF_CHEAT, "Path to the animation database file to load");
+		m_pFirstPersonControllerDefinition = REGISTER_STRING("pl_firstPersonControllerDefinition", "Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml", VF_CHEAT, "Path to the controller definition file to load");
 	}
 };
 
@@ -90,6 +96,7 @@ void CPlayer::PostInit(IGameObject *pGameObject)
 	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
 
 	m_pMovement = static_cast<CPlayerMovement *>(GetGameObject()->AcquireExtension("PlayerMovement"));
+	m_pAnimations = static_cast<CPlayerAnimations *>(GetGameObject()->AcquireExtension("PlayerAnimations"));
 	m_pInput = static_cast<CPlayerInput *>(GetGameObject()->AcquireExtension("PlayerInput"));
 
 	m_pView = static_cast<CPlayerView *>(GetGameObject()->AcquireExtension("PlayerView"));
@@ -225,6 +232,8 @@ void CPlayer::SetPlayerModel()
 
 	// Notify view so that the camera joint identifier can be re-cached
 	m_pView->OnPlayerModelChanged();
+	// Do the same for animations so that Mannequin data can be initialized
+	m_pAnimations->OnPlayerModelChanged();
 
 	// Now create the physical representation of the entity
 	m_pMovement->Physicalize();
