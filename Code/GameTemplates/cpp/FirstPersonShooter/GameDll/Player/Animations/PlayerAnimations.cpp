@@ -50,7 +50,8 @@ void CPlayerAnimations::ProcessEvent(SEntityEvent& event)
 			ICharacterInstance *pCharacter = reinterpret_cast<ICharacterInstance *>(event.nParam[1]);
 
 			m_pActionController->OnAnimationEvent(pCharacter, *pAnimEvent);
-		};
+		}
+		break;
 	}
 }
 
