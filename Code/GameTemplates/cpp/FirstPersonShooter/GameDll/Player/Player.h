@@ -27,8 +27,7 @@ class CPlayer
 public:
 	enum EGeometrySlots
 	{
-		eGeometry_ThirdPerson = 0,
-		eGeometry_FirstPerson
+		eGeometry_FirstPerson = 0,
 	};
 
 	struct SExternalCVars
@@ -52,6 +51,8 @@ public:
 	// ISimpleActor
 	virtual bool Init(IGameObject* pGameObject) override;
 	virtual void PostInit(IGameObject* pGameObject) override;
+
+	virtual void Update(SEntityUpdateContext& ctx, int updateSlot) override;
 
 	virtual void HandleEvent(const SGameObjectEvent &event) override;
 	virtual void ProcessEvent(SEntityEvent& event) override;

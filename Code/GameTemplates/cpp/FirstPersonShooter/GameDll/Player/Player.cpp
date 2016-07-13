@@ -46,7 +46,7 @@ class CPlayerRegistrator
 		REGISTER_CVAR2("pl_rotationSpeedYaw", &m_rotationSpeedYaw, 0.05f, VF_CHEAT, "Speed at which the player rotates entity yaw");
 		REGISTER_CVAR2("pl_rotationSpeedPitch", &m_rotationSpeedPitch, 0.05f, VF_CHEAT, "Speed at which the player rotates entity pitch");
 
-		REGISTER_CVAR2("pl_rotationLimitsMinPitch", &m_rotationLimitsMinPitch, -1.f, VF_CHEAT, "Minimum entity pitch limit");
+		REGISTER_CVAR2("pl_rotationLimitsMinPitch", &m_rotationLimitsMinPitch, -0.84f, VF_CHEAT, "Minimum entity pitch limit");
 		REGISTER_CVAR2("pl_rotationLimitsMaxPitch", &m_rotationLimitsMaxPitch, 1.5f, VF_CHEAT, "Maximum entity pitch limit");
 
 		REGISTER_CVAR2("pl_eyeHeight", &m_playerEyeHeight, 0.935f, VF_CHEAT, "Height of the player's eyes from ground");
@@ -96,6 +96,34 @@ void CPlayer::PostInit(IGameObject *pGameObject)
 
 	// Register with the actor system
 	gEnv->pGame->GetIGameFramework()->GetIActorSystem()->AddActor(GetEntityId(), this);
+
+	// Make sure that this extension is updated regularly via the Update function below
+	pGameObject->EnableUpdateSlot(this, 0);
+}
+
+void CPlayer::Update(SEntityUpdateContext &ctx, int updateSlot)
+{
+	if (IsDead())
+		return;
+
+	IEntity &entity = *GetEntity();
+
+	// Update entity rotation as the player turns
+	// Start with getting the look orientation's yaw, pitch and roll
+	Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(m_pInput->GetLookOrientation()));
+
+	// We only want to affect Z-axis rotation, zero pitch and roll
+	ypr.y = 0;
+	ypr.z = 0;
+
+	// Re-calculate the quaternion based on the corrected look orientation
+	Quat correctedOrientation = Quat(CCamera::CreateOrientationYPR(ypr));
+
+	// Create the new entity transform, position stays the same
+	Matrix34 entityTransform = Matrix34::Create(Vec3(1, 1, 1), correctedOrientation, entity.GetWorldPos());
+
+	// Send updated transform to the entity
+	GetEntity()->SetWorldTM(entityTransform);
 }
 
 void CPlayer::HandleEvent(const SGameObjectEvent &event)
@@ -181,12 +209,12 @@ void CPlayer::OnSpawn(EntityId spawnerId)
 void CPlayer::SetPlayerModel()
 {
 	// Load the third person model
-	GetEntity()->LoadCharacter(eGeometry_ThirdPerson, GetCVars().m_pFirstPersonGeometry->GetString());
+	GetEntity()->LoadCharacter(eGeometry_FirstPerson, GetCVars().m_pFirstPersonGeometry->GetString());
 	
 	// Disable player model rendering for the local client
 	/*if (IsLocalClient())
 	{
-		GetEntity()->SetSlotFlags(eGeometry_ThirdPerson, GetEntity()->GetSlotFlags(0) & ~ENTITY_SLOT_RENDER);
+		GetEntity()->SetSlotFlags(eGeometry_FirstPerson, GetEntity()->GetSlotFlags(0) & ~ENTITY_SLOT_RENDER);
 
 		// Load the first person character
 		GetEntity()->LoadGeometry(eGeometry_FirstPerson, "Objects/primitive_pyramid.cgf");

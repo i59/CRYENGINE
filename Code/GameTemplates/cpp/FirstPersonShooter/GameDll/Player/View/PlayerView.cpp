@@ -44,7 +44,7 @@ void CPlayerView::HandleEvent(const SGameObjectEvent &event)
 
 void CPlayerView::OnPlayerModelChanged()
 {
-	if (auto *pCharacter = GetEntity()->GetCharacter(CPlayer::eGeometry_ThirdPerson))
+	if (auto *pCharacter = GetEntity()->GetCharacter(CPlayer::eGeometry_FirstPerson))
 	{
 		// Cache the camera joint id so that we don't need to look it up every frame in UpdateView
 		const char *cameraJointName = m_pPlayer->GetCVars().m_pCameraJointName->GetString();
@@ -71,7 +71,7 @@ void CPlayerView::UpdateView(SViewParams &viewParams)
 	}
 #endif
 
-	if (auto *pCharacter = entity.GetCharacter(CPlayer::eGeometry_ThirdPerson))
+	if (auto *pCharacter = entity.GetCharacter(CPlayer::eGeometry_FirstPerson))
 	{
 		const QuatT &cameraOrientation = pCharacter->GetISkeletonPose()->GetAbsJointByID(m_cameraJointId);
 
