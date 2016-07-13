@@ -30,6 +30,9 @@ bool CPlayerAnimations::Init(IGameObject *pGameObject)
 void CPlayerAnimations::PostInit(IGameObject *pGameObject)
 {
 	m_pPlayer = static_cast<CPlayer *>(pGameObject->QueryExtension("Player"));
+
+	// Make sure that this extension is updated regularly via the Update function below
+	pGameObject->EnableUpdateSlot(this, 0);
 }
 
 void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
