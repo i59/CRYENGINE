@@ -50,6 +50,8 @@ class CPlayerRegistrator
 		REGISTER_CVAR2("pl_rotationLimitsMaxPitch", &m_rotationLimitsMaxPitch, 1.5f, VF_CHEAT, "Maximum entity pitch limit");
 
 		REGISTER_CVAR2("pl_eyeHeight", &m_playerEyeHeight, 0.935f, VF_CHEAT, "Height of the player's eyes from ground");
+
+		m_pFirstPersonGeometry = REGISTER_STRING("pl_firstPersonGeometry", "Objects/Characters/Human/sdk_player/sdk_player.cdf", VF_CHEAT, "Sets the first person geometry to load");
 	}
 };
 
@@ -178,10 +180,10 @@ void CPlayer::OnSpawn(EntityId spawnerId)
 void CPlayer::SetPlayerModel()
 {
 	// Load the third person model
-	GetEntity()->LoadGeometry(eGeometry_ThirdPerson, "Objects/primitive_sphere.cgf");
+	GetEntity()->LoadCharacter(eGeometry_ThirdPerson, GetCVars().m_pFirstPersonGeometry->GetString());
 	
 	// Disable player model rendering for the local client
-	if (IsLocalClient())
+	/*if (IsLocalClient())
 	{
 		GetEntity()->SetSlotFlags(eGeometry_ThirdPerson, GetEntity()->GetSlotFlags(0) & ~ENTITY_SLOT_RENDER);
 
@@ -190,8 +192,10 @@ void CPlayer::SetPlayerModel()
 		Matrix34 tm = Matrix34::Create(Vec3(1, 1, 1), IDENTITY, Vec3(0, 0, 1));
 
 		GetEntity()->SetSlotLocalTM(eGeometry_FirstPerson, tm);
-	}
+	}*/
 
+
+	// Now create the physical representation of the entity
 	m_pMovement->Physicalize();
 }
 

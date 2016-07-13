@@ -40,6 +40,8 @@ public:
 		float m_rotationLimitsMaxPitch;
 
 		float m_playerEyeHeight;
+
+		ICVar *m_pFirstPersonGeometry;
 	};
 
 public:
