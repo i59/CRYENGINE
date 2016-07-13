@@ -86,21 +86,9 @@ void CPlayerMovement::Update(SEntityUpdateContext &ctx, int updateSlot)
 	if(pPhysicalEntity == nullptr)
 		return;
 
-	Matrix34 entityTM = entity.GetWorldTM();
-
 	GetLatestPhysicsStats(*pPhysicalEntity);
 
-	UpdateMovementRequest(ctx.fFrameTime, *pPhysicalEntity, entityTM);
-
-	// Update entity rotation
-	Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(entityTM));
-	
-	// Use look orientation from view
-	ypr.x = CCamera::CreateAnglesYPR(Matrix33(m_pPlayer->GetInput()->GetLookOrientation())).x;
-
-	entityTM.SetRotation33(CCamera::CreateOrientationYPR(ypr));
-	
-	entity.SetWorldTM(entityTM);
+	UpdateMovementRequest(ctx.fFrameTime, *pPhysicalEntity);
 }
 
 void CPlayerMovement::GetLatestPhysicsStats(IPhysicalEntity &physicalEntity)
@@ -112,7 +100,7 @@ void CPlayerMovement::GetLatestPhysicsStats(IPhysicalEntity &physicalEntity)
 	}
 }
 
-void CPlayerMovement::UpdateMovementRequest(float frameTime, IPhysicalEntity &physicalEntity, const Matrix34 &entityTM)
+void CPlayerMovement::UpdateMovementRequest(float frameTime, IPhysicalEntity &physicalEntity)
 {
 	if(m_bOnGround)
 	{
@@ -122,8 +110,7 @@ void CPlayerMovement::UpdateMovementRequest(float frameTime, IPhysicalEntity &ph
 		moveAction.dir = ZERO;
 
 		const float moveSpeed = 20.5f;
-		moveAction.dir = GetLocalMoveDirection() * moveSpeed;
-		moveAction.dir = entityTM.TransformVector(moveAction.dir) * frameTime;
+		moveAction.dir = m_pPlayer->GetInput()->GetLookOrientation() * GetLocalMoveDirection() * moveSpeed * frameTime;
 
 		if(m_pPlayer->GetInput()->GetInputFlags() & CPlayerInput::eInputFlag_Jump)
 		{

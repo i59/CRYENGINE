@@ -32,7 +32,7 @@ public:
 protected:
 	// Get the stats from latest physics thread update
 	void GetLatestPhysicsStats(IPhysicalEntity &physicalEntity);
-	void UpdateMovementRequest(float frameTime, IPhysicalEntity &physicalEntity, const Matrix34 &entityTM);
+	void UpdateMovementRequest(float frameTime, IPhysicalEntity &physicalEntity);
 
 protected:
 	CPlayer *m_pPlayer;

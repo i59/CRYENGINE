@@ -144,6 +144,9 @@ void CPlayer::SetHealth(float health)
 
 		evnt.nParam[1] = (INT_PTR)&inputData;
 		GetEntity()->SendEvent(evnt);
+		
+		// Player should always spawn upright
+		GetEntity()->SetWorldTM(Matrix34::Create(Vec3(1, 1, 1), IDENTITY, GetEntity()->GetWorldPos()));
 
 		SetPlayerModel();
 
