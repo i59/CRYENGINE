@@ -28,17 +28,12 @@ public:
 		eInputFlag_MoveForward = 1 << 2,
 		eInputFlag_MoveBack = 1 << 3,
 
-		eInputFlag_Jump = 1 << 4,
-
 #ifdef TEMPLATE_DEBUG
 		eInputFlag_DetachCamera = 1 << 5,
 #endif
 	};
 
 public:
-	CPlayerInput();
-	virtual ~CPlayerInput();
-
 	// ISimpleExtension
 	virtual bool Init(IGameObject* pGameObject) override;
 	virtual void PostInit(IGameObject* pGameObject) override;
@@ -61,7 +56,25 @@ public:
 	const Quat &GetLookOrientation() const { return m_lookOrientation; }
 
 protected:
+	void InitializeActionHandler();
+
 	void HandleInputFlagChange(EInputFlags flags, int activationMode, EInputFlagType type = eInputFlagType_Hold);
+
+	// Start actions below
+protected:
+	bool OnActionMoveLeft(EntityId entityId, const ActionId& actionId, int activationMode, float value);
+	bool OnActionMoveRight(EntityId entityId, const ActionId& actionId, int activationMode, float value);
+	bool OnActionMoveForward(EntityId entityId, const ActionId& actionId, int activationMode, float value);
+	bool OnActionMoveBack(EntityId entityId, const ActionId& actionId, int activationMode, float value);
+
+	bool OnActionMouseRotateYaw(EntityId entityId, const ActionId& actionId, int activationMode, float value);
+	bool OnActionMouseRotatePitch(EntityId entityId, const ActionId& actionId, int activationMode, float value);
+	
+	bool OnActionShoot(EntityId entityId, const ActionId& actionId, int activationMode, float value);
+
+#ifdef TEMPLATE_DEBUG
+	bool OnActionBoost(EntityId entityId, const ActionId& actionId, int activationMode, float value);
+#endif 
 
 protected:
 	CPlayer *m_pPlayer;
@@ -72,4 +85,7 @@ protected:
 
 	// Should translate to head orientation in the future
 	Quat m_lookOrientation;
+
+	// Handler for actionmap events that maps actions to callbacks
+	TActionHandler<CPlayerInput> m_actionHandler;
 };

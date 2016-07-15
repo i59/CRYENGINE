@@ -13,18 +13,14 @@ class CPlayer;
 
 class CSpawnPoint;
 
+struct ISimpleWeapon;
+
 ////////////////////////////////////////////////////////
 // Represents a player participating in gameplay
 ////////////////////////////////////////////////////////
 class CPlayer 
 	: public CGameObjectExtensionHelper<CPlayer, ISimpleActor>
 {
-	enum EFlownodeOutputs
-	{
-		eOutputPort_OnRespawn = 0,
-		eOutputPort_OnDeath,
-	};
-
 public:
 	enum EGeometrySlots
 	{
@@ -33,6 +29,8 @@ public:
 
 	struct SExternalCVars
 	{
+		float m_moveSpeed;
+
 		float m_rotationSpeedYaw;
 		float m_rotationSpeedPitch;
 
@@ -68,13 +66,10 @@ public:
 	virtual float GetHealth() const override { return m_bAlive ? GetMaxHealth() : 0.f; }
 	// ~ISimpleActor
 
-	void OnSpawn(EntityId spawnerId);
-	
-	// Remove player from active play
-	void Despawn();
-
 	CPlayerInput *GetInput() const { return m_pInput; }
 	CPlayerMovement *GetMovement() const { return m_pMovement; }
+
+	ISimpleWeapon *GetCurrentWeapon() const { return m_pCurrentWeapon; }
 
 	const bool IsLocalClient() const { return m_bIsLocalClient; }
 
@@ -83,12 +78,17 @@ public:
 protected:
 	void SetPlayerModel();
 
+	void CreateWeapon(const char *name);
+
 protected:
 	CPlayerInput *m_pInput;
 	CPlayerMovement *m_pMovement;
 	CPlayerView *m_pView;
 	CPlayerAnimations *m_pAnimations;
 
-	bool m_bAlive;
 	bool m_bIsLocalClient;
+	bool m_bAlive;
+
+	// Pointer to the weapon the player is currently using
+	ISimpleWeapon *m_pCurrentWeapon;
 };

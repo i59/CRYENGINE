@@ -10,12 +10,13 @@
 
 struct IGameStartup;
 
+struct IActor;
 
 class CEditorGame : public IEditorGame
 {
 public:
 	CEditorGame();
-	virtual ~CEditorGame();
+	virtual ~CEditorGame() {}
 
 	// IEditorGame
 	virtual bool Init(ISystem* pSystem, IGameToEditorInterface* pGameToEditorInterface) override;
@@ -42,6 +43,9 @@ public:
 	virtual void OnEntitySelectionChanged(EntityId entityId, bool isSelected) override {}
 	virtual void OnReloadScripts(EReloadScriptsType scriptsType) override {}
 	// ~IEditorGame
+
+protected:
+	IActor *GetPlayerActor();
 
 private:
 	bool ConfigureNetContext(bool on);

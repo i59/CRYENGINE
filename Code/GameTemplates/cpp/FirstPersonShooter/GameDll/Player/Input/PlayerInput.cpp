@@ -3,13 +3,7 @@
 
 #include "Player/Player.h"
 
-CPlayerInput::CPlayerInput()
-{
-}
-
-CPlayerInput::~CPlayerInput()
-{
-}
+#include "Entities/Gameplay/Weapons/ISimpleWeapon.h"
 
 bool CPlayerInput::Init(IGameObject *pGameObject)
 {
@@ -25,6 +19,9 @@ void CPlayerInput::PostInit(IGameObject *pGameObject)
 	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
 
 	m_pPlayer = static_cast<CPlayer *>(pGameObject->QueryExtension("Player"));
+
+	// Populate the action handler callbacks so that we get action map events
+	InitializeActionHandler();
 }
 
 void CPlayerInput::HandleEvent(const SGameObjectEvent &event)
@@ -80,46 +77,6 @@ void CPlayerInput::OnPlayerRespawn()
 	m_lookOrientation = IDENTITY;
 }
 
-void CPlayerInput::OnAction(const ActionId &action, int activationMode, float value)
-{
-	// This function is called when inputs trigger action map events
-	// Cross-reference 'action.c_str()' with Libs/config/defaultprofile.xml actions
-	if(!strcmp(action.c_str(), "moveleft"))
-	{
-		HandleInputFlagChange(eInputFlag_MoveLeft, activationMode);
-	}
-	else if(!strcmp(action.c_str(), "moveright"))
-	{
-		HandleInputFlagChange(eInputFlag_MoveRight, activationMode);
-	}
-	else if(!strcmp(action.c_str(), "moveforward"))
-	{
-		HandleInputFlagChange(eInputFlag_MoveForward, activationMode);
-	}
-	else if(!strcmp(action.c_str(), "moveback"))
-	{
-		HandleInputFlagChange(eInputFlag_MoveBack, activationMode);
-	}
-	else if(!strcmp(action.c_str(), "jump"))
-	{
-		HandleInputFlagChange(eInputFlag_Jump, activationMode);
-	}
-	else if(!strcmp(action.c_str(), "mouse_rotateyaw"))
-	{
-		m_mouseDeltaRotation.x -= value;
-	}
-	else if(!strcmp(action.c_str(), "mouse_rotatepitch"))
-	{
-		m_mouseDeltaRotation.y -= value;
-	}
-#ifdef TEMPLATE_DEBUG
-	else if (!strcmp(action.c_str(), "boost"))
-	{
-		HandleInputFlagChange(eInputFlag_DetachCamera, activationMode, eInputFlagType_Toggle);
-	}
-#endif
-}
-
 void CPlayerInput::HandleInputFlagChange(EInputFlags flags, int activationMode, EInputFlagType type)
 {
 	switch (type)
@@ -147,3 +104,81 @@ void CPlayerInput::HandleInputFlagChange(EInputFlags flags, int activationMode, 
 		break;
 	}
 }
+
+void CPlayerInput::InitializeActionHandler()
+{
+	m_actionHandler.AddHandler(ActionId("moveleft"), &CPlayerInput::OnActionMoveLeft);
+	m_actionHandler.AddHandler(ActionId("moveright"), &CPlayerInput::OnActionMoveRight);
+	m_actionHandler.AddHandler(ActionId("moveforward"), &CPlayerInput::OnActionMoveForward);
+	m_actionHandler.AddHandler(ActionId("moveback"), &CPlayerInput::OnActionMoveBack);
+
+	m_actionHandler.AddHandler(ActionId("mouse_rotateyaw"), &CPlayerInput::OnActionMouseRotateYaw);
+	m_actionHandler.AddHandler(ActionId("mouse_rotatepitch"), &CPlayerInput::OnActionMouseRotatePitch);
+
+	m_actionHandler.AddHandler(ActionId("shoot"), &CPlayerInput::OnActionShoot);
+
+#ifdef TEMPLATE_DEBUG
+	m_actionHandler.AddHandler(ActionId("boost"), &CPlayerInput::OnActionBoost);
+#endif
+}
+
+void CPlayerInput::OnAction(const ActionId &action, int activationMode, float value)
+{
+	// This function is called when inputs trigger action map events
+	// The handler below maps the event (see 'action') to a callback, further below in this file.
+	m_actionHandler.Dispatch(this, GetEntityId(), action, activationMode, value);
+}
+
+bool CPlayerInput::OnActionMoveLeft(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	HandleInputFlagChange(eInputFlag_MoveLeft, activationMode);
+	return true;
+}
+
+bool CPlayerInput::OnActionMoveRight(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	HandleInputFlagChange(eInputFlag_MoveRight, activationMode);
+	return true;
+}
+
+bool CPlayerInput::OnActionMoveForward(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	HandleInputFlagChange(eInputFlag_MoveForward, activationMode);
+	return true;
+}
+
+bool CPlayerInput::OnActionMoveBack(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	HandleInputFlagChange(eInputFlag_MoveBack, activationMode);
+	return true;
+}
+
+bool CPlayerInput::OnActionMouseRotateYaw(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	m_mouseDeltaRotation.x -= value;
+	return true;
+}
+
+bool CPlayerInput::OnActionMouseRotatePitch(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	m_mouseDeltaRotation.y -= value;
+	return true;
+}
+
+bool CPlayerInput::OnActionShoot(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	if (auto *pWeapon = m_pPlayer->GetCurrentWeapon())
+	{
+		pWeapon->RequestFire();
+	}
+
+	return true;
+}
+
+#ifdef TEMPLATE_DEBUG
+bool CPlayerInput::OnActionBoost(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	HandleInputFlagChange(eInputFlag_DetachCamera, activationMode, eInputFlagType_Toggle);
+	return true;
+}
+#endif

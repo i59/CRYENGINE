@@ -101,6 +101,14 @@
 		[
 			"Entities/Gameplay/SpawnPoint.cpp",
 			"Entities/Gameplay/SpawnPoint.h"
+		],
+		"Entities\\Gameplay\\Weapons":
+		[
+			"Entities/Gameplay/Weapons/ISimpleWeapon.h",
+			"Entities/Gameplay/Weapons/Rifle.cpp",
+			"Entities/Gameplay/Weapons/Rifle.h",
+			"Entities/Gameplay/Weapons/Bullet.cpp",
+			"Entities/Gameplay/Weapons/Bullet.h"
 		]
 	},
 	

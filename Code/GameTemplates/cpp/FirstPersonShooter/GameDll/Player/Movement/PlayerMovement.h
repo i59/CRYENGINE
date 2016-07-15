@@ -11,7 +11,6 @@ class CPlayerMovement : public CGameObjectExtensionHelper<CPlayerMovement, ISimp
 {
 public:
 	CPlayerMovement();
-	virtual ~CPlayerMovement();
 
 	//ISimpleExtension
 	virtual bool Init(IGameObject* pGameObject) override;
@@ -38,6 +37,4 @@ protected:
 	CPlayer *m_pPlayer;
 
 	bool m_bOnGround;
-
-	bool m_bRequestedJump;
 };

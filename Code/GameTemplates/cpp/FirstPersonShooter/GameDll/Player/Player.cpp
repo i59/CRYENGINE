@@ -13,6 +13,8 @@
 
 #include "Entities/Gameplay/SpawnPoint.h"
 
+#include "Entities/Gameplay/Weapons/ISimpleWeapon.h"
+
 #include <CryRenderer/IRenderAuxGeom.h>
 
 class CPlayerRegistrator
@@ -28,23 +30,13 @@ class CPlayerRegistrator
 		CGameFactory::RegisterGameObjectExtension<CPlayerView>("PlayerView");
 		CGameFactory::RegisterGameObjectExtension<CPlayerAnimations>("PlayerAnimations");
 		
-		// Create flownode
-		CGameEntityNodeFactory &nodeFactory = CGameFactory::RegisterEntityFlowNode("Player");
-
-		// Define output ports
-		std::vector<SOutputPortConfig> outputs;
-		outputs.push_back(OutputPortConfig_Void("OnRespawn", "Sent when the player is respawned"));
-		outputs.push_back(OutputPortConfig_Void("OnDeath", "Sent when the player is killed"));
-		nodeFactory.AddOutputs(outputs);
-
-		// Mark the factory as complete, indicating that there will be no additional ports
-		nodeFactory.Close();
-
 		RegisterCVars();
 	}
 
 	void RegisterCVars()
 	{
+		REGISTER_CVAR2("pl_moveSpeed", &m_moveSpeed, 20.5f, VF_CHEAT, "Speed at which the player moves");
+
 		REGISTER_CVAR2("pl_rotationSpeedYaw", &m_rotationSpeedYaw, 0.05f, VF_CHEAT, "Speed at which the player rotates entity yaw");
 		REGISTER_CVAR2("pl_rotationSpeedPitch", &m_rotationSpeedPitch, 0.05f, VF_CHEAT, "Speed at which the player rotates entity pitch");
 
@@ -70,6 +62,7 @@ CPlayer::CPlayer()
 	, m_pView(nullptr)
 	, m_bAlive(false)
 	, m_bIsLocalClient(false)
+	, m_pCurrentWeapon(nullptr)
 {
 }
 
@@ -131,6 +124,9 @@ void CPlayer::Update(SEntityUpdateContext &ctx, int updateSlot)
 
 	// Send updated transform to the entity
 	GetEntity()->SetWorldTM(entityTransform);
+
+	// Update the weapon's position
+	m_pCurrentWeapon->GetEntity()->SetWorldTM(GetEntity()->GetWorldTM());
 }
 
 void CPlayer::HandleEvent(const SGameObjectEvent &event)
@@ -147,15 +143,28 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 	{
 		case ENTITY_EVENT_RESET:
 		{
-			// Make sure to revive player when respawning in Editor
 			if (event.nParam[0] == 1)
 			{
+				// Make sure to revive player when respawning in Editor
 				SetHealth(GetMaxHealth());
 			}
-			else
+		}
+		break;
+		case ENTITY_EVENT_HIDE:
+		{
+			// Hide the weapon too
+			if (m_pCurrentWeapon != nullptr)
 			{
-				// Trigger despawning
-				SetHealth(0.f);
+				m_pCurrentWeapon->GetEntity()->Hide(true);
+			}
+		}
+		break;
+		case ENTITY_EVENT_UNHIDE:
+		{
+			// Unhide the weapon too
+			if (m_pCurrentWeapon != nullptr)
+			{
+				m_pCurrentWeapon->GetEntity()->Hide(false);
 			}
 		}
 		break;
@@ -169,48 +178,29 @@ void CPlayer::Release()
 
 void CPlayer::SetHealth(float health)
 {
-	bool bWasAlive = m_bAlive;
-	m_bAlive = health > 0;
-
-	if(m_bAlive && !bWasAlive)
-	{
-		TFlowInputData inputData;
-		SEntityEvent evnt;
-
-		evnt.event     = ENTITY_EVENT_ACTIVATE_FLOW_NODE_OUTPUT;
-		evnt.nParam[0] = eOutputPort_OnRespawn;
-
-		evnt.nParam[1] = (INT_PTR)&inputData;
-		GetEntity()->SendEvent(evnt);
-		
-		// Player should always spawn upright
-		GetEntity()->SetWorldTM(Matrix34::Create(Vec3(1, 1, 1), IDENTITY, GetEntity()->GetWorldPos()));
-
-		SetPlayerModel();
-
-		m_pInput->OnPlayerRespawn();
-	}
-	else if(!m_bAlive && bWasAlive)
-	{
-		TFlowInputData inputData;
-		SEntityEvent evnt;
-
-		evnt.event     = ENTITY_EVENT_ACTIVATE_FLOW_NODE_OUTPUT;
-		evnt.nParam[0] = eOutputPort_OnDeath;
-
-		evnt.nParam[1] = (INT_PTR)&inputData;
-		GetEntity()->SendEvent(evnt);
-
-		m_pMovement->Ragdollize();
-	}
-}
-
-void CPlayer::OnSpawn(EntityId spawnerId)
-{
-	if (gEnv->IsEditing())
+	// Note that this implementation does not handle the concept of death, SetHealth(0) will still revive the player.
+	if (m_bAlive)
 		return;
 
-	SetHealth(GetMaxHealth());
+	m_bAlive = true;
+
+	// Unhide the entity in case hidden by the Editor
+	GetEntity()->Hide(false);
+
+	// Make sure that the player spawns upright
+	GetEntity()->SetWorldTM(Matrix34::Create(Vec3(1, 1, 1), IDENTITY, GetEntity()->GetWorldPos()));
+
+	// Set the player geometry, this also triggers physics proxy creation
+	SetPlayerModel();
+
+	// Notify input that the player respawned
+	m_pInput->OnPlayerRespawn();
+
+	// Spawn the player with a weapon
+	if (m_pCurrentWeapon == nullptr)
+	{
+		CreateWeapon("Rifle");
+	}
 }
 
 void CPlayer::SetPlayerModel()
@@ -239,7 +229,34 @@ void CPlayer::SetPlayerModel()
 	m_pMovement->Physicalize();
 }
 
-void CPlayer::Despawn()
+void CPlayer::CreateWeapon(const char *name)
 {
-	m_pMovement->Dephysicalize();
+	SEntitySpawnParams spawnParams;
+
+	// Set the class of the entity we want to create, e.g. "Rifle"
+	spawnParams.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
+
+	// Now spawn the entity via the entity system
+	// Note that the game object extension (CRifle in this example) will be acquired automatically.
+	IEntity *pWeaponEntity = gEnv->pEntitySystem->SpawnEntity(spawnParams);
+	CRY_ASSERT(pWeaponEntity != nullptr);
+	
+	// Now acquire the game object for this entity
+	if (auto *pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(pWeaponEntity->GetId()))
+	{
+		// Obtain our ISimpleWeapon implementation, based on IGameObjectExtension
+		if (auto *pWeapon = pGameObject->QueryExtension(name))
+		{
+			// Set the equipped weapon
+			m_pCurrentWeapon = static_cast<ISimpleWeapon *>(pWeapon);
+		}
+		else
+		{
+			CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed to query game object extension for weapon %s!", name);
+		}
+	}
+	else
+	{
+		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Spawned weapon of type %s but failed to get game object!", name);
+	}
 }

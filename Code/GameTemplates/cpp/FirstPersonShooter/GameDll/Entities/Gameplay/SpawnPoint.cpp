@@ -34,14 +34,6 @@ class CSpawnPointRegistrator
 
 CSpawnPointRegistrator g_spawnerRegistrator;
 
-CSpawnPoint::CSpawnPoint()
-{
-}
-
-CSpawnPoint::~CSpawnPoint()
-{
-}
-
 bool CSpawnPoint::Init(IGameObject* pGameObject)
 {
 	SetGameObject(pGameObject);
@@ -58,13 +50,14 @@ void CSpawnPoint::SpawnEntity(IEntity &otherEntity)
 	otherEntity.SetWorldTM(GetEntity()->GetWorldTM());
 
 	// Special behavior for players, notify respawn
-	if(!strcmp(otherEntity.GetClass()->GetName(), "Player"))
+	if(!strcmp(otherEntity.GetClass()->GetName(), "Player") && !gEnv->IsEditing())
 	{
 		if(IGameObject *pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(otherEntity.GetId()))
 		{
 			if(auto *pPlayer = static_cast<CPlayer *>(pGameObject->QueryExtension("Player")))
 			{
-				pPlayer->OnSpawn(GetEntityId());
+				// Revive the player
+				pPlayer->SetHealth(100.f);
 			}
 		}
 	}

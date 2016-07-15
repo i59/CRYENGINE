@@ -9,10 +9,6 @@ CPlayerMovement::CPlayerMovement()
 {
 }
 
-CPlayerMovement::~CPlayerMovement()
-{
-}
-
 bool CPlayerMovement::Init(IGameObject *pGameObject)
 {
 	SetGameObject(pGameObject);
@@ -54,8 +50,6 @@ void CPlayerMovement::Physicalize()
 	physParams.pPlayerDynamics = &playerDynamics;
 
 	GetEntity()->Physicalize(physParams);
-
-	m_bRequestedJump = false;
 }
 
 void CPlayerMovement::Ragdollize()
@@ -108,21 +102,8 @@ void CPlayerMovement::UpdateMovementRequest(float frameTime, IPhysicalEntity &ph
 		pe_action_move moveAction;
 		moveAction.iJump = 2;
 
-		moveAction.dir = ZERO;
-
-		const float moveSpeed = 20.5f;
+		const float moveSpeed = m_pPlayer->GetCVars().m_moveSpeed;
 		moveAction.dir = m_pPlayer->GetInput()->GetLookOrientation() * GetLocalMoveDirection() * moveSpeed * frameTime;
-
-		if(m_pPlayer->GetInput()->GetInputFlags() & CPlayerInput::eInputFlag_Jump)
-		{
-			m_bRequestedJump = true;
-		}
-		else if(m_bRequestedJump)
-		{
-			moveAction.dir.z += 3.5f;
-
-			m_bRequestedJump = false;
-		}
 
 		physicalEntity.Action(&moveAction);
 	}

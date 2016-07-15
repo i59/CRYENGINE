@@ -163,7 +163,7 @@ protected:
 
 		if (pActInfo->pEntity)
 		{
-			bRet = (pActInfo->pEntity->GetId() == LOCAL_PLAYER_ENTITY_ID);
+			bRet = (pActInfo->pEntity->GetId() == gEnv->pGame->GetIGameFramework()->GetClientActorId());
 		}
 		else
 		{

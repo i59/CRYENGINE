@@ -70,6 +70,11 @@ void CGameRules::OnClientDisconnect(int channelId, EDisconnectionCause cause, co
 
 bool CGameRules::OnClientEnteredGame(int channelId, bool isReset)
 {
+	// We only handle default spawning below for the Launcher
+	// Editor has special logic in CEditorGame
+	if (gEnv->IsEditor())
+		return true;
+
 	auto *pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
 
 	auto *pActor = pActorSystem->GetActorByChannelId(channelId);
@@ -97,6 +102,7 @@ bool CGameRules::OnClientEnteredGame(int channelId, bool isReset)
 				continue;
 
 			pSpawner->SpawnEntity(*pActor->GetEntity());
+
 			break;
 		}
 	}

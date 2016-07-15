@@ -9,13 +9,12 @@
 #include "Game/GameRules.h"
 
 #include <ILevelSystem.h>
-
+#include <IActorSystem.h>
 
 extern "C"
 {
 	GAME_API IGameStartup* CreateGameStartup();
 };
-
 
 CEditorGame::CEditorGame()
 	: m_pGame(nullptr)
@@ -23,10 +22,6 @@ CEditorGame::CEditorGame()
 	, m_bEnabled(false)
 	, m_bGameMode(false)
 	, m_bPlayer(false)
-{
-}
-
-CEditorGame::~CEditorGame()
 {
 }
 
@@ -63,6 +58,7 @@ void CEditorGame::Shutdown()
 {
 	EnablePlayer(false);
 	SetGameMode(false);
+
 	m_pGameStartup->Shutdown();
 }
 
@@ -73,6 +69,7 @@ void CEditorGame::EnablePlayer(bool bPlayer)
 	{
 		spawnPlayer = m_bPlayer = bPlayer;
 	}
+
 	if (!SetGameMode(m_bGameMode))
 	{
 		gEnv->pLog->LogWarning("Failed setting game mode");
@@ -124,11 +121,25 @@ void CEditorGame::SetPlayerPosAng(Vec3 pos, Vec3 viewDir)
 
 void CEditorGame::HidePlayer(bool bHide)
 {
-	IEntity* pPlayer = GetPlayer();
+	auto *pPlayer = GetPlayerActor();
 	if (pPlayer)
 	{
-		pPlayer->Hide(bHide);
+		IEntity &playerEntity = *pPlayer->GetEntity();
+
+		playerEntity.Hide(bHide);
+
+		playerEntity.InvalidateTM();
+
+		if (!bHide)
+		{
+			pPlayer->SetHealth(pPlayer->GetMaxHealth());
+		}
 	}
+}
+
+IActor *CEditorGame::GetPlayerActor()
+{
+	return gEnv->pGame->GetIGameFramework()->GetClientActor();
 }
 
 bool CEditorGame::ConfigureNetContext(bool on)

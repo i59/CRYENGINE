@@ -21,9 +21,6 @@ class CSpawnPoint : public CGameObjectExtensionHelper<CSpawnPoint, CNativeEntity
 	};
 
 public:
-	CSpawnPoint();
-	virtual ~CSpawnPoint();
-
 	// CNativeEntityBase
 	virtual bool Init(IGameObject *pGameObject) override;
 	virtual void Release() override;
