@@ -16,15 +16,9 @@ public:
 	virtual void PostInit(IGameObject *pGameObject) override;
 	virtual void HandleEvent(const SGameObjectEvent &event) override;
 
-	virtual void Update(SEntityUpdateContext& ctx, int updateSlot) override;
-
 	virtual void Release() override;
 	// ~ISimpleExtension
 
 protected:
 	void Physicalize();
-
-protected:
-	// Time at which this entity should be removed, or negative if not scheduled for removal
-	float m_removalTime;
 };

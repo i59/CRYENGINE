@@ -19,8 +19,6 @@ class CBulletRegistrator
 
 		REGISTER_CVAR2("w_bulletMass", &m_mass, 5000.f, VF_CHEAT, "Sets the mass of each individual bullet fired by weapons");
 		REGISTER_CVAR2("w_bulletInitialVelocity", &m_initialVelocity, 10.f, VF_CHEAT, "Sets the initial velocity of each individual bullet fired by weapons");
-
-		REGISTER_CVAR2("w_bulletPostCollisionLifetime", &m_postCollisionLifetime, 1.f, VF_CHEAT, "Number of seconds that the bullet will remain for after colliding with another object");
 	}
 
 public:
@@ -28,22 +26,16 @@ public:
 
 	float m_mass;
 	float m_initialVelocity;
-
-	float m_postCollisionLifetime;
 };
 
 CBulletRegistrator g_bulletRegistrator;
 
 CBullet::CBullet()
-	: m_removalTime(-1)
 {
 }
 
 void CBullet::PostInit(IGameObject *pGameObject)
 {
-	// Make sure that this extension is updated regularly via the Update function below
-	pGameObject->EnableUpdateSlot(this, 0);
-
 	// Make sure we get logged collision events
 	// Note the difference between immediate (directly on the physics thread) and logged (delayed to run on main thread) physics events.
 	pGameObject->EnablePhysicsEvent(true, eEPE_OnCollisionLogged);
@@ -71,20 +63,6 @@ void CBullet::PostInit(IGameObject *pGameObject)
 	}
 }
 
-void CBullet::Update(SEntityUpdateContext& ctx, int updateSlot)
-{
-	// Check if a removal time is currently scheduled
-	// If so, check if the bullet has expired
-	if (!isneg(m_removalTime) && gEnv->pTimer->GetFrameStartTime().GetSeconds() - m_removalTime > g_bulletRegistrator.m_postCollisionLifetime)
-	{
-		// Ask that the entity system removes this entity
-		// This operation is normally queued, so will happen within a frame from now
-		gEnv->pEntitySystem->RemoveEntity(GetEntityId());
-
-		m_removalTime = -1;
-	}
-}
-
 void CBullet::HandleEvent(const SGameObjectEvent &event)
 {
 	// Handle the OnCollision event, in order to have the entity removed on collision
@@ -94,10 +72,7 @@ void CBullet::HandleEvent(const SGameObjectEvent &event)
 		//EventPhysCollision *physCollision = reinterpret_cast<EventPhysCollision *>(event.ptr);
 
 		// Queue removal of this entity, unless it has already been done
-		if (isneg(m_removalTime))
-		{
-			m_removalTime = gEnv->pTimer->GetFrameStartTime().GetSeconds() + g_bulletRegistrator.m_postCollisionLifetime;
-		}
+		gEnv->pEntitySystem->RemoveEntity(GetEntityId());
 	}
 }
 
