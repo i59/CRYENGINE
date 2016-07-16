@@ -37,9 +37,9 @@ void CGameFactory::Init()
 void CGameFactory::RegisterFlowNodes()
 {
 	// Start with registering the entity nodes
-	IFlowSystem* pFlowSystem = gEnv->pGame->GetIGameFramework()->GetIFlowSystem();
-	std::map<string, CGameEntityNodeFactory*>::iterator it = s_flowNodeFactories.begin(), end = s_flowNodeFactories.end();
-	for(; it != end; ++it)
+	IFlowSystem *pFlowSystem = gEnv->pGame->GetIGameFramework()->GetIFlowSystem();
+
+	for(auto it = s_flowNodeFactories.begin(); it != s_flowNodeFactories.end(); ++it)
 	{
 		pFlowSystem->RegisterType(it->first.c_str(), it->second);
 	}
@@ -47,7 +47,7 @@ void CGameFactory::RegisterFlowNodes()
 	stl::free_container(s_flowNodeFactories);
 
 	// Now register the regular nodes
-	CAutoRegFlowNodeBaseZero* pFactory = CAutoRegFlowNodeBaseZero::m_pFirst;
+	CAutoRegFlowNodeBaseZero *pFactory = CAutoRegFlowNodeBaseZero::m_pFirst;
 	while (pFactory)
 	{
 		pFlowSystem->RegisterType(pFactory->m_sClassName, pFactory);
