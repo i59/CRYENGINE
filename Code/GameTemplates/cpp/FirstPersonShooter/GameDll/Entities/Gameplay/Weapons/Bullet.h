@@ -9,7 +9,6 @@ class CBullet
 	: public CGameObjectExtensionHelper<CBullet, CNativeEntityBase>
 {
 public:
-	CBullet();
 	virtual ~CBullet() {}
 
 	// ISimpleExtension	

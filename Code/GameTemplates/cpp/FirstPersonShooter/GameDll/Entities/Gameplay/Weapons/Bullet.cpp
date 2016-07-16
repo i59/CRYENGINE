@@ -30,10 +30,6 @@ public:
 
 CBulletRegistrator g_bulletRegistrator;
 
-CBullet::CBullet()
-{
-}
-
 void CBullet::PostInit(IGameObject *pGameObject)
 {
 	// Make sure we get logged collision events
