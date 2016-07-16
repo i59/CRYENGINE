@@ -45,7 +45,9 @@ void CBullet::PostInit(IGameObject *pGameObject)
 	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
 
 	// Set the model
-	GetEntity()->LoadGeometry(0, g_bulletRegistrator.m_pGeometry->GetString());
+	const int geometrySlot = 0;
+
+	LoadMesh(geometrySlot, g_bulletRegistrator.m_pGeometry->GetString());
 
 	// Now create the physical representation of the entity
 	Physicalize();

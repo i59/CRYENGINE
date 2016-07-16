@@ -31,4 +31,18 @@ struct ISimpleExtension : public IGameObjectExtension
 	//~IGameObjectExtension
 
 	virtual ~ISimpleExtension() {}
+
+	// Helper for loading geometry or characters
+	void LoadMesh(int slot, const char *path)
+	{
+		// Load the rifle geometry into the first slot
+		if (IsCharacterFile(path))
+		{
+			GetEntity()->LoadCharacter(slot, path);
+		}
+		else
+		{
+			GetEntity()->LoadGeometry(slot, path);
+		}
+	}
 };

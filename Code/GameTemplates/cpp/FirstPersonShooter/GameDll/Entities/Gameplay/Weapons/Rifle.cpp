@@ -26,22 +26,9 @@ CRifleRegistrator g_rifleRegistrator;
 
 void CRifle::PostInit(IGameObject *pGameObject)
 {
-	LoadGeometry();
-}
+	const int geometrySlot = 0;
 
-void CRifle::LoadGeometry()
-{
-	const char *geometryPath = g_rifleRegistrator.m_pGeometryPath->GetString();
-
-	// Load the rifle geometry into the first slot
-	if (IsCharacterFile(geometryPath))
-	{
-		GetEntity()->LoadCharacter(0, geometryPath);
-	}
-	else
-	{
-		GetEntity()->LoadGeometry(0, geometryPath);
-	}
+	LoadMesh(geometrySlot, g_rifleRegistrator.m_pGeometryPath->GetString());
 }
 
 void CRifle::RequestFire()

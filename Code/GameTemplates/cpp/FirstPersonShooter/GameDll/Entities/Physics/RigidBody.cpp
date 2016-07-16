@@ -43,14 +43,8 @@ void CRigidBody::Reset()
 	{
 		auto &gameObject = *GetGameObject();
 
-		if(!stricmp(PathUtil::GetExt(modelPath), CRY_GEOMETRY_FILE_EXT))
-		{
-			GetEntity()->LoadGeometry(0, modelPath);
-		}
-		else
-		{
-			GetEntity()->LoadCharacter(0, modelPath);
-		}
+		const int geometrySlot = 0;
+		LoadMesh(geometrySlot, modelPath);
 
 		SEntityPhysicalizeParams physicalizationParams;
 		physicalizationParams.type = PE_RIGID;

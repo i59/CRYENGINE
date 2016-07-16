@@ -18,7 +18,4 @@ public:
 	// IWeapon
 	virtual void RequestFire() override;
 	// ~IWeapon
-
-protected:
-	void LoadGeometry();
 };
