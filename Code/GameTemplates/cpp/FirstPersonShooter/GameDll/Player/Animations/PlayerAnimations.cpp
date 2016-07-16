@@ -57,7 +57,7 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 		if (pPhysEnt->GetStatus(&playerDynamics) != 0 && pCharacter != nullptr)
 		{
 			// Set turn rate as the difference between previous and new entity rotation
-			float turnAngle = Ang3::CreateRadZ(correctedOrientation.GetColumn1(), GetEntity()->GetForwardDir()) / ctx.fFrameTime;
+			float turnAngle = Ang3::CreateRadZ(GetEntity()->GetForwardDir(), correctedOrientation.GetColumn1()) / ctx.fFrameTime;
 			float travelSpeed = playerDynamics.v.GetLength();
 			
 			// Set the travel speed based on the physics velocity magnitude
