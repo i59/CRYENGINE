@@ -131,25 +131,6 @@ int CGameStartup::Update(bool haveFocus, unsigned int updateFlags)
 
 	int returnCode = 0;
 
-	if (gEnv->pConsole)
-	{
-#if CRY_PLATFORM_WINDOWS
-		if (gEnv && gEnv->pRenderer && gEnv->pRenderer->GetHWND())
-		{
-			bool focus = (::GetFocus() == gEnv->pRenderer->GetHWND());
-			static bool focused = focus;
-			if (focus != focused)
-			{
-				if (GetISystem()->GetISystemEventDispatcher())
-				{
-					GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_CHANGE_FOCUS, focus, 0);
-				}
-				focused = focus;
-			}
-		}
-#endif
-	}
-
 	if (m_pGame)
 	{
 		returnCode = m_pGame->Update(haveFocus, updateFlags);
