@@ -1,9 +1,8 @@
 #pragma once
 
-
 #include <IGameRulesSystem.h>
 
-class CGameRules : public CGameObjectExtensionHelper<CGameRules, IGameRules, 1>
+class CGameRules : public CGameObjectExtensionHelper<CGameRules, IGameRules>
 {
 public:
 	virtual ~CGameRules();
