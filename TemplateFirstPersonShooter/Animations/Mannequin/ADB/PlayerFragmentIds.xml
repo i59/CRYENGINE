@@ -1,5 +1,5 @@
 <TagDefinition version="2">
  <Tags>
-  <Tag name="Idle" subTagDef="Animations/Mannequin/ADB/PlayerTags.xml"/>
+  <Tag name="Idle"/>
  </Tags>
 </TagDefinition>

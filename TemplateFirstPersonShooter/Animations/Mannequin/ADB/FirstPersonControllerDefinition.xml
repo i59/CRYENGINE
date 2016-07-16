@@ -2,10 +2,9 @@
  <Tags filename="Animations/Mannequin/ADB/PlayerTags.xml"/>
  <Fragments filename="Animations/Mannequin/ADB/PlayerFragmentIds.xml"/>
  <FragmentDefs>
-  <Idle scopes="FullBody"/>
+  <Idle scopes="FullBody" flags="Persistent+AutoReinstall"/>
  </FragmentDefs>
  <ScopeContextDefs>
-  <MainCharacter />
   <FirstPersonCharacter />
  </ScopeContextDefs>
  <ScopeDefs>

@@ -2,13 +2,9 @@
 
 #include "Entities/Helpers/ISimpleExtension.h"
 
-class CPlayer;
+#include <ICryMannequin.h>
 
-class IActionController;
-struct SAnimationContext;
-class IAnimationDatabase;
-struct SControllerDef;
-class IAction;
+class CPlayer;
 
 ////////////////////////////////////////////////////////
 // Player extension to manage animation handling and playback via Mannequin
@@ -43,4 +39,7 @@ protected:
 	SAnimationContext *m_pAnimationContext;
 
 	_smart_ptr<IAction> m_pIdleFragment;
+
+	TagID m_rotateTagId;
+	TagID m_walkTagId;
 };

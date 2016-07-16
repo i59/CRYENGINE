@@ -2,8 +2,7 @@
 #include "PlayerAnimations.h"
 
 #include "Player/Player.h"
-
-#include "IdleAction.h"
+#include "Player/Input/PlayerInput.h"
 
 #include <CryAnimation/ICryAnimation.h>
 #include <ICryMannequin.h>
@@ -37,6 +36,48 @@ void CPlayerAnimations::PostInit(IGameObject *pGameObject)
 
 void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 {
+	// Start updating the motion parameters used for blend spaces
+	if (auto *pPhysEnt = m_pPlayer->GetEntity()->GetPhysics())
+	{
+		// Update entity rotation as the player turns
+		// Start with getting the look orientation's yaw, pitch and roll
+		Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(m_pPlayer->GetInput()->GetLookOrientation()));
+
+		// We only want to affect Z-axis rotation, zero pitch and roll
+		ypr.y = 0;
+		ypr.z = 0;
+
+		// Re-calculate the quaternion based on the corrected look orientation
+		Quat correctedOrientation = Quat(CCamera::CreateOrientationYPR(ypr));
+
+		auto *pCharacter = m_pPlayer->GetEntity()->GetCharacter(CPlayer::eGeometry_FirstPerson);
+
+		// Get the player's velocity from physics
+		pe_status_dynamics playerDynamics;
+		if (pPhysEnt->GetStatus(&playerDynamics) != 0 && pCharacter != nullptr)
+		{
+			// Set turn rate as the difference between previous and new entity rotation
+			float turnAngle = Ang3::CreateRadZ(correctedOrientation.GetColumn1(), GetEntity()->GetForwardDir()) / ctx.fFrameTime;
+			float travelSpeed = playerDynamics.v.GetLength();
+			
+			// Set the travel speed based on the physics velocity magnitude
+			// Keep in mind that the maximum number for motion parameters is 10.
+			// If your velocity can reach a magnitude higher than this, divide by the maximum theoretical account and work with a 0 - 1 ratio.
+			pCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelSpeed, travelSpeed, 0.f);
+
+			// Update the turn speed in CryAnimation, note that the maximum motion parameter (10) applies here too.
+			pCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TurnAngle, turnAngle, 0.f);
+			pCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelAngle, turnAngle, 0.f);
+
+			// Update the Mannequin tags
+			m_pAnimationContext->state.Set(m_rotateTagId, abs(turnAngle) > 0);
+			m_pAnimationContext->state.Set(m_walkTagId, travelSpeed > 0);
+		}
+
+		// Send updated transform to the entity, only orientation changes
+		GetEntity()->SetPosRotScale(GetEntity()->GetWorldPos(), correctedOrientation, Vec3(1, 1, 1));
+	}
+
 	if (m_pActionController != nullptr)
 	{
 		m_pActionController->Update(ctx.fFrameTime);
@@ -105,10 +146,14 @@ void CPlayerAnimations::OnPlayerModelChanged()
 	int priority = 0;
 	auto idleFragmentId = pControllerDefinition->m_fragmentIDs.Find("Idle");
 
-	m_pIdleFragment = new CIdleAction(priority, idleFragmentId, TAG_STATE_EMPTY, IAction::Interruptable);
+	m_pIdleFragment = new TAction<SAnimationContext>(priority, idleFragmentId, TAG_STATE_EMPTY, 0);
 
 	// Queue the idle fragment to start playing immediately on next update
 	m_pActionController->Queue(*m_pIdleFragment.get());
+
+	// Acquire tag identifiers to avoid doing so each update
+	m_rotateTagId = m_pAnimationContext->state.GetDef().Find("Rotate");
+	m_walkTagId = m_pAnimationContext->state.GetDef().Find("Walk");
 }
 
 void CPlayerAnimations::ActivateMannequinContext(const char *contextName, const SControllerDef &controllerDefinition, const IAnimationDatabase &animationDatabase)

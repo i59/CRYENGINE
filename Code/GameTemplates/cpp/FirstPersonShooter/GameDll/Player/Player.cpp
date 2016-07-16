@@ -45,8 +45,8 @@ class CPlayerRegistrator
 
 		REGISTER_CVAR2("pl_eyeHeight", &m_playerEyeHeight, 0.935f, VF_CHEAT, "Height of the player's eyes from ground");
 
-		m_pFirstPersonGeometry = REGISTER_STRING("pl_firstPersonGeometry", "Objects/Characters/Human/sdk_player/sdk_player.cdf", VF_CHEAT, "Sets the first person geometry to load");
-		m_pCameraJointName = REGISTER_STRING("pl_cameraJointName", "Bip01 Camera", VF_CHEAT, "Sets the name of the joint managing the player's view position");
+		m_pFirstPersonGeometry = REGISTER_STRING("pl_firstPersonGeometry", "Objects/motusTest/motusbuild.cdf", VF_CHEAT, "Sets the first person geometry to load");
+		m_pCameraJointName = REGISTER_STRING("pl_cameraJointName", "head", VF_CHEAT, "Sets the name of the joint managing the player's view position");
 
 		m_pFirstPersonMannequinContext = REGISTER_STRING("pl_firstPersonMannequinContext", "FirstPersonCharacter", VF_CHEAT, "The name of the FP context used in Mannequin");
 		m_pFirstPersonAnimationDatabase = REGISTER_STRING("pl_firstPersonAnimationDatabase", "Animations/Mannequin/ADB/FirstPerson.adb", VF_CHEAT, "Path to the animation database file to load");
@@ -103,29 +103,7 @@ void CPlayer::PostInit(IGameObject *pGameObject)
 
 void CPlayer::Update(SEntityUpdateContext &ctx, int updateSlot)
 {
-	if (IsDead())
-		return;
-
-	IEntity &entity = *GetEntity();
-
-	// Update entity rotation as the player turns
-	// Start with getting the look orientation's yaw, pitch and roll
-	Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(m_pInput->GetLookOrientation()));
-
-	// We only want to affect Z-axis rotation, zero pitch and roll
-	ypr.y = 0;
-	ypr.z = 0;
-
-	// Re-calculate the quaternion based on the corrected look orientation
-	Quat correctedOrientation = Quat(CCamera::CreateOrientationYPR(ypr));
-
-	// Create the new entity transform, position stays the same
-	Matrix34 entityTransform = Matrix34::Create(Vec3(1, 1, 1), correctedOrientation, entity.GetWorldPos());
-
-	// Send updated transform to the entity
-	GetEntity()->SetWorldTM(entityTransform);
-
-	// Update the weapon's position
+	// Update the weapon's position to match ours
 	m_pCurrentWeapon->GetEntity()->SetWorldTM(GetEntity()->GetWorldTM());
 }
 

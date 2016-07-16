@@ -74,9 +74,7 @@
 		"Player\\Animations":
 		[
 			"Player/Animations/PlayerAnimations.cpp",
-			"Player/Animations/PlayerAnimations.h",
-			"Player/Animations/IdleAction.cpp",
-			"Player/Animations/IdleAction.h"
+			"Player/Animations/PlayerAnimations.h"
 		]
 	},
 	
