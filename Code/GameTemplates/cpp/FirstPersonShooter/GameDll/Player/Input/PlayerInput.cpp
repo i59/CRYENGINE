@@ -155,9 +155,13 @@ bool CPlayerInput::OnActionMouseRotatePitch(EntityId entityId, const ActionId& a
 
 bool CPlayerInput::OnActionShoot(EntityId entityId, const ActionId& actionId, int activationMode, float value)
 {
-	if (auto *pWeapon = m_pPlayer->GetCurrentWeapon())
+	// Only fire on press, not release
+	if (activationMode == eIS_Pressed)
 	{
-		pWeapon->RequestFire();
+		if (auto *pWeapon = m_pPlayer->GetCurrentWeapon())
+		{
+			pWeapon->RequestFire();
+		}
 	}
 
 	return true;
