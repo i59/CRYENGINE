@@ -42,6 +42,8 @@ public:
 		ICVar *m_pFirstPersonGeometry;
 		ICVar *m_pCameraJointName;
 
+		ICVar *m_pWeaponJointName;
+
 		ICVar *m_pFirstPersonMannequinContext;
 		ICVar *m_pFirstPersonAnimationDatabase;
 		ICVar *m_pFirstPersonControllerDefinition;
@@ -54,8 +56,6 @@ public:
 	// ISimpleActor
 	virtual bool Init(IGameObject* pGameObject) override;
 	virtual void PostInit(IGameObject* pGameObject) override;
-
-	virtual void Update(SEntityUpdateContext& ctx, int updateSlot) override;
 
 	virtual void HandleEvent(const SGameObjectEvent &event) override;
 	virtual void ProcessEvent(SEntityEvent& event) override;

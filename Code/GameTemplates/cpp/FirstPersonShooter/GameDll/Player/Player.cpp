@@ -48,6 +48,8 @@ class CPlayerRegistrator
 		m_pFirstPersonGeometry = REGISTER_STRING("pl_firstPersonGeometry", "Objects/motusTest/motusbuild.cdf", VF_CHEAT, "Sets the first person geometry to load");
 		m_pCameraJointName = REGISTER_STRING("pl_cameraJointName", "head", VF_CHEAT, "Sets the name of the joint managing the player's view position");
 
+		m_pWeaponJointName = REGISTER_STRING("pl_weaponJointName", "RT_weapon_R_default_target", VF_CHEAT, "Sets the name of the joint managing the weapon's position");
+
 		m_pFirstPersonMannequinContext = REGISTER_STRING("pl_firstPersonMannequinContext", "FirstPersonCharacter", VF_CHEAT, "The name of the FP context used in Mannequin");
 		m_pFirstPersonAnimationDatabase = REGISTER_STRING("pl_firstPersonAnimationDatabase", "Animations/Mannequin/ADB/FirstPerson.adb", VF_CHEAT, "Path to the animation database file to load");
 		m_pFirstPersonControllerDefinition = REGISTER_STRING("pl_firstPersonControllerDefinition", "Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml", VF_CHEAT, "Path to the controller definition file to load");
@@ -96,15 +98,6 @@ void CPlayer::PostInit(IGameObject *pGameObject)
 
 	// Register with the actor system
 	gEnv->pGame->GetIGameFramework()->GetIActorSystem()->AddActor(GetEntityId(), this);
-
-	// Make sure that this extension is updated regularly via the Update function below
-	pGameObject->EnableUpdateSlot(this, 0);
-}
-
-void CPlayer::Update(SEntityUpdateContext &ctx, int updateSlot)
-{
-	// Update the weapon's position to match ours
-	m_pCurrentWeapon->GetEntity()->SetWorldTM(GetEntity()->GetWorldTM());
 }
 
 void CPlayer::HandleEvent(const SGameObjectEvent &event)

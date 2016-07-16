@@ -27,7 +27,7 @@ public:
 	void OnPlayerModelChanged();
 
 protected:
-	void ActivateMannequinContext(const char *contextName, const SControllerDef &controllerDefinition, const IAnimationDatabase &animationDatabase);
+	void ActivateMannequinContext(const char *contextName, ICharacterInstance &character, const SControllerDef &controllerDefinition, const IAnimationDatabase &animationDatabase);
 
 protected:
 	CPlayer *m_pPlayer;
@@ -39,4 +39,6 @@ protected:
 
 	TagID m_rotateTagId;
 	TagID m_walkTagId;
+
+	uint32 m_weaponJointId;
 };

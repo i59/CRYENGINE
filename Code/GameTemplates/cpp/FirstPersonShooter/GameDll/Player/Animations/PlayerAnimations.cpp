@@ -4,6 +4,8 @@
 #include "Player/Player.h"
 #include "Player/Input/PlayerInput.h"
 
+#include "Entities/Gameplay/Weapons/ISimpleWeapon.h"
+
 #include <CryAnimation/ICryAnimation.h>
 #include <ICryMannequin.h>
 
@@ -65,6 +67,15 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 			// Update the Mannequin tags
 			m_pAnimationContext->state.Set(m_rotateTagId, abs(turnAngle) > 0);
 			m_pAnimationContext->state.Set(m_walkTagId, travelSpeed > 0);
+
+			// Update the weapon's orientation to match ours
+			if (auto *pWeapon = m_pPlayer->GetCurrentWeapon())
+			{
+				const QuatT &weaponOrientation = pCharacter->GetISkeletonPose()->GetAbsJointByID(m_weaponJointId);
+				Matrix34 weaponTransform = GetEntity()->GetWorldTM() * Matrix34(weaponOrientation);
+
+				pWeapon->GetEntity()->SetWorldTM(weaponTransform);
+			}
 		}
 
 		// Send updated transform to the entity, only orientation changes
@@ -131,8 +142,11 @@ void CPlayerAnimations::OnPlayerModelChanged()
 	m_pActionController = mannequinInterface.CreateActionController(GetEntity(), *m_pAnimationContext);
 	CRY_ASSERT(m_pActionController != nullptr);
 
+	ICharacterInstance *pCharacterInstance = GetEntity()->GetCharacter(CPlayer::eGeometry_FirstPerson);
+	CRY_ASSERT(pCharacterInstance != nullptr);
+
 	// Activate the Main context we'll be playing our animations in
-	ActivateMannequinContext(mannequinContextName, *pControllerDefinition, *pAnimationDatabase);
+	ActivateMannequinContext(mannequinContextName, *pCharacterInstance, *pControllerDefinition, *pAnimationDatabase);
 
 	// Create this idle fragment
 	// This implementation handles switching to various sub-fragments by itself, based on input and physics data
@@ -147,9 +161,14 @@ void CPlayerAnimations::OnPlayerModelChanged()
 	// Acquire tag identifiers to avoid doing so each update
 	m_rotateTagId = m_pAnimationContext->state.GetDef().Find("Rotate");
 	m_walkTagId = m_pAnimationContext->state.GetDef().Find("Walk");
+
+	// Cache the weapon joint id so that we avoid looking it up every frame by name
+	const char *weaponJointName = m_pPlayer->GetCVars().m_pWeaponJointName->GetString();
+
+	m_weaponJointId = pCharacterInstance->GetIDefaultSkeleton().GetJointIDByName(weaponJointName);
 }
 
-void CPlayerAnimations::ActivateMannequinContext(const char *contextName, const SControllerDef &controllerDefinition, const IAnimationDatabase &animationDatabase)
+void CPlayerAnimations::ActivateMannequinContext(const char *contextName, ICharacterInstance &character, const SControllerDef &controllerDefinition, const IAnimationDatabase &animationDatabase)
 {
 	IEntity &entity = *GetEntity();
 
@@ -160,10 +179,7 @@ void CPlayerAnimations::ActivateMannequinContext(const char *contextName, const 
 		return;
 	}
 
-	ICharacterInstance *pCharacterInstance = entity.GetCharacter(CPlayer::eGeometry_FirstPerson);
-	CRY_ASSERT(pCharacterInstance != nullptr);
-
 	// Setting Scope contexts can happen at any time, and what entity or character instance we have bound to a particular scope context
 	// can change during the lifetime of an action controller.
-	m_pActionController->SetScopeContext(scopeContextId, entity, pCharacterInstance, &animationDatabase);
+	m_pActionController->SetScopeContext(scopeContextId, entity, &character, &animationDatabase);
 }
