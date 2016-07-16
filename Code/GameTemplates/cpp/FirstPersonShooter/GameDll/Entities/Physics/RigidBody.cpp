@@ -21,16 +21,6 @@ class CRigidBodyRegistrator
 
 CRigidBodyRegistrator g_rigidBodyRegistrator;
 
-bool CRigidBody::Init(IGameObject *pGameObject)
-{
-	if(!ISimpleExtension::Init(pGameObject))
-		return false;
-
-	GetGameObject()->AcquireExtension("EntityNetworkController");
-
-	return true;
-}
-
 void CRigidBody::ProcessEvent(SEntityEvent &event)
 {
 	switch(event.event)
