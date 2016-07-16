@@ -52,7 +52,7 @@ public:
 	virtual EntityId SetChannelForMigratingPlayer(const char* name, uint16 channelID) override { return INVALID_ENTITYID; }
 	virtual void StoreMigratingPlayer(IActor* pActor) override {}
 	virtual bool IsTimeLimited() const override { return false; }
-	virtual bool OnCollision(const SGameCollision& event) override { return false; }
+	virtual bool OnCollision(const SGameCollision& event) override { return true; }
 	virtual void OnEntityReused(IEntity* pEntity, SEntitySpawnParams& params, EntityId prevId) override {}
 	virtual void ClientHit(const HitInfo& hitInfo) override {}
 	virtual void ServerHit(const HitInfo& hitInfo) override {}

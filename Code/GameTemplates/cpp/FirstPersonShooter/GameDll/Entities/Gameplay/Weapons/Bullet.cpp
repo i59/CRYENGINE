@@ -45,6 +45,11 @@ void CBullet::PostInit(IGameObject *pGameObject)
 
 	LoadMesh(geometrySlot, g_bulletRegistrator.m_pGeometry->GetString());
 
+	// Load the custom bullet material.
+	// This material has the 'mat_bullet' surface type applied, which is set up to play sounds on collision with 'mat_default' objects in Libs/MaterialEffects
+	auto *pBulletMaterial = gEnv->p3DEngine->GetMaterialManager()->LoadMaterial("Materials/bullet");
+	GetEntity()->SetMaterial(pBulletMaterial);
+
 	// Now create the physical representation of the entity
 	Physicalize();
 
