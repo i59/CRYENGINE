@@ -54,7 +54,7 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 			// Set turn rate as the difference between previous and new entity rotation
 			float turnAngle = Ang3::CreateRadZ(GetEntity()->GetForwardDir(), correctedOrientation.GetColumn1()) / ctx.fFrameTime;
 			float travelSpeed = playerDynamics.v.GetLength();
-			
+
 			// Set the travel speed based on the physics velocity magnitude
 			// Keep in mind that the maximum number for motion parameters is 10.
 			// If your velocity can reach a magnitude higher than this, divide by the maximum theoretical account and work with a 0 - 1 ratio.
@@ -166,6 +166,9 @@ void CPlayerAnimations::OnPlayerModelChanged()
 	const char *weaponJointName = m_pPlayer->GetCVars().m_pWeaponJointName->GetString();
 
 	m_weaponJointId = pCharacterInstance->GetIDefaultSkeleton().GetJointIDByName(weaponJointName);
+
+	// Disable movement coming from the animation (root joint offset), we control this entirely via physics
+	pCharacterInstance->GetISkeletonAnim()->SetAnimationDrivenMotion(1);
 }
 
 void CPlayerAnimations::ActivateMannequinContext(const char *contextName, ICharacterInstance &character, const SControllerDef &controllerDefinition, const IAnimationDatabase &animationDatabase)
