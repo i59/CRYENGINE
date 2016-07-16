@@ -18,13 +18,6 @@ CPlayerView::~CPlayerView()
 	GetGameObject()->ReleaseView(this);
 }
 
-bool CPlayerView::Init(IGameObject *pGameObject)
-{
-	SetGameObject(pGameObject);
-
-	return pGameObject->BindToNetwork();
-}
-
 void CPlayerView::PostInit(IGameObject *pGameObject)
 {
 	m_pPlayer = static_cast<CPlayer *>(pGameObject->QueryExtension("Player"));

@@ -9,13 +9,6 @@ CPlayerMovement::CPlayerMovement()
 {
 }
 
-bool CPlayerMovement::Init(IGameObject *pGameObject)
-{
-	SetGameObject(pGameObject);
-
-	return pGameObject->BindToNetwork();
-}
-
 void CPlayerMovement::PostInit(IGameObject *pGameObject)
 {
 	m_pPlayer = static_cast<CPlayer *>(pGameObject->QueryExtension("Player"));

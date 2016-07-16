@@ -16,12 +16,6 @@ class CSpawnPointRegistrator
 
 CSpawnPointRegistrator g_spawnerRegistrator;
 
-bool CSpawnPoint::Init(IGameObject* pGameObject)
-{
-	SetGameObject(pGameObject);
-	return pGameObject->BindToNetwork();
-}
-
 void CSpawnPoint::SpawnEntity(IEntity &otherEntity)
 {
 	otherEntity.SetWorldTM(GetEntity()->GetWorldTM());

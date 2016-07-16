@@ -17,7 +17,6 @@ public:
 	virtual ~CPlayerAnimations();
 
 	// ISimpleExtension
-	virtual bool Init(IGameObject* pGameObject) override;
 	virtual void PostInit(IGameObject* pGameObject) override;
 
 	virtual void Update(SEntityUpdateContext& ctx, int updateSlot) override;

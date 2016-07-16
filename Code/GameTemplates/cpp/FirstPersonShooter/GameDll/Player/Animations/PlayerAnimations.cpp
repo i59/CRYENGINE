@@ -19,13 +19,6 @@ CPlayerAnimations::~CPlayerAnimations()
 	SAFE_DELETE(m_pAnimationContext);
 }
 
-bool CPlayerAnimations::Init(IGameObject *pGameObject)
-{
-	SetGameObject(pGameObject);
-
-	return pGameObject->BindToNetwork();
-}
-
 void CPlayerAnimations::PostInit(IGameObject *pGameObject)
 {
 	m_pPlayer = static_cast<CPlayer *>(pGameObject->QueryExtension("Player"));

@@ -16,7 +16,6 @@ public:
 	virtual ~CPlayerView();
 
 	// ISimpleExtension
-	virtual bool Init(IGameObject* pGameObject) override;
 	virtual void PostInit(IGameObject* pGameObject) override;
 
 	virtual void HandleEvent(const SGameObjectEvent &event) override;

@@ -5,13 +5,6 @@
 
 #include "Entities/Gameplay/Weapons/ISimpleWeapon.h"
 
-bool CPlayerInput::Init(IGameObject *pGameObject)
-{
-	SetGameObject(pGameObject);
-
-	return pGameObject->BindToNetwork();
-}
-
 void CPlayerInput::PostInit(IGameObject *pGameObject)
 {
 	const int requiredEvents[] = { eGFE_BecomeLocalPlayer };
