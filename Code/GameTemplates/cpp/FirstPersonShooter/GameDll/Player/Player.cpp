@@ -23,7 +23,7 @@ class CPlayerRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterGameObject<CPlayer>("Player", "", 0);
+		CGameFactory::RegisterGameObject<CPlayer>("Player");
 
 		CGameFactory::RegisterGameObjectExtension<CPlayerMovement>("PlayerMovement");
 		CGameFactory::RegisterGameObjectExtension<CPlayerInput>("PlayerInput");

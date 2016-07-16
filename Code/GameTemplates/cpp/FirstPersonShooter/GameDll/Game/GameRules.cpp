@@ -20,7 +20,7 @@ class CRulesRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterGameObject<CGameRules>("GameRules", "", 0);
+		CGameFactory::RegisterGameObject<CGameRules>("GameRules");
 
 		IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
 

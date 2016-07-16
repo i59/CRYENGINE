@@ -10,7 +10,7 @@ class CSpawnPointRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterNativeEntity<CSpawnPoint>("SpawnPoint", "Gameplay", "");
+		CGameFactory::RegisterNativeEntity<CSpawnPoint>("SpawnPoint", "Gameplay");
 	}
 };
 

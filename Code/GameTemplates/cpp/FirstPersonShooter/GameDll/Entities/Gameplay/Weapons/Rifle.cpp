@@ -8,7 +8,7 @@ class CRifleRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterGameObject<CRifle>("Rifle", "", 0);
+		CGameFactory::RegisterGameObject<CRifle>("Rifle");
 
 		RegisterCVars();
 	}

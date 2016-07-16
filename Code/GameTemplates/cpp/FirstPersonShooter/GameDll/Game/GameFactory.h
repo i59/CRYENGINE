@@ -40,12 +40,11 @@ public:
 	static void RegisterFlowNodes();
 
 	template<class T>
-	static void RegisterGameObject(const char *name, const char *script, uint32 flags = 0)
+	static void RegisterGameObject(const char *name, uint32 flags = 0)
 	{
 		bool registerClass = ((flags & eGORF_NoEntityClass) == 0);
 		IEntityClassRegistry::SEntityClassDesc clsDesc;
 		clsDesc.sName = name;
-		clsDesc.sScriptFile = script;
 	
 		static CObjectCreator<T> _creator;
 
@@ -62,11 +61,11 @@ public:
 	template<class T>
 	static void RegisterGameObjectExtension(const char *name)
 	{
-		RegisterGameObject<T>(name, "", eGORF_NoEntityClass);
+		RegisterGameObject<T>(name, eGORF_NoEntityClass);
 	}
 
 	template<class T>
-	static void RegisterNativeEntity(const char *name, const char *path, const char *editorIcon, uint32 flags = 0, SNativeEntityPropertyInfo *pProperties = nullptr, uint32 numProperties = 0)
+	static void RegisterNativeEntity(const char *name, const char *path, const char *editorIcon = "", uint32 flags = 0, SNativeEntityPropertyInfo *pProperties = nullptr, uint32 numProperties = 0)
 	{
 		const bool registerClass = ((flags & eGORF_NoEntityClass) == 0);
 		IEntityClassRegistry::SEntityClassDesc clsDesc;

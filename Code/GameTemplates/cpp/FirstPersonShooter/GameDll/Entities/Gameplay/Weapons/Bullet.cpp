@@ -8,7 +8,7 @@ class CBulletRegistrator
 {
 	virtual void Register() override
 	{
-		CGameFactory::RegisterGameObject<CBullet>("Bullet", "", 0);
+		CGameFactory::RegisterGameObject<CBullet>("Bullet");
 
 		RegisterCVars();
 	}
