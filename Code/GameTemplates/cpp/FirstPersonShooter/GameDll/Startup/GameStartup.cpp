@@ -17,38 +17,6 @@ extern "C" IGameFramework * CreateGameFramework();
 
 #define DLL_INITFUNC_CREATEGAME "CreateGameFramework"
 
-#if CRY_PLATFORM_WINDOWS
-void debugLogCallStack()
-{
-	// Print call stack for each find.
-	const char* funcs[32];
-	int nCount = 32;
-
-	CryLogAlways("    ----- CallStack () -----");
-	gEnv->pSystem->debug_GetCallStack(funcs, nCount);
-	for (int i = 1; i < nCount; i++) // start from 1 to skip this function.
-	{
-		CryLogAlways("    %02d) %s", i, funcs[i]);
-	}
-}
-#endif
-
-void GameStartupErrorObserver::OnAssert(const char* condition, const char* message, const char* fileName, unsigned int fileLineNumber)
-{
-}
-
-void GameStartupErrorObserver::OnFatalError(const char* message)
-{
-	CryLogAlways("---FATAL ERROR: message:%s", message);
-
-#if CRY_PLATFORM_WINDOWS
-	gEnv->pSystem->debug_LogCallStack();
-	CryLogAlways("----------------------------------------");
-#endif
-}
-
-//////////////////////////////////////////////////////////////////////////
-
 CGameStartup* CGameStartup::Create()
 {
 	static char buff[sizeof(CGameStartup)];
@@ -103,7 +71,6 @@ IGameRef CGameStartup::Init(SSystemInitParams& startupParams)
 		GetISystem()->ExecuteCommandLine();
 
 	GetISystem()->GetISystemEventDispatcher()->RegisterListener(this);
-	GetISystem()->RegisterErrorObserver(&m_errorObsever);
 
 #if defined(CRY_UNIT_TESTING)
 	if (CryUnitTest::IUnitTestManager* pTestManager = GetISystem()->GetITestSystem()->GetIUnitTestManager())

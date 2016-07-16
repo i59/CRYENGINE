@@ -10,15 +10,6 @@
 
 extern HMODULE GetFrameworkDLL(const char* dllLocalDir);
 
-class GameStartupErrorObserver : public IErrorObserver
-{
-public:
-	// IErrorObserver
-	void OnAssert(const char* condition, const char* message, const char* fileName, unsigned int fileLineNumber) override;
-	void OnFatalError(const char* message) override;
-	// ~IErrorObserver
-};
-
 class CGameStartup : public IGameStartup, public ISystemEventListener
 {
 public:
@@ -51,12 +42,6 @@ private:
 
 	static void FullScreenCVarChanged(ICVar* pVar);
 
-#if CRY_PLATFORM_WINDOWS
-	// IWindowMessageHandler
-	bool HandleMessage(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam, LRESULT* pResult);
-	// ~IWindowMessageHandler
-#endif
-
 	IGame*                   m_pGame;
 	IGameRef                 m_gameRef;
 	bool                     m_quit;
@@ -68,5 +53,4 @@ private:
 	string                   m_reqModName;
 
 	IGameFramework*          m_pFramework;
-	GameStartupErrorObserver m_errorObsever;
 };
