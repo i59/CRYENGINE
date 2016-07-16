@@ -1,10 +1,9 @@
 {
 	"NoUberFile":
 	{
-		"DLL":
+		"Root":
 		[
 			"StdAfx.cpp",
-			"GameDll.cpp",
 			"StdAfx.h"
 		]
 	},

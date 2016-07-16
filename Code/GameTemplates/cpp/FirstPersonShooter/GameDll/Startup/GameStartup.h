@@ -13,6 +13,8 @@ extern HMODULE GetFrameworkDLL(const char* dllLocalDir);
 class CGameStartup : public IGameStartup, public ISystemEventListener
 {
 public:
+	CGameStartup();
+
 	// IGameStartup
 	virtual IGameRef    Init(SSystemInitParams& startupParams) override;
 	virtual void        Shutdown() override;
@@ -34,7 +36,6 @@ public:
 	static CGameStartup* Create();
 
 protected:
-	CGameStartup();
 	virtual ~CGameStartup();
 
 private:
@@ -48,7 +49,6 @@ private:
 	bool                     m_fullScreenCVarSetup;
 
 	HMODULE                  m_gameDll;
-	HMODULE                  m_frameworkDll;
 
 	string                   m_reqModName;
 

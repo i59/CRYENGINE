@@ -7,20 +7,24 @@
 #include <CryInput/IHardwareMouse.h>
 #include "Game/Game.h"
 
+#include "EditorSpecific/EditorGame.h"
+
 #if ENABLE_AUTO_TESTER
 static CAutoTester s_autoTesterSingleton;
 #endif
 
-#if defined(_LIB)
-extern "C" IGameFramework * CreateGameFramework();
-#endif
-
-#define DLL_INITFUNC_CREATEGAME "CreateGameFramework"
-
-CGameStartup* CGameStartup::Create()
+extern "C"
 {
-	static char buff[sizeof(CGameStartup)];
-	return new(buff) CGameStartup();
+	GAME_API IGameStartup* CreateGameStartup()
+	{
+		static char buff[sizeof(CGameStartup)];
+		return new(buff) CGameStartup();
+	}
+
+	GAME_API IEditorGame* CreateEditorGame()
+	{
+		return new CEditorGame();
+	}
 }
 
 CGameStartup::CGameStartup()
@@ -28,7 +32,6 @@ CGameStartup::CGameStartup()
 	m_gameRef(&m_pGame),
 	m_quit(false),
 	m_gameDll(0),
-	m_frameworkDll(nullptr),
 	m_pFramework(nullptr),
 	m_fullScreenCVarSetup(false)
 {
@@ -249,20 +252,46 @@ void CGameStartup::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR l
 	}
 }
 
+#if defined(_LIB)
+extern "C" IGameFramework * CreateGameFramework();
+#else
+static HMODULE s_frameworkDLL = nullptr;
+
+static void CleanupFrameworkDLL()
+{
+	assert(s_frameworkDLL);
+	CryFreeLibrary(s_frameworkDLL);
+	s_frameworkDLL = 0;
+}
+#endif
+
 bool CGameStartup::InitFramework(SSystemInitParams& startupParams)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Game Framework");
 
 #if !defined(_LIB)
-	m_frameworkDll = GetFrameworkDLL(startupParams.szBinariesDir);
+	if (!s_frameworkDLL)
+	{
+		if (startupParams.szBinariesDir && startupParams.szBinariesDir[0])
+		{
+			string dllName = PathUtil::Make(startupParams.szBinariesDir, GAME_FRAMEWORK_FILENAME);
+			s_frameworkDLL = CryLoadLibrary(dllName.c_str());
+		}
+		else
+		{
+			s_frameworkDLL = CryLoadLibrary(GAME_FRAMEWORK_FILENAME);
+		}
 
-	if (!m_frameworkDll)
+		atexit(CleanupFrameworkDLL);
+	}
+
+	if (!s_frameworkDLL)
 	{
 		CryFatalError("Failed to open the GameFramework DLL!");
 		return false;
 	}
 
-	IGameFramework::TEntryFunction CreateGameFramework = (IGameFramework::TEntryFunction)CryGetProcAddress(m_frameworkDll, DLL_INITFUNC_CREATEGAME);
+	IGameFramework::TEntryFunction CreateGameFramework = (IGameFramework::TEntryFunction)CryGetProcAddress(s_frameworkDLL, "CreateGameFramework");
 
 	if (!CreateGameFramework)
 	{
