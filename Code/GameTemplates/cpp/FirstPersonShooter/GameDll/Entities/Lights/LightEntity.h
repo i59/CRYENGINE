@@ -42,7 +42,7 @@ class CLightEntity
 
 public:
 	CLightEntity();
-	~CLightEntity() {}
+	virtual ~CLightEntity() {}
 
 	// CNativeEntityBase
 	virtual void ProcessEvent(SEntityEvent& event) override;

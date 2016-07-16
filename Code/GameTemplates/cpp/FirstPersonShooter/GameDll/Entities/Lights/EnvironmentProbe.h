@@ -44,7 +44,7 @@ public:
 
 public:
 	CEnvironmentProbeEntity();
-	~CEnvironmentProbeEntity() {}
+	virtual ~CEnvironmentProbeEntity() {}
 
 	// CNativeEntityBase
 	virtual void ProcessEvent(SEntityEvent& event) override;

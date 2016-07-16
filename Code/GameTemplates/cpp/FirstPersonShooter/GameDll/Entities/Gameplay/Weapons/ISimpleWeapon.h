@@ -7,6 +7,8 @@
 ////////////////////////////////////////////////////////
 struct ISimpleWeapon : public ISimpleExtension
 {
+	virtual ~ISimpleWeapon() {}
+
 	// Call to request that the weapon is fired
 	virtual void RequestFire() = 0;
 };

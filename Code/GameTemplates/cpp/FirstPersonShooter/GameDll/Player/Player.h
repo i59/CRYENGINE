@@ -60,8 +60,6 @@ public:
 	virtual void HandleEvent(const SGameObjectEvent &event) override;
 	virtual void ProcessEvent(SEntityEvent& event) override;
 
-	virtual void Release() override;
-
 	virtual void SetHealth(float health) override;
 	virtual float GetHealth() const override { return m_bAlive ? GetMaxHealth() : 0.f; }
 	// ~ISimpleActor

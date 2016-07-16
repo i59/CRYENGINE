@@ -15,8 +15,6 @@ public:
 	// ISimpleExtension	
 	virtual void PostInit(IGameObject *pGameObject) override;
 	virtual void HandleEvent(const SGameObjectEvent &event) override;
-
-	virtual void Release() override;
 	// ~ISimpleExtension
 
 protected:

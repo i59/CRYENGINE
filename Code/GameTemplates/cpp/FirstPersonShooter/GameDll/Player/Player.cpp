@@ -149,11 +149,6 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 	}
 }
 
-void CPlayer::Release()
-{
-	ISimpleActor::Release();
-}
-
 void CPlayer::SetHealth(float health)
 {
 	// Note that this implementation does not handle the concept of death, SetHealth(0) will still revive the player.

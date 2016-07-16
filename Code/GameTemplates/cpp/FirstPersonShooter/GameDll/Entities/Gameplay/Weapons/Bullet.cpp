@@ -85,8 +85,3 @@ void CBullet::Physicalize()
 
 	GetEntity()->Physicalize(physParams);
 }
-
-void CBullet::Release()
-{
-	ISimpleExtension::Release();
-}

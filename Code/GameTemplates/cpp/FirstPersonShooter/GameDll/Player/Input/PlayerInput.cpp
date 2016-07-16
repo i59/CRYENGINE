@@ -47,11 +47,6 @@ void CPlayerInput::HandleEvent(const SGameObjectEvent &event)
 	}
 }
 
-void CPlayerInput::Release()
-{
-	ISimpleExtension::Release();
-}
-
 void CPlayerInput::Update(SEntityUpdateContext &ctx, int updateSlot)
 {
 	// Start by updating look dir

@@ -9,10 +9,10 @@ class CRifle
 	: public CGameObjectExtensionHelper<CRifle, ISimpleWeapon>
 {
 public:
+	virtual ~CRifle() {}
+
 	// ISimpleExtension	
 	virtual void PostInit(IGameObject *pGameObject) override;
-	
-	virtual void Release() override;
 	// ~ISimpleExtension
 
 	// IWeapon

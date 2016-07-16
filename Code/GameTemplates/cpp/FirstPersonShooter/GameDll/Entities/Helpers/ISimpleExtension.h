@@ -30,6 +30,5 @@ struct ISimpleExtension : public IGameObjectExtension
 	virtual ComponentEventPriority GetEventPriority(const int eventID) const override {return EEntityEventPriority_GameObject;}
 	//~IGameObjectExtension
 
-	ISimpleExtension() {}
 	virtual ~ISimpleExtension() {}
 };

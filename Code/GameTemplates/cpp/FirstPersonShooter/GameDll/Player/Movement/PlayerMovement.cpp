@@ -66,11 +66,6 @@ void CPlayerMovement::Dephysicalize()
 	GetEntity()->Physicalize(physParams);
 }
 
-void CPlayerMovement::Release()
-{
-	ISimpleExtension::Release();
-}
-
 void CPlayerMovement::Update(SEntityUpdateContext &ctx, int updateSlot)
 {
 	if(m_pPlayer->IsDead())

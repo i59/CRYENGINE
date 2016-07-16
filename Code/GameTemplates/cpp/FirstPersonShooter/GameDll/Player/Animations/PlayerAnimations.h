@@ -23,8 +23,6 @@ public:
 	virtual void Update(SEntityUpdateContext& ctx, int updateSlot) override;
 
 	virtual void ProcessEvent(SEntityEvent& event) override;
-
-	virtual void Release() override;
 	// ~ISimpleExtension
 
 	void OnPlayerModelChanged();

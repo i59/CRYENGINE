@@ -11,8 +11,7 @@ class CNativeEntityBase
 	: public ISimpleExtension
 {
 public:
-	CNativeEntityBase() {}
-	~CNativeEntityBase() {}
+	virtual ~CNativeEntityBase() {}
 
 	// Retrieves the current string value of a property
 	const char *GetPropertyValue(int index) const;

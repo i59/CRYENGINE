@@ -12,7 +12,7 @@ public:
 	typedef std::unordered_map<int, string> TPropertyStorage;
 
 	CNativeEntityPropertyHandler(SNativeEntityPropertyInfo *pProperties, int numProperties, uint32 scriptFlags);
-	~CNativeEntityPropertyHandler();
+	virtual ~CNativeEntityPropertyHandler();
 
 	// IEntityPropertyHandler
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const { pSizer->Add(m_pProperties); }

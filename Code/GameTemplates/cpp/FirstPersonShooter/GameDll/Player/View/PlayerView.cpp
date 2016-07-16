@@ -88,8 +88,3 @@ void CPlayerView::UpdateView(SViewParams &viewParams)
 		viewParams.position += entity.GetWorldRotation().GetColumn2() * m_pPlayer->GetCVars().m_playerEyeHeight;
 	}
 }
-
-void CPlayerView::Release()
-{
-	ISimpleExtension::Release();
-}

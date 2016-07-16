@@ -18,14 +18,11 @@ public:
 	};
 
 public:
-	CRigidBody();
-	virtual ~CRigidBody();
+	virtual ~CRigidBody() {}
 
 	// ISimpleExtension	
 	virtual bool Init(IGameObject *pGameObject) override;
 	virtual void ProcessEvent(SEntityEvent &event) override;
-	
-	virtual void Release() override;
 	// ~ISimpleExtension
 
 protected:

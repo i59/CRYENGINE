@@ -56,8 +56,3 @@ void CRifle::RequestFire()
 	// Spawn the entity, bullet is propelled in CBullet based on the rotation and position here
 	gEnv->pEntitySystem->SpawnEntity(spawnParams);
 }
-
-void CRifle::Release()
-{
-	ISimpleExtension::Release();
-}

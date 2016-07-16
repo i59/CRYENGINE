@@ -174,8 +174,3 @@ void CPlayerAnimations::ActivateMannequinContext(const char *contextName, const 
 	// can change during the lifetime of an action controller.
 	m_pActionController->SetScopeContext(scopeContextId, entity, pCharacterInstance, &animationDatabase);
 }
-
-void CPlayerAnimations::Release()
-{
-	ISimpleExtension::Release();
-}

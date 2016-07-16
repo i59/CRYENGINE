@@ -21,14 +21,6 @@ class CRigidBodyRegistrator
 
 CRigidBodyRegistrator g_rigidBodyRegistrator;
 
-CRigidBody::CRigidBody()
-{
-}
-
-CRigidBody::~CRigidBody()
-{
-}
-
 bool CRigidBody::Init(IGameObject *pGameObject)
 {
 	if(!ISimpleExtension::Init(pGameObject))
@@ -76,9 +68,4 @@ void CRigidBody::Reset()
 
 		GetEntity()->Physicalize(physicalizationParams);
 	}
-}
-
-void CRigidBody::Release()
-{
-	ISimpleExtension::Release();
 }
