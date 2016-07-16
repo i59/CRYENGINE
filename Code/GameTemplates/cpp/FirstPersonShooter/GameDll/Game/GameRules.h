@@ -3,16 +3,6 @@
 
 #include <IGameRulesSystem.h>
 
-class CPlayer;
-
-struct IUsableEntity
-{
-	virtual void RequestUse(CPlayer &player) = 0;
-	virtual void OnUsed(CPlayer &player) = 0;
-};
-
-#define MAX_PLAYERS 2
-
 class CGameRules : public CGameObjectExtensionHelper<CGameRules, IGameRules, 1>
 {
 public:
