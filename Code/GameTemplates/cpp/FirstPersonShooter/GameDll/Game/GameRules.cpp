@@ -24,8 +24,13 @@ class CRulesRegistrator
 
 		IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
 
-		pGameFramework->GetIGameRulesSystem()->RegisterGameRules(GAMERULES_NAME, "GameRules");
-		pGameFramework->GetIGameRulesSystem()->AddGameRulesAlias(GAMERULES_NAME, GAMERULES_NAME_SHORT);
+		// Get the default game rules name
+		// Note that this is not necessary, feel free to replace your game rules name with a custom string here
+		// It is possible to have multiple game rules implementations registered.
+		ICVar *pDefaultGameRulesVar = gEnv->pConsole->GetCVar("sv_gamerulesdefault");
+
+		pGameFramework->GetIGameRulesSystem()->RegisterGameRules(pDefaultGameRulesVar->GetString(), "GameRules");
+		pGameFramework->GetIGameRulesSystem()->AddGameRulesAlias(pDefaultGameRulesVar->GetString(), pDefaultGameRulesVar->GetString());
 	}
 };
 

@@ -190,7 +190,10 @@ void CEditorGame::OnBeforeLevelLoad()
 {
 	EnablePlayer(false);
 	ConfigureNetContext(true);
-	m_pGame->GetIGameFramework()->GetIGameRulesSystem()->CreateGameRules(GAMERULES_NAME);
+
+	ICVar *pDefaultGameRulesVar = gEnv->pConsole->GetCVar("sv_gamerulesdefault");
+
+	m_pGame->GetIGameFramework()->GetIGameRulesSystem()->CreateGameRules(pDefaultGameRulesVar->GetString());
 	m_pGame->GetIGameFramework()->GetILevelSystem()->OnLoadingStart(0);
 }
 

@@ -3,9 +3,6 @@
 
 #include <IGameRulesSystem.h>
 
-#define GAMERULES_NAME "SinglePlayer"
-#define GAMERULES_NAME_SHORT "sp"
-
 class CPlayer;
 
 struct IUsableEntity
