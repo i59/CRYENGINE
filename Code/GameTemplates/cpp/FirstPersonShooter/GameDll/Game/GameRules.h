@@ -19,7 +19,6 @@ struct IUsableEntity
 class CGameRules : public CGameObjectExtensionHelper<CGameRules, IGameRules, 1>
 {
 public:
-	CGameRules();
 	virtual ~CGameRules();
 
 	// IGameObjectExtension
@@ -43,7 +42,7 @@ public:
 	virtual void SetAuthority(bool auth) override {}
 	virtual void PostUpdate(float frameTime) override {}
 	virtual void PostRemoteSpawn() override {}
-	virtual void GetMemoryUsage(ICrySizer* s) const override;
+	virtual void GetMemoryUsage(ICrySizer* s) const override { s->Add(*this); }
 	// ~IGameObjectExtension
 
 	// IGameRules

@@ -31,10 +31,6 @@ class CRulesRegistrator
 
 CRulesRegistrator g_gameRulesRegistrator;
 
-CGameRules::CGameRules()
-{
-}
-
 CGameRules::~CGameRules()
 {
 	gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->SetCurrentGameRules(nullptr);
@@ -56,6 +52,9 @@ bool CGameRules::OnClientConnect(int channelId, bool isReset)
 {
 	auto *pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
 	
+	// Called when a new client connects to the server
+	// Occurs during level load for the local player
+	// In this case we create a player called "DefaultPlayer", and use the "Player" entity class registered in Player.cpp
 	return pActorSystem->CreateActor(channelId, "DefaultPlayer", "Player", ZERO, IDENTITY, Vec3(1, 1, 1)) != nullptr;
 }
 
@@ -108,9 +107,4 @@ bool CGameRules::OnClientEnteredGame(int channelId, bool isReset)
 	}
 
 	return true;
-}
-
-void CGameRules::GetMemoryUsage(ICrySizer* s) const
-{
-	s->Add(*this);
 }

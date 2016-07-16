@@ -21,6 +21,7 @@ CAutoRegFlowNodeBaseZero *CAutoRegFlowNodeBaseZero::m_pLast = nullptr;
 
 void CGameFactory::Init()
 {
+	// Register entities
 	if(IEntityRegistrator::g_pFirst != nullptr)
 	{
 		do
