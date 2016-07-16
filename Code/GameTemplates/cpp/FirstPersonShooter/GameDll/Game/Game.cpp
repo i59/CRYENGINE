@@ -6,13 +6,6 @@
 #include "Game.h"
 #include "GameFactory.h"
 
-#include "FlowNodes/Helpers/FlowBaseNode.h"
-
-
-CAutoRegFlowNodeBaseZero* CAutoRegFlowNodeBaseZero::m_pFirst = nullptr;
-CAutoRegFlowNodeBaseZero* CAutoRegFlowNodeBaseZero::m_pLast = nullptr;
-
-
 CGame::CGame()
 	: m_pGameFramework(nullptr)
 {
@@ -40,41 +33,18 @@ bool CGame::Init(IGameFramework* pFramework)
 
 void CGame::RegisterGameFlowNodes()
 {
-	IFlowSystem* pFlowSystem = m_pGameFramework->GetIFlowSystem();
-	if (pFlowSystem)
-	{
-		CAutoRegFlowNodeBaseZero* pFactory = CAutoRegFlowNodeBaseZero::m_pFirst;
-
-		while (pFactory)
-		{
-			pFlowSystem->RegisterType(pFactory->m_sClassName, pFactory);
-			pFactory = pFactory->m_pNext;
-		}
-
-		CGameFactory::RegisterEntityFlowNodes();
-	}
+	CGameFactory::RegisterFlowNodes();
 }
 
 int CGame::Update(bool haveFocus, unsigned int updateFlags)
 {
 	const bool bRun = m_pGameFramework->PreUpdate(haveFocus, updateFlags);
+
+	// Perform update of game-specific systems here
+
 	m_pGameFramework->PostUpdate(haveFocus, updateFlags);
+	
 	return bRun ? 1 : 0;
-}
-
-void CGame::Shutdown()
-{
-	this->~CGame();
-}
-
-void CGame::GetMemoryStatistics(ICrySizer* s)
-{
-	s->Add(*this);
-}
-
-const char* CGame::GetLongName()
-{
-	return GetName();
 }
 
 const char* CGame::GetName()

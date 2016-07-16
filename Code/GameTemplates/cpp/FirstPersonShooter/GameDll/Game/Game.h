@@ -16,14 +16,14 @@ public:
 	// IGame
 	virtual bool Init(IGameFramework *pFramework) override;
 	virtual bool CompleteInit() override { return true; };
-	virtual void Shutdown() override;
+	virtual void Shutdown() override { this->~CGame(); }
 	virtual int Update(bool haveFocus, unsigned int updateFlags) override;
 	virtual void EditorResetGame(bool bStart) override {}
 	virtual void PlayerIdSet(EntityId playerId) override {}
 	virtual IGameFramework* GetIGameFramework() override { return m_pGameFramework; }
-	virtual const char* GetLongName() override;
+	virtual const char* GetLongName() override { return GetName(); }
 	virtual const char* GetName() override;
-	virtual void GetMemoryStatistics(ICrySizer* s) override;
+	virtual void GetMemoryStatistics(ICrySizer* s) override { s->Add(*this); }
 	virtual void OnClearPlayerIds() override {}
 	virtual IGame::TSaveGameName CreateSaveGameName() override { return TSaveGameName(); }
 	virtual const char* GetMappedLevelName(const char *levelName) const override { return ""; }

@@ -9,11 +9,15 @@
 #include "Entities/Helpers/NativeEntityPropertyHandling.h"
 
 #include "FlowNodes/Helpers/FlowGameEntityNode.h"
+#include "FlowNodes/Helpers/FlowBaseNode.h"
 
 std::map<string, CGameEntityNodeFactory*> CGameFactory::s_flowNodeFactories;
 
 IEntityRegistrator *IEntityRegistrator::g_pFirst = nullptr;
 IEntityRegistrator *IEntityRegistrator::g_pLast = nullptr;
+
+CAutoRegFlowNodeBaseZero *CAutoRegFlowNodeBaseZero::m_pFirst = nullptr;
+CAutoRegFlowNodeBaseZero *CAutoRegFlowNodeBaseZero::m_pLast = nullptr;
 
 void CGameFactory::Init()
 {
@@ -29,8 +33,9 @@ void CGameFactory::Init()
 	}
 }
 
-void CGameFactory::RegisterEntityFlowNodes()
+void CGameFactory::RegisterFlowNodes()
 {
+	// Start with registering the entity nodes
 	IFlowSystem* pFlowSystem = gEnv->pGame->GetIGameFramework()->GetIFlowSystem();
 	std::map<string, CGameEntityNodeFactory*>::iterator it = s_flowNodeFactories.begin(), end = s_flowNodeFactories.end();
 	for(; it != end; ++it)
@@ -39,6 +44,14 @@ void CGameFactory::RegisterEntityFlowNodes()
 	}
 
 	stl::free_container(s_flowNodeFactories);
+
+	// Now register the regular nodes
+	CAutoRegFlowNodeBaseZero* pFactory = CAutoRegFlowNodeBaseZero::m_pFirst;
+	while (pFactory)
+	{
+		pFlowSystem->RegisterType(pFactory->m_sClassName, pFactory);
+		pFactory = pFactory->m_pNext;
+	}
 }
 
 CGameEntityNodeFactory &CGameFactory::RegisterEntityFlowNode(const char *className)

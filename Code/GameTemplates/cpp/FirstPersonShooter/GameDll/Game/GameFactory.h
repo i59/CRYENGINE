@@ -37,7 +37,7 @@ public:
 	};
 
 	static void Init();
-	static void RegisterEntityFlowNodes();
+	static void RegisterFlowNodes();
 
 	template<class T>
 	static void RegisterGameObject(const char *name, const char *script, uint32 flags = 0)
