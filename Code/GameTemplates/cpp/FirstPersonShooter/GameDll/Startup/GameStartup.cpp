@@ -114,11 +114,6 @@ IGameRef CGameStartup::Reset()
 	return nullptr;
 }
 
-void CGameStartup::Shutdown()
-{
-	this->~CGameStartup();
-}
-
 int CGameStartup::Update(bool haveFocus, unsigned int updateFlags)
 {
 	// The frame profile system already creates an "overhead" profile label
@@ -251,20 +246,17 @@ bool CGameStartup::InitFramework(SSystemInitParams& startupParams)
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Init Game Framework");
 
 #if !defined(_LIB)
-	if (!s_frameworkDLL)
+	if (startupParams.szBinariesDir && startupParams.szBinariesDir[0])
 	{
-		if (startupParams.szBinariesDir && startupParams.szBinariesDir[0])
-		{
-			string dllName = PathUtil::Make(startupParams.szBinariesDir, GAME_FRAMEWORK_FILENAME);
-			s_frameworkDLL = CryLoadLibrary(dllName.c_str());
-		}
-		else
-		{
-			s_frameworkDLL = CryLoadLibrary(GAME_FRAMEWORK_FILENAME);
-		}
-
-		atexit(CleanupFrameworkDLL);
+		string dllName = PathUtil::Make(startupParams.szBinariesDir, GAME_FRAMEWORK_FILENAME);
+		s_frameworkDLL = CryLoadLibrary(dllName.c_str());
 	}
+	else
+	{
+		s_frameworkDLL = CryLoadLibrary(GAME_FRAMEWORK_FILENAME);
+	}
+
+	atexit(CleanupFrameworkDLL);
 
 	if (!s_frameworkDLL)
 	{

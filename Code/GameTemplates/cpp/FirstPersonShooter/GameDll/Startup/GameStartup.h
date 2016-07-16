@@ -6,7 +6,6 @@
 #include <CryCore/Platform/CryWindows.h>
 
 #define GAME_FRAMEWORK_FILENAME CryLibraryDefName("CryAction")
-#define GAME_WINDOW_CLASSNAME   "CRYENGINE"
 
 extern HMODULE GetFrameworkDLL(const char* dllLocalDir);
 
@@ -17,7 +16,7 @@ public:
 
 	// IGameStartup
 	virtual IGameRef    Init(SSystemInitParams& startupParams) override;
-	virtual void        Shutdown() override;
+	virtual void        Shutdown() override { this->~CGameStartup(); }
 	virtual int         Update(bool haveFocus, unsigned int updateFlags) override;
 	virtual bool        GetRestartLevel(char** levelName) override;
 	virtual const char* GetPatch() const override                              { return nullptr; }
@@ -32,8 +31,6 @@ public:
 	// ~ISystemEventListener
 
 	bool                 InitFramework(SSystemInitParams& startupParams);
-
-	static CGameStartup* Create();
 
 protected:
 	virtual ~CGameStartup();
