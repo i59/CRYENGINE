@@ -25,6 +25,7 @@ public:
 
 	// Gets the requested movement direction based on input data
 	Vec3 GetLocalMoveDirection() const;
+	bool IsOnGround() const { return m_bOnGround; }
 
 protected:
 	// Get the stats from latest physics thread update
