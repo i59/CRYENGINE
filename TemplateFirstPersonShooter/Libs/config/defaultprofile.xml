@@ -19,7 +19,5 @@
 		<action name="mouse_rotatepitch" keyboard="maxis_y" />
 		
 		<action name="shoot" onPress="1" onRelease="1" retriggerable="1" keyboard="mouse1"/>
-		
-		<action name="boost" onPress="1" onRelease="1" keyboard="lshift" xboxpad="xi_thumbl" ps4pad="pad_l3"/>
 	</actionmap>  
 </profile>
