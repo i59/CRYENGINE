@@ -42,11 +42,15 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 		if (pPhysEnt->GetStatus(&playerDynamics) != 0 && pCharacter != nullptr)
 		{
 			float travelSpeed = playerDynamics.v.GetLength2D();
-
+			float travelAngle = Ang3::CreateRadZ(GetEntity()->GetForwardDir(), playerDynamics.v.GetNormalized());
+			
 			// Set the travel speed based on the physics velocity magnitude
 			// Keep in mind that the maximum number for motion parameters is 10.
 			// If your velocity can reach a magnitude higher than this, divide by the maximum theoretical account and work with a 0 - 1 ratio.
 			pCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelSpeed, travelSpeed, 0.f);
+
+			// The travel angle in this template is only used to play the going backwards animation
+			pCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelAngle, travelAngle, 0.f);
 
 			// Update the Mannequin tags
 			m_pAnimationContext->state.Set(m_walkTagId, travelSpeed > 0.2f && m_pPlayer->GetMovement()->IsOnGround());
