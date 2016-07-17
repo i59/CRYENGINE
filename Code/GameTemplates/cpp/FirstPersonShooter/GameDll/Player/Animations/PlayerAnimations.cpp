@@ -3,6 +3,7 @@
 
 #include "Player/Player.h"
 #include "Player/Input/PlayerInput.h"
+#include "Player/Movement/PlayerMovement.h"
 
 #include "Entities/Gameplay/Weapons/ISimpleWeapon.h"
 
@@ -48,7 +49,7 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 			pCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelSpeed, travelSpeed, 0.f);
 
 			// Update the Mannequin tags
-			m_pAnimationContext->state.Set(m_walkTagId, travelSpeed > 0.2f);
+			m_pAnimationContext->state.Set(m_walkTagId, travelSpeed > 0.2f && m_pPlayer->GetMovement()->IsOnGround());
 
 			// Update the weapon's orientation to match ours
 			if (auto *pWeapon = m_pPlayer->GetCurrentWeapon())
