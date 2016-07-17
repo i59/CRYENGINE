@@ -104,10 +104,6 @@ void CPlayerInput::InitializeActionHandler()
 	m_actionHandler.AddHandler(ActionId("mouse_rotatepitch"), &CPlayerInput::OnActionMouseRotatePitch);
 
 	m_actionHandler.AddHandler(ActionId("shoot"), &CPlayerInput::OnActionShoot);
-
-#ifdef TEMPLATE_DEBUG
-	m_actionHandler.AddHandler(ActionId("boost"), &CPlayerInput::OnActionBoost);
-#endif
 }
 
 void CPlayerInput::OnAction(const ActionId &action, int activationMode, float value)
@@ -166,11 +162,3 @@ bool CPlayerInput::OnActionShoot(EntityId entityId, const ActionId& actionId, in
 
 	return true;
 }
-
-#ifdef TEMPLATE_DEBUG
-bool CPlayerInput::OnActionBoost(EntityId entityId, const ActionId& actionId, int activationMode, float value)
-{
-	HandleInputFlagChange(eInputFlag_DetachCamera, activationMode, eInputFlagType_Toggle);
-	return true;
-}
-#endif

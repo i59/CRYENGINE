@@ -53,17 +53,6 @@ void CPlayerView::UpdateView(SViewParams &viewParams)
 	// Start with changing view rotation to the requested mouse look orientation
 	viewParams.rotation = Quat(m_pPlayer->GetInput()->GetLookOrientation());
 
-#ifdef TEMPLATE_DEBUG
-	auto inputFlags = m_pPlayer->GetInput()->GetInputFlags();
-
-	if((inputFlags & CPlayerInput::eInputFlag_DetachCamera) != 0)
-	{
-		viewParams.position += viewParams.rotation * m_pPlayer->GetMovement()->GetLocalMoveDirection();
-
-		return;
-	}
-#endif
-
 	if (auto *pCharacter = entity.GetCharacter(CPlayer::eGeometry_FirstPerson))
 	{
 		const QuatT &cameraOrientation = pCharacter->GetISkeletonPose()->GetAbsJointByID(m_cameraJointId);
