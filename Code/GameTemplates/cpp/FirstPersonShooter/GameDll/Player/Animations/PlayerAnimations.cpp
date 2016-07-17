@@ -40,7 +40,7 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 		pe_status_dynamics playerDynamics;
 		if (pPhysEnt->GetStatus(&playerDynamics) != 0 && pCharacter != nullptr)
 		{
-			float travelSpeed = playerDynamics.v.GetLength();
+			float travelSpeed = playerDynamics.v.GetLength2D();
 
 			// Set the travel speed based on the physics velocity magnitude
 			// Keep in mind that the maximum number for motion parameters is 10.
