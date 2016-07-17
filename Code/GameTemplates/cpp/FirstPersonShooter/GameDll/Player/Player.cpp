@@ -45,14 +45,16 @@ class CPlayerRegistrator
 
 		REGISTER_CVAR2("pl_eyeHeight", &m_playerEyeHeight, 0.935f, VF_CHEAT, "Height of the player's eyes from ground");
 
-		m_pFirstPersonGeometry = REGISTER_STRING("pl_firstPersonGeometry", "Objects/motusTest/motusbuild.cdf", VF_CHEAT, "Sets the first person geometry to load");
-		m_pCameraJointName = REGISTER_STRING("pl_cameraJointName", "head", VF_CHEAT, "Sets the name of the joint managing the player's view position");
+		REGISTER_CVAR2("pl_viewOffsetForward", &m_viewOffsetY, -1.5f, VF_CHEAT, "View offset along the forward axis from the player entity");
+		REGISTER_CVAR2("pl_viewOffsetUp", &m_viewOffsetZ, 2.f, VF_CHEAT, "View offset along the up axis from the player entity");
 
+		m_pThirdPersonGeometry = REGISTER_STRING("pl_thirdPersonGeometry", "Objects/motusTest/motusbuild.cdf", VF_CHEAT, "Sets the third person geometry to load");
+		
 		m_pWeaponJointName = REGISTER_STRING("pl_weaponJointName", "RT_weapon_R_default_target", VF_CHEAT, "Sets the name of the joint managing the weapon's position");
 
-		m_pFirstPersonMannequinContext = REGISTER_STRING("pl_firstPersonMannequinContext", "FirstPersonCharacter", VF_CHEAT, "The name of the FP context used in Mannequin");
-		m_pFirstPersonAnimationDatabase = REGISTER_STRING("pl_firstPersonAnimationDatabase", "Animations/Mannequin/ADB/FirstPerson.adb", VF_CHEAT, "Path to the animation database file to load");
-		m_pFirstPersonControllerDefinition = REGISTER_STRING("pl_firstPersonControllerDefinition", "Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml", VF_CHEAT, "Path to the controller definition file to load");
+		m_pThirdPersonMannequinContext = REGISTER_STRING("pl_thirdPersonMannequinContext", "FirstPersonCharacter", VF_CHEAT, "The name of the third person context used in Mannequin");
+		m_pThirdPersonAnimationDatabase = REGISTER_STRING("pl_thirdPersonAnimationDatabase", "Animations/Mannequin/ADB/FirstPerson.adb", VF_CHEAT, "Path to the animation database file to load");
+		m_pThirdPersonControllerDefinition = REGISTER_STRING("pl_thirdPersonControllerDefinition", "Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml", VF_CHEAT, "Path to the controller definition file to load");
 	}
 };
 
@@ -172,22 +174,8 @@ void CPlayer::SetHealth(float health)
 void CPlayer::SetPlayerModel()
 {
 	// Load the third person model
-	GetEntity()->LoadCharacter(eGeometry_FirstPerson, GetCVars().m_pFirstPersonGeometry->GetString());
+	GetEntity()->LoadCharacter(eGeometry_ThirdPerson, GetCVars().m_pThirdPersonGeometry->GetString());
 	
-	// Disable player model rendering for the local client
-	/*if (IsLocalClient())
-	{
-		GetEntity()->SetSlotFlags(eGeometry_FirstPerson, GetEntity()->GetSlotFlags(0) & ~ENTITY_SLOT_RENDER);
-
-		// Load the first person character
-		GetEntity()->LoadGeometry(eGeometry_FirstPerson, "Objects/primitive_pyramid.cgf");
-		Matrix34 tm = Matrix34::Create(Vec3(1, 1, 1), IDENTITY, Vec3(0, 0, 1));
-
-		GetEntity()->SetSlotLocalTM(eGeometry_FirstPerson, tm);
-	}*/
-
-	// Notify view so that the camera joint identifier can be re-cached
-	m_pView->OnPlayerModelChanged();
 	// Do the same for animations so that Mannequin data can be initialized
 	m_pAnimations->OnPlayerModelChanged();
 

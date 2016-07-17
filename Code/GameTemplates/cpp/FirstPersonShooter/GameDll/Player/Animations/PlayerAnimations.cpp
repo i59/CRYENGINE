@@ -45,7 +45,7 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 		// Re-calculate the quaternion based on the corrected look orientation
 		Quat correctedOrientation = Quat(CCamera::CreateOrientationYPR(ypr));
 
-		auto *pCharacter = m_pPlayer->GetEntity()->GetCharacter(CPlayer::eGeometry_FirstPerson);
+		auto *pCharacter = m_pPlayer->GetEntity()->GetCharacter(CPlayer::eGeometry_ThirdPerson);
 
 		// Get the player's velocity from physics
 		pe_status_dynamics playerDynamics;
@@ -114,7 +114,7 @@ void CPlayerAnimations::OnPlayerModelChanged()
 	IMannequin &mannequinInterface = gEnv->pGame->GetIGameFramework()->GetMannequinInterface();
 	IAnimationDatabaseManager &animationDatabaseManager = mannequinInterface.GetAnimationDatabaseManager();
 
-	const char *mannequinControllerDefinition = m_pPlayer->GetCVars().m_pFirstPersonControllerDefinition->GetString();
+	const char *mannequinControllerDefinition = m_pPlayer->GetCVars().m_pThirdPersonControllerDefinition->GetString();
 
 	// Load the Mannequin controller definition.
 	// This is owned by the animation database manager
@@ -125,8 +125,8 @@ void CPlayerAnimations::OnPlayerModelChanged()
 		return;
 	}
 
-	const char *mannequinContextName = m_pPlayer->GetCVars().m_pFirstPersonMannequinContext->GetString();
-	const char *animationDatabasePath = m_pPlayer->GetCVars().m_pFirstPersonAnimationDatabase->GetString();
+	const char *mannequinContextName = m_pPlayer->GetCVars().m_pThirdPersonMannequinContext->GetString();
+	const char *animationDatabasePath = m_pPlayer->GetCVars().m_pThirdPersonAnimationDatabase->GetString();
 
 	// Load the animation database
 	auto *pAnimationDatabase = animationDatabaseManager.Load(animationDatabasePath);
@@ -143,7 +143,7 @@ void CPlayerAnimations::OnPlayerModelChanged()
 	m_pActionController = mannequinInterface.CreateActionController(GetEntity(), *m_pAnimationContext);
 	CRY_ASSERT(m_pActionController != nullptr);
 
-	ICharacterInstance *pCharacterInstance = GetEntity()->GetCharacter(CPlayer::eGeometry_FirstPerson);
+	ICharacterInstance *pCharacterInstance = GetEntity()->GetCharacter(CPlayer::eGeometry_ThirdPerson);
 	CRY_ASSERT(pCharacterInstance != nullptr);
 
 	// Activate the Main context we'll be playing our animations in

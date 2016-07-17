@@ -24,7 +24,7 @@ class CPlayer
 public:
 	enum EGeometrySlots
 	{
-		eGeometry_FirstPerson = 0,
+		eGeometry_ThirdPerson = 0,
 	};
 
 	struct SExternalCVars
@@ -39,14 +39,16 @@ public:
 
 		float m_playerEyeHeight;
 
-		ICVar *m_pFirstPersonGeometry;
-		ICVar *m_pCameraJointName;
+		float m_viewOffsetY;
+		float m_viewOffsetZ;
 
+		ICVar *m_pThirdPersonGeometry;
+		
 		ICVar *m_pWeaponJointName;
 
-		ICVar *m_pFirstPersonMannequinContext;
-		ICVar *m_pFirstPersonAnimationDatabase;
-		ICVar *m_pFirstPersonControllerDefinition;
+		ICVar *m_pThirdPersonMannequinContext;
+		ICVar *m_pThirdPersonAnimationDatabase;
+		ICVar *m_pThirdPersonControllerDefinition;
 	};
 
 public:
