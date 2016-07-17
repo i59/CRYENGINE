@@ -26,6 +26,7 @@ public:
 	// Gets the requested movement direction based on input data
 	Vec3 GetLocalMoveDirection() const;
 	bool IsOnGround() const { return m_bOnGround; }
+	Vec3 GetGroundNormal() const { return m_groundNormal; }
 
 	void RequestJump();
 
@@ -38,4 +39,5 @@ protected:
 	CPlayer *m_pPlayer;
 
 	bool m_bOnGround;
+	Vec3 m_groundNormal;
 };
