@@ -4,7 +4,6 @@
 
 #include "StdAfx.h"
 #include "GameRules.h"
-#include <GameObjects/GameObject.h>
 
 #include "Game/GameFactory.h"
 
