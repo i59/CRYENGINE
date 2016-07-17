@@ -20,8 +20,6 @@ public:
 	//~ISimpleExtension
 
 	void Physicalize();
-	void Ragdollize();
-	void Dephysicalize();
 
 	// Gets the requested movement direction based on input data
 	Vec3 GetLocalMoveDirection() const;
