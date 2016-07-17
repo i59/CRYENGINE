@@ -26,11 +26,7 @@ public:
 		eInputFlag_MoveLeft = 1 << 0,
 		eInputFlag_MoveRight = 1 << 1,
 		eInputFlag_MoveForward = 1 << 2,
-		eInputFlag_MoveBack = 1 << 3,
-
-#ifdef TEMPLATE_DEBUG
-		eInputFlag_DetachCamera = 1 << 5,
-#endif
+		eInputFlag_MoveBack = 1 << 3
 	};
 
 public:
@@ -71,10 +67,6 @@ protected:
 	bool OnActionMouseRotatePitch(EntityId entityId, const ActionId& actionId, int activationMode, float value);
 	
 	bool OnActionShoot(EntityId entityId, const ActionId& actionId, int activationMode, float value);
-
-#ifdef TEMPLATE_DEBUG
-	bool OnActionBoost(EntityId entityId, const ActionId& actionId, int activationMode, float value);
-#endif 
 
 protected:
 	CPlayer *m_pPlayer;
