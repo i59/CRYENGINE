@@ -216,18 +216,6 @@ void CPlayer::SetPlayerModel()
 	// Load the third person model
 	GetEntity()->LoadCharacter(eGeometry_FirstPerson, GetCVars().m_pFirstPersonGeometry->GetString());
 	
-	// Disable player model rendering for the local client
-	/*if (IsLocalClient())
-	{
-		GetEntity()->SetSlotFlags(eGeometry_FirstPerson, GetEntity()->GetSlotFlags(0) & ~ENTITY_SLOT_RENDER);
-
-		// Load the first person character
-		GetEntity()->LoadGeometry(eGeometry_FirstPerson, "Objects/primitive_pyramid.cgf");
-		Matrix34 tm = Matrix34::Create(Vec3(1, 1, 1), IDENTITY, Vec3(0, 0, 1));
-
-		GetEntity()->SetSlotLocalTM(eGeometry_FirstPerson, tm);
-	}*/
-
 	// Notify view so that the camera joint identifier can be re-cached
 	m_pView->OnPlayerModelChanged();
 	// Do the same for animations so that Mannequin data can be initialized
