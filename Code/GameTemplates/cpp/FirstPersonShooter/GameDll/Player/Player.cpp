@@ -36,6 +36,7 @@ class CPlayerRegistrator
 	void RegisterCVars()
 	{
 		REGISTER_CVAR2("pl_moveSpeed", &m_moveSpeed, 20.5f, VF_CHEAT, "Speed at which the player moves");
+		REGISTER_CVAR2("pl_jumpHeight", &m_jumpHeight, 5.f, VF_CHEAT, "Height of a player's jump");
 
 		REGISTER_CVAR2("pl_eyeHeight", &m_playerEyeHeight, 0.935f, VF_CHEAT, "Height of the player's eyes from ground");
 

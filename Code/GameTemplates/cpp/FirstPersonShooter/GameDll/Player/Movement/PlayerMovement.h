@@ -26,6 +26,8 @@ public:
 	// Gets the requested movement direction based on input data
 	Vec3 GetLocalMoveDirection() const;
 
+	void RequestJump();
+
 protected:
 	// Get the stats from latest physics thread update
 	void GetLatestPhysicsStats(IPhysicalEntity &physicalEntity);

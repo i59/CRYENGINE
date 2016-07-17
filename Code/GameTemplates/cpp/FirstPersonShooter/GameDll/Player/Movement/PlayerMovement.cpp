@@ -97,6 +97,24 @@ void CPlayerMovement::UpdateMovementRequest(float frameTime, IPhysicalEntity &ph
 	}
 }
 
+void CPlayerMovement::RequestJump()
+{
+	if (!m_bOnGround)
+		return;
+
+	if (auto *pPhysicalEntity = GetEntity()->GetPhysics())
+	{
+		pe_action_move moveAction;
+		moveAction.iJump = 2;
+
+		moveAction.dir.x = 0;
+		moveAction.dir.y = 0;
+		moveAction.dir.z = m_pPlayer->GetCVars().m_jumpHeight;
+
+		pPhysicalEntity->Action(&moveAction);
+	}
+}
+
 Vec3 CPlayerMovement::GetLocalMoveDirection() const
 {
 	Vec3 moveDirection = ZERO;

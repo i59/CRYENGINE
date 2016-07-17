@@ -56,6 +56,7 @@ protected:
 protected:
 	bool OnActionMoveForward(EntityId entityId, const ActionId& actionId, int activationMode, float value);
 	bool OnActionMoveBack(EntityId entityId, const ActionId& actionId, int activationMode, float value);
+	bool OnActionJump(EntityId entityId, const ActionId& actionId, int activationMode, float value);
 
 	bool OnActionMouseRotateYaw(EntityId entityId, const ActionId& actionId, int activationMode, float value);
 	bool OnActionMouseRotatePitch(EntityId entityId, const ActionId& actionId, int activationMode, float value);

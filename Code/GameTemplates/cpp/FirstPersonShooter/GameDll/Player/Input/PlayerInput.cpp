@@ -2,6 +2,7 @@
 #include "PlayerInput.h"
 
 #include "Player/Player.h"
+#include "Player/Movement/PlayerMovement.h"
 
 #include "Entities/Gameplay/Weapons/ISimpleWeapon.h"
 
@@ -83,6 +84,8 @@ void CPlayerInput::InitializeActionHandler()
 	m_actionHandler.AddHandler(ActionId("moveleft"), &CPlayerInput::OnActionMoveBack);
 	m_actionHandler.AddHandler(ActionId("moveright"), &CPlayerInput::OnActionMoveForward);
 
+	m_actionHandler.AddHandler(ActionId("jump"), &CPlayerInput::OnActionJump);
+
 	m_actionHandler.AddHandler(ActionId("mouse_rotateyaw"), &CPlayerInput::OnActionMouseRotateYaw);
 	m_actionHandler.AddHandler(ActionId("mouse_rotatepitch"), &CPlayerInput::OnActionMouseRotatePitch);
 
@@ -105,6 +108,13 @@ bool CPlayerInput::OnActionMoveForward(EntityId entityId, const ActionId& action
 bool CPlayerInput::OnActionMoveBack(EntityId entityId, const ActionId& actionId, int activationMode, float value)
 {
 	HandleInputFlagChange(eInputFlag_MoveBack, activationMode);
+	return true;
+}
+
+bool CPlayerInput::OnActionJump(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	m_pPlayer->GetMovement()->RequestJump();
+
 	return true;
 }
 

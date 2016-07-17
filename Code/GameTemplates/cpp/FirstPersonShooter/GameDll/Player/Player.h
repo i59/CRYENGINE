@@ -30,6 +30,7 @@ public:
 	struct SExternalCVars
 	{
 		float m_moveSpeed;
+		float m_jumpHeight;
 
 		float m_playerEyeHeight;
 
