@@ -4,9 +4,9 @@
 		DefaultProperties can be override from command line
 	-->
 	<DefaultProperties
-		game="Puzzler"
-		launcher="Puzzler"
-		dedicated_server="Puzzler_Server"
+		game="TemplateFirstPersonShooter"
+		launcher="TemplateFirstPersonShooter"
+		dedicated_server="TemplateFirstPersonShooter_Server"
 		engine="Engine"
 		src="."
 		trg="Build_${p}"
@@ -64,7 +64,7 @@
 		<Job sourceroot="${src_game}\_FastLoad" targetroot="${trg_game}\_FastLoad" input="*.pak" copyonly="1"/>
 
 		<!-- Levels -->
-		<Job sourceroot="${src_game}\Levels\puzzel_one" targetroot="${trg_game}\Levels\puzzel_one" input="${level_types}" copyonly="1"/>
+		<Job sourceroot="${src_game}\Levels\example" targetroot="${trg_game}\Levels\example" input="${level_types}" copyonly="1"/>
 		
 		<!-- Localization -->
 		<Job sourceroot="${src_game}\Localization"  input="*.pak" targetroot="${trg_game}\Localization"  copyonly="1" />
@@ -154,7 +154,7 @@
 		
 		<Job sourceroot="${pak_game}" input="Scripts/*;Entities/*"  zip="${trg_game}\Scripts.pak" Zip_SizeSplit="1" Zip_MaxSize="1900000"/>
 		
-		<Job sourceroot="${src_game}" input="Sounds/*.fev;Sounds/*.fsb;Sounds/*.sfk;Sounds/*.xml;"  zip="${trg_game}\Sounds.pak" Zip_SizeSplit="1" Zip_MaxSize="1900000"/>
+		<Job sourceroot="${src_game}" input="Audio/*"  zip="${trg_game}\Audio.pak" Zip_SizeSplit="1" Zip_MaxSize="1900000"/>
 	</PakJob>
 	
 	<Run Job="CopyJob"/>
