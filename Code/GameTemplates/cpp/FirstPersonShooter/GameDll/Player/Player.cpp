@@ -45,7 +45,7 @@ class CPlayerRegistrator
 
 		REGISTER_CVAR2("pl_eyeHeight", &m_playerEyeHeight, 0.935f, VF_CHEAT, "Height of the player's eyes from ground");
 
-		m_pFirstPersonGeometry = REGISTER_STRING("pl_firstPersonGeometry", "Objects/motusTest/motusbuild.cdf", VF_CHEAT, "Sets the first person geometry to load");
+		m_pFirstPersonGeometry = REGISTER_STRING("pl_firstPersonGeometry", "Objects/Characters/SampleCharacter/firstperson.cdf", VF_CHEAT, "Sets the first person geometry to load");
 		m_pCameraJointName = REGISTER_STRING("pl_cameraJointName", "head", VF_CHEAT, "Sets the name of the joint managing the player's view position");
 
 		m_pWeaponJointName = REGISTER_STRING("pl_weaponJointName", "RT_weapon_R_default_target", VF_CHEAT, "Sets the name of the joint managing the weapon's position");
