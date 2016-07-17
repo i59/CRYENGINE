@@ -31,16 +31,10 @@ public:
 	{
 		float m_moveSpeed;
 
-		float m_rotationSpeedYaw;
-		float m_rotationSpeedPitch;
-
-		float m_rotationLimitsMinPitch;
-		float m_rotationLimitsMaxPitch;
-
 		float m_playerEyeHeight;
 
-		float m_viewOffsetY;
 		float m_viewOffsetZ;
+		float m_viewDistanceFromPlayer;
 
 		ICVar *m_pThirdPersonGeometry;
 		
@@ -76,6 +70,7 @@ public:
 	const SExternalCVars &GetCVars() const;
 
 protected:
+	void SelectSpawnPoint();
 	void SetPlayerModel();
 
 	void CreateWeapon(const char *name);

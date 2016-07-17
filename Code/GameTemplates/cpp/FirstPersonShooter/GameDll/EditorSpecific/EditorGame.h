@@ -24,7 +24,7 @@ public:
 	virtual void Shutdown() override;
 	virtual bool SetGameMode(bool bGameMode) override;
 	virtual IEntity* GetPlayer() override;
-	virtual void SetPlayerPosAng(Vec3 pos, Vec3 viewDir) override;
+	virtual void SetPlayerPosAng(Vec3 pos, Vec3 viewDir) override {}
 	virtual void HidePlayer(bool bHide) override;
 	virtual void OnBeforeLevelLoad() override;
 	virtual void OnAfterLevelLoad(const char* levelName, const char* levelFolder) override;

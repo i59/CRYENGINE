@@ -23,10 +23,8 @@ public:
 	enum EInputFlags
 		: TInputFlags
 	{
-		eInputFlag_MoveLeft = 1 << 0,
-		eInputFlag_MoveRight = 1 << 1,
-		eInputFlag_MoveForward = 1 << 2,
-		eInputFlag_MoveBack = 1 << 3
+		eInputFlag_MoveForward = 1 << 0,
+		eInputFlag_MoveBack = 1 << 1
 	};
 
 public:
@@ -49,8 +47,6 @@ public:
 	const TInputFlags GetInputFlags() const { return m_inputFlags; }
 	const Vec2 GetMouseDeltaRotation() const { return m_mouseDeltaRotation; }
 
-	const Quat &GetLookOrientation() const { return m_lookOrientation; }
-
 protected:
 	void InitializeActionHandler();
 
@@ -58,8 +54,6 @@ protected:
 
 	// Start actions below
 protected:
-	bool OnActionMoveLeft(EntityId entityId, const ActionId& actionId, int activationMode, float value);
-	bool OnActionMoveRight(EntityId entityId, const ActionId& actionId, int activationMode, float value);
 	bool OnActionMoveForward(EntityId entityId, const ActionId& actionId, int activationMode, float value);
 	bool OnActionMoveBack(EntityId entityId, const ActionId& actionId, int activationMode, float value);
 
@@ -74,9 +68,6 @@ protected:
 	TInputFlags m_inputFlags;
 
 	Vec2 m_mouseDeltaRotation;
-
-	// Should translate to head orientation in the future
-	Quat m_lookOrientation;
 
 	// Handler for actionmap events that maps actions to callbacks
 	TActionHandler<CPlayerInput> m_actionHandler;

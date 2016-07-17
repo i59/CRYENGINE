@@ -42,27 +42,12 @@ void CPlayerInput::HandleEvent(const SGameObjectEvent &event)
 
 void CPlayerInput::Update(SEntityUpdateContext &ctx, int updateSlot)
 {
-	// Start by updating look dir
-	Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(m_lookOrientation));
-	
-	ypr.x += m_mouseDeltaRotation.x * m_pPlayer->GetCVars().m_rotationSpeedYaw * ctx.fFrameTime;
-
-	// TODO: Perform soft clamp here instead of hard wall, should reduce rot speed in this direction when close to limit.
-	ypr.y = CLAMP(ypr.y + m_mouseDeltaRotation.y * m_pPlayer->GetCVars().m_rotationSpeedPitch * ctx.fFrameTime, m_pPlayer->GetCVars().m_rotationLimitsMinPitch, m_pPlayer->GetCVars().m_rotationLimitsMaxPitch);
-
-	ypr.z = 0;
-
-	m_lookOrientation = Quat(CCamera::CreateOrientationYPR(ypr));
-
-	// Reset every frame
-	m_mouseDeltaRotation = ZERO;
 }
 
 void CPlayerInput::OnPlayerRespawn()
 {
 	m_inputFlags = 0;
 	m_mouseDeltaRotation = ZERO;
-	m_lookOrientation = IDENTITY;
 }
 
 void CPlayerInput::HandleInputFlagChange(EInputFlags flags, int activationMode, EInputFlagType type)
@@ -95,10 +80,8 @@ void CPlayerInput::HandleInputFlagChange(EInputFlags flags, int activationMode, 
 
 void CPlayerInput::InitializeActionHandler()
 {
-	m_actionHandler.AddHandler(ActionId("moveleft"), &CPlayerInput::OnActionMoveLeft);
-	m_actionHandler.AddHandler(ActionId("moveright"), &CPlayerInput::OnActionMoveRight);
-	m_actionHandler.AddHandler(ActionId("moveforward"), &CPlayerInput::OnActionMoveForward);
-	m_actionHandler.AddHandler(ActionId("moveback"), &CPlayerInput::OnActionMoveBack);
+	m_actionHandler.AddHandler(ActionId("moveleft"), &CPlayerInput::OnActionMoveBack);
+	m_actionHandler.AddHandler(ActionId("moveright"), &CPlayerInput::OnActionMoveForward);
 
 	m_actionHandler.AddHandler(ActionId("mouse_rotateyaw"), &CPlayerInput::OnActionMouseRotateYaw);
 	m_actionHandler.AddHandler(ActionId("mouse_rotatepitch"), &CPlayerInput::OnActionMouseRotatePitch);
@@ -111,18 +94,6 @@ void CPlayerInput::OnAction(const ActionId &action, int activationMode, float va
 	// This function is called when inputs trigger action map events
 	// The handler below maps the event (see 'action') to a callback, further below in this file.
 	m_actionHandler.Dispatch(this, GetEntityId(), action, activationMode, value);
-}
-
-bool CPlayerInput::OnActionMoveLeft(EntityId entityId, const ActionId& actionId, int activationMode, float value)
-{
-	HandleInputFlagChange(eInputFlag_MoveLeft, activationMode);
-	return true;
-}
-
-bool CPlayerInput::OnActionMoveRight(EntityId entityId, const ActionId& actionId, int activationMode, float value)
-{
-	HandleInputFlagChange(eInputFlag_MoveRight, activationMode);
-	return true;
 }
 
 bool CPlayerInput::OnActionMoveForward(EntityId entityId, const ActionId& actionId, int activationMode, float value)

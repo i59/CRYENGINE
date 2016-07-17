@@ -8,11 +8,6 @@
 
 #include "Game/GameFactory.h"
 
-#include "Player/Player.h"
-#include "Entities/Gameplay/SpawnPoint.h"
-
-#include "FlowNodes/Helpers/FlowGameEntityNode.h"
-
 #include <IActorSystem.h>
 
 class CRulesRegistrator
@@ -74,41 +69,13 @@ void CGameRules::OnClientDisconnect(int channelId, EDisconnectionCause cause, co
 
 bool CGameRules::OnClientEnteredGame(int channelId, bool isReset)
 {
-	// We only handle default spawning below for the Launcher
-	// Editor has special logic in CEditorGame
-	if (gEnv->IsEditor())
-		return true;
-
 	auto *pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
 
 	auto *pActor = pActorSystem->GetActorByChannelId(channelId);
 	if(pActor != nullptr)
 	{
-		// Spawn at first default spawner
-		auto *pEntityIterator = gEnv->pEntitySystem->GetEntityIterator();
-		pEntityIterator->MoveFirst();
-
-		auto *pSpawnerClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("SpawnPoint");
-		auto extensionId = gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->GetID("SpawnPoint");
-
-		while (!pEntityIterator->IsEnd())
-		{
-			IEntity *pEntity = pEntityIterator->Next();
-			if(pEntity->GetClass() != pSpawnerClass)
-				continue;
-
-			auto *pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(pEntity->GetId());
-			if(pGameObject == nullptr)
-				continue;
-
-			auto *pSpawner = static_cast<CSpawnPoint *>(pGameObject->QueryExtension(extensionId));
-			if(pSpawner == nullptr)
-				continue;
-
-			pSpawner->SpawnEntity(*pActor->GetEntity());
-
-			break;
-		}
+		// Trigger actor revive
+		pActor->SetHealth(pActor->GetMaxHealth());
 	}
 
 	return true;

@@ -37,16 +37,10 @@ class CPlayerRegistrator
 	{
 		REGISTER_CVAR2("pl_moveSpeed", &m_moveSpeed, 20.5f, VF_CHEAT, "Speed at which the player moves");
 
-		REGISTER_CVAR2("pl_rotationSpeedYaw", &m_rotationSpeedYaw, 0.05f, VF_CHEAT, "Speed at which the player rotates entity yaw");
-		REGISTER_CVAR2("pl_rotationSpeedPitch", &m_rotationSpeedPitch, 0.05f, VF_CHEAT, "Speed at which the player rotates entity pitch");
-
-		REGISTER_CVAR2("pl_rotationLimitsMinPitch", &m_rotationLimitsMinPitch, -0.84f, VF_CHEAT, "Minimum entity pitch limit");
-		REGISTER_CVAR2("pl_rotationLimitsMaxPitch", &m_rotationLimitsMaxPitch, 1.5f, VF_CHEAT, "Maximum entity pitch limit");
-
 		REGISTER_CVAR2("pl_eyeHeight", &m_playerEyeHeight, 0.935f, VF_CHEAT, "Height of the player's eyes from ground");
 
-		REGISTER_CVAR2("pl_viewOffsetForward", &m_viewOffsetY, -1.5f, VF_CHEAT, "View offset along the forward axis from the player entity");
 		REGISTER_CVAR2("pl_viewOffsetUp", &m_viewOffsetZ, 2.f, VF_CHEAT, "View offset along the up axis from the player entity");
+		REGISTER_CVAR2("pl_viewDistanceFromPlayer", &m_viewDistanceFromPlayer, 5.f, VF_CHEAT, "Distance from view (camera) to player");
 
 		m_pThirdPersonGeometry = REGISTER_STRING("pl_thirdPersonGeometry", "Objects/motusTest/motusbuild.cdf", VF_CHEAT, "Sets the third person geometry to load");
 		
@@ -146,6 +140,9 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 
 void CPlayer::SetHealth(float health)
 {
+	// Find a spawn point and move the entity there
+	SelectSpawnPoint();
+
 	// Note that this implementation does not handle the concept of death, SetHealth(0) will still revive the player.
 	if (m_bAlive)
 		return;
@@ -154,9 +151,6 @@ void CPlayer::SetHealth(float health)
 
 	// Unhide the entity in case hidden by the Editor
 	GetEntity()->Hide(false);
-
-	// Make sure that the player spawns upright
-	GetEntity()->SetWorldTM(Matrix34::Create(Vec3(1, 1, 1), IDENTITY, GetEntity()->GetWorldPos()));
 
 	// Set the player geometry, this also triggers physics proxy creation
 	SetPlayerModel();
@@ -168,6 +162,35 @@ void CPlayer::SetHealth(float health)
 	if (m_pCurrentWeapon == nullptr)
 	{
 		CreateWeapon("Rifle");
+	}
+}
+
+void CPlayer::SelectSpawnPoint()
+{
+	// Spawn at first default spawner
+	auto *pEntityIterator = gEnv->pEntitySystem->GetEntityIterator();
+	pEntityIterator->MoveFirst();
+
+	auto *pSpawnerClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("SpawnPoint");
+	auto extensionId = gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->GetID("SpawnPoint");
+
+	while (!pEntityIterator->IsEnd())
+	{
+		IEntity *pEntity = pEntityIterator->Next();
+		if (pEntity->GetClass() != pSpawnerClass)
+			continue;
+
+		auto *pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(pEntity->GetId());
+		if (pGameObject == nullptr)
+			continue;
+
+		auto *pSpawner = static_cast<CSpawnPoint *>(pGameObject->QueryExtension(extensionId));
+		if (pSpawner == nullptr)
+			continue;
+
+		pSpawner->SpawnEntity(*GetEntity());
+
+		break;
 	}
 }
 

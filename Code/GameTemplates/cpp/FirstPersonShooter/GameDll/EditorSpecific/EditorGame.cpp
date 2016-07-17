@@ -110,15 +110,6 @@ IEntity* CEditorGame::GetPlayer()
 	return gEnv->pEntitySystem->GetEntity(LOCAL_PLAYER_ENTITY_ID);
 }
 
-void CEditorGame::SetPlayerPosAng(Vec3 pos, Vec3 viewDir)
-{
-	IEntity* pPlayer = GetPlayer();
-	if (pPlayer)
-	{
-		pPlayer->SetPosRotScale(pos, Quat::CreateRotationVDir(viewDir), Vec3(1.0f), ENTITY_XFORM_EDITOR);
-	}
-}
-
 void CEditorGame::HidePlayer(bool bHide)
 {
 	auto *pPlayer = GetPlayerActor();
