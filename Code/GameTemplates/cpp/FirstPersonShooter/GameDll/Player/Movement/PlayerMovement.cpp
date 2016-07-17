@@ -34,10 +34,10 @@ void CPlayerMovement::Physicalize()
 	// Specify the size of our cylinder
 	playerDimensions.sizeCollider = Vec3(0.45f, 0.45f, m_pPlayer->GetCVars().m_playerEyeHeight * 0.5f);
 
-	// Offset pivot upwards
-	playerDimensions.heightPivot = 1.f;
-
-	playerDimensions.heightCollider = 0.f;
+	// Keep pivot at the player's feet (defined in player geometry) 
+	playerDimensions.heightPivot = 0.f;
+	// Offset collider upwards
+	playerDimensions.heightCollider = 1.f;
 	playerDimensions.groundContactEps = 0.004f;
 
 	physParams.pPlayerDimensions = &playerDimensions;
