@@ -74,6 +74,7 @@ public:
 	const SExternalCVars &GetCVars() const;
 
 protected:
+	void SelectSpawnPoint();
 	void SetPlayerModel();
 
 	void CreateWeapon(const char *name);

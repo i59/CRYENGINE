@@ -144,6 +144,9 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 
 void CPlayer::SetHealth(float health)
 {
+	// Find a spawn point and move the entity there
+	SelectSpawnPoint();
+
 	// Note that this implementation does not handle the concept of death, SetHealth(0) will still revive the player.
 	if (m_bAlive)
 		return;
@@ -166,6 +169,41 @@ void CPlayer::SetHealth(float health)
 	if (m_pCurrentWeapon == nullptr)
 	{
 		CreateWeapon("Rifle");
+	}
+}
+
+void CPlayer::SelectSpawnPoint()
+{
+	// We only handle default spawning below for the Launcher
+	// Editor has special logic in CEditorGame
+	if (gEnv->IsEditor())
+		return;
+
+	// Spawn at first default spawner
+	auto *pEntityIterator = gEnv->pEntitySystem->GetEntityIterator();
+	pEntityIterator->MoveFirst();
+
+	auto *pSpawnerClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("SpawnPoint");
+	auto extensionId = gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->GetID("SpawnPoint");
+
+	while (!pEntityIterator->IsEnd())
+	{
+		IEntity *pEntity = pEntityIterator->Next();
+
+		if (pEntity->GetClass() != pSpawnerClass)
+			continue;
+
+		auto *pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(pEntity->GetId());
+		if (pGameObject == nullptr)
+			continue;
+
+		auto *pSpawner = static_cast<CSpawnPoint *>(pGameObject->QueryExtension(extensionId));
+		if (pSpawner == nullptr)
+			continue;
+
+		pSpawner->SpawnEntity(*GetEntity());
+
+		break;
 	}
 }
 
