@@ -15,7 +15,7 @@ class CRifleRegistrator
 
 	void RegisterCVars()
 	{
-		m_pGeometryPath = REGISTER_STRING("w_rifleGeometryPath", "Objects/Weapons/Rifle/rifle_tp.cgf", VF_CHEAT, "The name of the FP context used in Mannequin");
+		m_pGeometryPath = REGISTER_STRING("w_rifleGeometryPath", "Objects/Weapons/motusWeapon/motusweapon.cgf", VF_CHEAT, "Path to the rifle geometry that we want to load");
 
 		REGISTER_CVAR2("w_rifleBulletScale", &m_bulletScale, 0.05f, VF_CHEAT, "Determines the scale of the bullet geometry");
 	}
