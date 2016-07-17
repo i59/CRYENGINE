@@ -55,7 +55,7 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 			if (m_pPlayer->GetMovement()->IsOnGround())
 			{
 				// Calculate slope value
-				Vec3 groundNormal = m_pPlayer->GetMovement()->GetGroundNormal() * correctedOrientation;
+				Vec3 groundNormal = m_pPlayer->GetMovement()->GetGroundNormal() * GetEntity()->GetWorldRotation();
 				groundNormal.x = 0.0f;
 				float cosine = Vec3Constants<float>::fVec3_OneZ | groundNormal;
 				Vec3 sine = Vec3Constants<float>::fVec3_OneZ % groundNormal;
