@@ -45,6 +45,9 @@ public:
 	virtual void* GetGameInterface() override {return nullptr;}
 	// ~IGame
 
+protected:
+	void InitializePlayerProfile();
+
 private:
 	IGameFramework* m_pGameFramework;
 };
