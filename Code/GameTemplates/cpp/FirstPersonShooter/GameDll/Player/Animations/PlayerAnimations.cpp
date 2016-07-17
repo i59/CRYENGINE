@@ -66,6 +66,19 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 			pCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TurnAngle, turnAngle, 0.f);
 			pCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelAngle, travelAngle, 0.f);
 
+			if (m_pPlayer->GetMovement()->IsOnGround())
+			{
+				// Calculate slope value
+				Vec3 groundNormal = m_pPlayer->GetMovement()->GetGroundNormal() * correctedOrientation;
+				groundNormal.x = 0.0f;
+				float cosine = Vec3Constants<float>::fVec3_OneZ | groundNormal;
+				Vec3 sine = Vec3Constants<float>::fVec3_OneZ % groundNormal;
+
+				float travelSlope = atan2f(sgn(sine.x) * sine.GetLength(), cosine);
+
+				pCharacter->GetISkeletonAnim()->SetDesiredMotionParam(eMotionParamID_TravelSlope, travelSlope, 0.f);
+			}
+
 			// Update the Mannequin tags
 			m_pAnimationContext->state.Set(m_rotateTagId, abs(turnAngle) > 0);
 			m_pAnimationContext->state.Set(m_walkTagId, travelSpeed > 0.2f && m_pPlayer->GetMovement()->IsOnGround());

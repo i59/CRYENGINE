@@ -80,6 +80,7 @@ void CPlayerMovement::GetLatestPhysicsStats(IPhysicalEntity &physicalEntity)
 	if(physicalEntity.GetStatus(&livingStatus) != 0)
 	{
 		m_bOnGround = !livingStatus.bFlying;
+		m_groundNormal = livingStatus.groundSlope;
 	}
 }
 
