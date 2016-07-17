@@ -57,16 +57,10 @@ void CPlayerView::UpdateView(SViewParams &viewParams)
 	{
 		const QuatT &cameraOrientation = pCharacter->GetISkeletonPose()->GetAbsJointByID(m_cameraJointId);
 
-		viewParams.position = entity.GetWorldTM().TransformPoint(cameraOrientation.t);
-	}
-	else
-	{
-		// Fallback in case the player character failed to load
-		// Should not happen in production
-		viewParams.position = entity.GetWorldPos();
+		Vec3 localCameraPosition = cameraOrientation.t;
+		localCameraPosition.y += m_pPlayer->GetCVars().m_cameraOffsetY;
+		localCameraPosition.z += m_pPlayer->GetCVars().m_cameraOffsetZ;
 
-		// The player's origin point is at its feet
-		// Offset camera upwards to meet its eyes
-		viewParams.position += entity.GetWorldRotation().GetColumn2() * m_pPlayer->GetCVars().m_playerEyeHeight;
+		viewParams.position = entity.GetWorldTM().TransformPoint(localCameraPosition);
 	}
 }

@@ -39,6 +39,9 @@ public:
 
 		float m_playerEyeHeight;
 
+		float m_cameraOffsetY;
+		float m_cameraOffsetZ;
+
 		ICVar *m_pFirstPersonGeometry;
 		ICVar *m_pCameraJointName;
 
