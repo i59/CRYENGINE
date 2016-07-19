@@ -140,8 +140,46 @@ void CPlayerInput::Update(SEntityUpdateContext &ctx, int updateSlot)
 	}
 }
 
+void CPlayerInput::OnPlayerRespawn()
+{
+	m_inputFlags = 0;
+}
+
+void CPlayerInput::HandleInputFlagChange(EInputFlags flags, int activationMode, EInputFlagType type)
+{
+	switch (type)
+	{
+		case eInputFlagType_Hold:
+		{
+			if (activationMode == eIS_Released)
+			{
+				m_inputFlags &= ~flags;
+			}
+			else
+			{
+				m_inputFlags |= flags;
+			}
+		}
+		break;
+		case eInputFlagType_Toggle:
+		{
+			if (activationMode == eIS_Released)
+			{
+				// Toggle the bit(s)
+				m_inputFlags ^= flags;
+			}
+		}
+		break;
+	}
+}
+
 void CPlayerInput::InitializeActionHandler()
 {
+	m_actionHandler.AddHandler(ActionId("moveleft"), &CPlayerInput::OnActionMoveLeft);
+	m_actionHandler.AddHandler(ActionId("moveright"), &CPlayerInput::OnActionMoveRight);
+	m_actionHandler.AddHandler(ActionId("moveforward"), &CPlayerInput::OnActionMoveForward);
+	m_actionHandler.AddHandler(ActionId("moveback"), &CPlayerInput::OnActionMoveBack);
+
 	m_actionHandler.AddHandler(ActionId("shoot"), &CPlayerInput::OnActionShoot);
 }
 
@@ -152,15 +190,51 @@ void CPlayerInput::OnAction(const ActionId &action, int activationMode, float va
 	m_actionHandler.Dispatch(this, GetEntityId(), action, activationMode, value);
 }
 
+bool CPlayerInput::OnActionMoveLeft(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	HandleInputFlagChange(eInputFlag_MoveLeft, activationMode);
+	return true;
+}
+
+bool CPlayerInput::OnActionMoveRight(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	HandleInputFlagChange(eInputFlag_MoveRight, activationMode);
+	return true;
+}
+
+bool CPlayerInput::OnActionMoveForward(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	HandleInputFlagChange(eInputFlag_MoveForward, activationMode);
+	return true;
+}
+
+bool CPlayerInput::OnActionMoveBack(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	HandleInputFlagChange(eInputFlag_MoveBack, activationMode);
+	return true;
+}
 
 bool CPlayerInput::OnActionShoot(EntityId entityId, const ActionId& actionId, int activationMode, float value)
 {
 	// Only fire on press, not release
-	if (activationMode == eIS_Pressed)
+	if (activationMode == eIS_Pressed && !m_cursorPositionInWorld.IsZero())
 	{
 		if (auto *pWeapon = m_pPlayer->GetCurrentWeapon())
 		{
-			pWeapon->RequestFire();
+			// Determine where the player is aiming
+			Vec3 shootDirection = (m_cursorPositionInWorld - GetEntity()->GetWorldPos());
+			shootDirection.Normalize();
+
+			// Ignore vertical offset
+			shootDirection.z = 0;
+
+			// Create a quaternion, this will be used to specify bullet orientation
+			Quat qShootDirection = Quat::CreateRotationVDir(shootDirection);
+
+			// Determine initial bullet position, we offset slightly outwards to not hit our own mesh
+			Vec3 initialBulletPosition = pWeapon->GetEntity()->GetWorldPos() + shootDirection;
+
+			pWeapon->RequestFire(initialBulletPosition, qShootDirection);
 		}
 	}
 

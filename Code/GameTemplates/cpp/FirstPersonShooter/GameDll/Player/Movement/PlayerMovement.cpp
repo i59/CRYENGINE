@@ -88,9 +88,35 @@ void CPlayerMovement::UpdateMovementRequest(float frameTime, IPhysicalEntity &ph
 		moveAction.iJump = 2;
 
 		const float moveSpeed = m_pPlayer->GetCVars().m_moveSpeed;
-		//moveAction.dir = GetEntity()->GetWorldRotation() * GetLocalMoveDirection() * moveSpeed * frameTime;
+		moveAction.dir = GetLocalMoveDirection() * moveSpeed * frameTime;
 
 		// Dispatch the movement request
-		//physicalEntity.Action(&moveAction);
+		physicalEntity.Action(&moveAction);
 	}
+}
+
+Vec3 CPlayerMovement::GetLocalMoveDirection() const
+{
+	Vec3 moveDirection = ZERO;
+
+	uint32 inputFlags = m_pPlayer->GetInput()->GetInputFlags();
+
+	if (inputFlags & CPlayerInput::eInputFlag_MoveLeft)
+	{
+		moveDirection.x -= 1;
+	}
+	if (inputFlags & CPlayerInput::eInputFlag_MoveRight)
+	{
+		moveDirection.x += 1;
+	}
+	if (inputFlags & CPlayerInput::eInputFlag_MoveForward)
+	{
+		moveDirection.y += 1;
+	}
+	if (inputFlags & CPlayerInput::eInputFlag_MoveBack)
+	{
+		moveDirection.y -= 1;
+	}
+
+	return moveDirection;
 }

@@ -164,6 +164,9 @@ void CPlayer::SetHealth(float health)
 	// Set the player geometry, this also triggers physics proxy creation
 	SetPlayerModel();
 
+	// Notify input that the player respawned
+	m_pInput->OnPlayerRespawn();
+
 	// Spawn the player with a weapon
 	if (m_pCurrentWeapon == nullptr)
 	{

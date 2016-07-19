@@ -34,13 +34,13 @@ void CRifle::PostInit(IGameObject *pGameObject)
 	LoadMesh(geometrySlot, g_rifleRegistrator.m_pGeometryPath->GetString());
 }
 
-void CRifle::RequestFire()
+void CRifle::RequestFire(const Vec3 &initialBulletPosition, const Quat &initialBulletRotation)
 {
 	SEntitySpawnParams spawnParams;
 	spawnParams.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("Bullet");
 
-	spawnParams.vPosition = GetEntity()->GetWorldPos() + GetEntity()->GetWorldRotation() * Vec3(0, 1, 1);
-	spawnParams.qRotation = GetEntity()->GetWorldRotation();
+	spawnParams.vPosition = initialBulletPosition;
+	spawnParams.qRotation = initialBulletRotation;
 
 	spawnParams.vScale = Vec3(g_rifleRegistrator.m_bulletScale);
 
