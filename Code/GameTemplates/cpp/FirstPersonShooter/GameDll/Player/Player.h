@@ -44,8 +44,6 @@ public:
 
 		ICVar *m_pThirdPersonGeometry;
 		
-		ICVar *m_pWeaponJointName;
-
 		ICVar *m_pThirdPersonMannequinContext;
 		ICVar *m_pThirdPersonAnimationDatabase;
 		ICVar *m_pThirdPersonControllerDefinition;

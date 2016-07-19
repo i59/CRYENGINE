@@ -7,6 +7,8 @@
 
 #include <CryInput/IHardwareMouse.h>
 
+#include <CryAnimation/ICryAnimation.h>
+
 CPlayerInput::CPlayerInput()
 	: m_pCursorEntity(nullptr)
 {
@@ -217,24 +219,24 @@ bool CPlayerInput::OnActionMoveBack(EntityId entityId, const ActionId& actionId,
 bool CPlayerInput::OnActionShoot(EntityId entityId, const ActionId& actionId, int activationMode, float value)
 {
 	// Only fire on press, not release
-	if (activationMode == eIS_Pressed && !m_cursorPositionInWorld.IsZero())
+	if (activationMode == eIS_Pressed)
 	{
-		if (auto *pWeapon = m_pPlayer->GetCurrentWeapon())
+		// Note that we always fire from the barrel position
+		// Another approach would be to use Aim IK and adjust aim based on where the player is aiming with the cursor
+
+		auto *pWeapon = m_pPlayer->GetCurrentWeapon();
+		auto *pCharacter = GetEntity()->GetCharacter(CPlayer::eGeometry_ThirdPerson);
+
+		if (pWeapon != nullptr && pCharacter != nullptr)
 		{
-			// Determine where the player is aiming
-			Vec3 shootDirection = (m_cursorPositionInWorld - GetEntity()->GetWorldPos());
-			shootDirection.Normalize();
+			auto *pBarrelOutAttachment = pCharacter->GetIAttachmentManager()->GetInterfaceByName("barrel_out");
 
-			// Ignore vertical offset
-			shootDirection.z = 0;
+			if (pBarrelOutAttachment != nullptr)
+			{
+				QuatTS bulletOrigin = pBarrelOutAttachment->GetAttWorldAbsolute();
 
-			// Create a quaternion, this will be used to specify bullet orientation
-			Quat qShootDirection = Quat::CreateRotationVDir(shootDirection);
-
-			// Determine initial bullet position, we offset slightly outwards to not hit our own mesh
-			Vec3 initialBulletPosition = pWeapon->GetEntity()->GetWorldPos() + shootDirection;
-
-			pWeapon->RequestFire(initialBulletPosition, qShootDirection);
+				pWeapon->RequestFire(bulletOrigin.t, bulletOrigin.q);
+			}
 		}
 	}
 
