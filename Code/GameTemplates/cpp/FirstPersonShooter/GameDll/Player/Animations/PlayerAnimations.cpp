@@ -84,7 +84,7 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 			}
 
 			// Update the Mannequin tags
-			m_pAnimationContext->state.Set(m_rotateTagId, abs(turnAngle) > 0);
+			m_pAnimationContext->state.Set(m_rotateTagId, abs(turnAngle) > 0.05f);
 			m_pAnimationContext->state.Set(m_walkTagId, travelSpeed > 0.2f && m_pPlayer->GetMovement()->IsOnGround());
 
 			// Update the weapon's orientation to match ours
