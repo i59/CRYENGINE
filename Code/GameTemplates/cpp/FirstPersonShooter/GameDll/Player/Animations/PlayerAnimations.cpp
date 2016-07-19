@@ -44,9 +44,18 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 			Quat playerOrientation;
 
 			// Update player orientation based on velocity
-			if (playerDynamics.v.GetLength() > 0)
+			if (playerDynamics.v.GetLength() > 0.1f)
 			{
 				playerOrientation = Quat::CreateRotationVDir(playerDynamics.v.GetNormalized());
+
+				Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(playerOrientation));
+
+				// We only want to affect Z-axis rotation, zero pitch and roll
+				ypr.y = 0;
+				ypr.z = 0;
+
+				// Re-calculate the quaternion based on the corrected yaw
+				playerOrientation = Quat(CCamera::CreateOrientationYPR(ypr));
 
 				// Send updated transform to the entity, only orientation changes
 				GetEntity()->SetPosRotScale(GetEntity()->GetWorldPos(), playerOrientation, Vec3(1, 1, 1));
