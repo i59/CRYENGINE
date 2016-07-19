@@ -46,8 +46,7 @@ class CPlayerRegistrator
 
 		REGISTER_CVAR2("pl_eyeHeight", &m_playerEyeHeight, 0.935f, VF_CHEAT, "Height of the player's eyes from ground");
 
-		REGISTER_CVAR2("pl_viewOffsetForward", &m_viewOffsetY, -1.5f, VF_CHEAT, "View offset along the forward axis from the player entity");
-		REGISTER_CVAR2("pl_viewOffsetUp", &m_viewOffsetZ, 2.f, VF_CHEAT, "View offset along the up axis from the player entity");
+		REGISTER_CVAR2("pl_viewDistanceFromPlayer", &m_viewDistanceFromPlayer, 10.f, VF_CHEAT, "Camera distance from player");
 
 		m_pThirdPersonGeometry = REGISTER_STRING("pl_thirdPersonGeometry", "Objects/Characters/SampleCharacter/thirdperson.cdf", VF_CHEAT, "Sets the third person geometry to load");
 		
@@ -164,9 +163,6 @@ void CPlayer::SetHealth(float health)
 
 	// Set the player geometry, this also triggers physics proxy creation
 	SetPlayerModel();
-
-	// Notify input that the player respawned
-	m_pInput->OnPlayerRespawn();
 
 	// Spawn the player with a weapon
 	if (m_pCurrentWeapon == nullptr)

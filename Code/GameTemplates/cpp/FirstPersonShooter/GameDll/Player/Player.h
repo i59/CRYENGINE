@@ -40,8 +40,7 @@ public:
 
 		float m_playerEyeHeight;
 
-		float m_viewOffsetY;
-		float m_viewOffsetZ;
+		float m_viewDistanceFromPlayer;
 
 		ICVar *m_pThirdPersonGeometry;
 		

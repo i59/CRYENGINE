@@ -33,18 +33,22 @@ void CPlayerAnimations::PostInit(IGameObject *pGameObject)
 void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 {
 	// Start updating the motion parameters used for blend spaces
-	if (auto *pPhysEnt = m_pPlayer->GetEntity()->GetPhysics())
+	if (auto *pPhysEnt = GetEntity()->GetPhysics())
 	{
-		// Update entity rotation as the player turns
-		// Start with getting the look orientation's yaw, pitch and roll
-		Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(m_pPlayer->GetInput()->GetLookOrientation()));
+		Quat playerOrientation;
 
-		// We only want to affect Z-axis rotation, zero pitch and roll
-		ypr.y = 0;
-		ypr.z = 0;
+		Vec3 cursorPositionWorldSpace = m_pPlayer->GetInput()->GetWorldCursorPosition();
+		if (!cursorPositionWorldSpace.IsZero())
+		{
+			Vec3 playerDirection = cursorPositionWorldSpace - GetEntity()->GetWorldPos();
+			playerDirection.Normalize();
 
-		// Re-calculate the quaternion based on the corrected look orientation
-		Quat correctedOrientation = Quat(CCamera::CreateOrientationYPR(ypr));
+			playerDirection.z = 0;
+
+			playerOrientation = Quat::CreateRotationVDir(playerDirection);
+		}
+		else
+			playerOrientation = GetEntity()->GetWorldRotation();
 
 		auto *pCharacter = m_pPlayer->GetEntity()->GetCharacter(CPlayer::eGeometry_ThirdPerson);
 
@@ -53,7 +57,7 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 		if (pPhysEnt->GetStatus(&playerDynamics) != 0 && pCharacter != nullptr)
 		{
 			// Set turn rate as the difference between previous and new entity rotation
-			float turnAngle = Ang3::CreateRadZ(GetEntity()->GetForwardDir(), correctedOrientation.GetColumn1()) / ctx.fFrameTime;
+			float turnAngle = Ang3::CreateRadZ(GetEntity()->GetForwardDir(), playerOrientation.GetColumn1()) / ctx.fFrameTime;
 			float travelAngle = Ang3::CreateRadZ(GetEntity()->GetForwardDir(), playerDynamics.v.GetNormalized());
 			float travelSpeed = playerDynamics.v.GetLength2D();
 
@@ -69,7 +73,7 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 			if (m_pPlayer->GetMovement()->IsOnGround())
 			{
 				// Calculate slope value
-				Vec3 groundNormal = m_pPlayer->GetMovement()->GetGroundNormal() * correctedOrientation;
+				Vec3 groundNormal = m_pPlayer->GetMovement()->GetGroundNormal() * playerOrientation;
 				groundNormal.x = 0.0f;
 				float cosine = Vec3Constants<float>::fVec3_OneZ | groundNormal;
 				Vec3 sine = Vec3Constants<float>::fVec3_OneZ % groundNormal;
@@ -94,7 +98,7 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 		}
 
 		// Send updated transform to the entity, only orientation changes
-		GetEntity()->SetPosRotScale(GetEntity()->GetWorldPos(), correctedOrientation, Vec3(1, 1, 1));
+		GetEntity()->SetPosRotScale(GetEntity()->GetWorldPos(), playerOrientation, Vec3(1, 1, 1));
 	}
 
 	if (m_pActionController != nullptr)

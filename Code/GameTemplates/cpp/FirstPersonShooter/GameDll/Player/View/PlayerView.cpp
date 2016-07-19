@@ -38,15 +38,12 @@ void CPlayerView::UpdateView(SViewParams &viewParams)
 {
 	IEntity &entity = *GetEntity();
 
-	// Start with changing view rotation to the requested mouse look orientation
-	viewParams.rotation = Quat(m_pPlayer->GetInput()->GetLookOrientation());
-
 	// Start with matching view to the entity position
 	viewParams.position = entity.GetWorldPos();
 
-	// Offset the player along the forward axis (normally back)
-	viewParams.position += entity.GetWorldRotation().GetColumn1() * m_pPlayer->GetCVars().m_viewOffsetY;
+	// Offset the camera upwards
+	viewParams.position.z += m_pPlayer->GetCVars().m_viewDistanceFromPlayer;
 
-	// Offset the view upwards
-	viewParams.position.z += m_pPlayer->GetCVars().m_viewOffsetZ;
+	// Create rotation, facing the player
+	viewParams.rotation = Quat::CreateRotationX(DEG2RAD(-90));
 }

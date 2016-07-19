@@ -18,6 +18,7 @@
 		<action name="mouse_rotateyaw" keyboard="maxis_x" />
 		<action name="mouse_rotatepitch" keyboard="maxis_y" />
 		
-		<action name="shoot" onPress="1" onRelease="1" retriggerable="1" keyboard="mouse1"/>
+		<action name="shoot" onPress="1" onRelease="1" retriggerable="1" keyboard="space"/>
+		<action name="navigate_to" onPress="1" onRelease="1" retriggerable="1" keyboard="mouse1"/>
 	</actionmap>  
 </profile>

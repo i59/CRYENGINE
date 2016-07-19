@@ -5,6 +5,8 @@
 
 #include "Entities/Gameplay/Weapons/ISimpleWeapon.h"
 
+#include <CryInput/IHardwareMouse.h>
+
 void CPlayerInput::PostInit(IGameObject *pGameObject)
 {
 	const int requiredEvents[] = { eGFE_BecomeLocalPlayer };
@@ -37,72 +39,44 @@ void CPlayerInput::HandleEvent(const SGameObjectEvent &event)
 
 		// Make sure that this extension is updated regularly via the Update function below
 		GetGameObject()->EnableUpdateSlot(this, 0);
+
+		m_cursorPositionInWorld = ZERO;
 	}
 }
 
 void CPlayerInput::Update(SEntityUpdateContext &ctx, int updateSlot)
 {
-	// Start by updating look dir
-	Ang3 ypr = CCamera::CreateAnglesYPR(Matrix33(m_lookOrientation));
-	
-	ypr.x += m_mouseDeltaRotation.x * m_pPlayer->GetCVars().m_rotationSpeedYaw * ctx.fFrameTime;
+	float mouseX, mouseY;
 
-	// TODO: Perform soft clamp here instead of hard wall, should reduce rot speed in this direction when close to limit.
-	ypr.y = CLAMP(ypr.y + m_mouseDeltaRotation.y * m_pPlayer->GetCVars().m_rotationSpeedPitch * ctx.fFrameTime, m_pPlayer->GetCVars().m_rotationLimitsMinPitch, m_pPlayer->GetCVars().m_rotationLimitsMaxPitch);
+	gEnv->pHardwareMouse->GetHardwareMouseClientPosition(&mouseX, &mouseY);
 
-	ypr.z = 0;
+	// Invert mouse Y
+	mouseY = gEnv->pRenderer->GetHeight() - mouseY;
 
-	m_lookOrientation = Quat(CCamera::CreateOrientationYPR(ypr));
+	Vec3 vPos0(0, 0, 0);
+	gEnv->pRenderer->UnProjectFromScreen(mouseX, mouseY, 0, &vPos0.x, &vPos0.y, &vPos0.z);
 
-	// Reset every frame
-	m_mouseDeltaRotation = ZERO;
-}
+	Vec3 vPos1(0, 0, 0);
+	gEnv->pRenderer->UnProjectFromScreen(mouseX, mouseY, 1, &vPos1.x, &vPos1.y, &vPos1.z);
 
-void CPlayerInput::OnPlayerRespawn()
-{
-	m_inputFlags = 0;
-	m_mouseDeltaRotation = ZERO;
-	m_lookOrientation = IDENTITY;
-}
+	Vec3 vDir = vPos1 - vPos0;
+	vDir.Normalize();
 
-void CPlayerInput::HandleInputFlagChange(EInputFlags flags, int activationMode, EInputFlagType type)
-{
-	switch (type)
+	const auto rayFlags = rwi_stop_at_pierceable | rwi_colltype_any;
+	ray_hit hit;
+
+	if (gEnv->pPhysicalWorld->RayWorldIntersection(vPos0, vDir * gEnv->p3DEngine->GetMaxViewDistance(), ent_all, rayFlags, &hit, 1))
 	{
-		case eInputFlagType_Hold:
-		{
-			if (activationMode == eIS_Released)
-			{
-				m_inputFlags &= ~flags;
-			}
-			else
-			{
-				m_inputFlags |= flags;
-			}
-		}
-		break;
-		case eInputFlagType_Toggle:
-		{
-			if (activationMode == eIS_Released)
-			{
-				// Toggle the bit(s)
-				m_inputFlags ^= flags;
-			}
-		}
-		break;
+		m_cursorPositionInWorld = hit.pt;
+	}
+	else
+	{
+		m_cursorPositionInWorld = ZERO;
 	}
 }
 
 void CPlayerInput::InitializeActionHandler()
 {
-	m_actionHandler.AddHandler(ActionId("moveleft"), &CPlayerInput::OnActionMoveLeft);
-	m_actionHandler.AddHandler(ActionId("moveright"), &CPlayerInput::OnActionMoveRight);
-	m_actionHandler.AddHandler(ActionId("moveforward"), &CPlayerInput::OnActionMoveForward);
-	m_actionHandler.AddHandler(ActionId("moveback"), &CPlayerInput::OnActionMoveBack);
-
-	m_actionHandler.AddHandler(ActionId("mouse_rotateyaw"), &CPlayerInput::OnActionMouseRotateYaw);
-	m_actionHandler.AddHandler(ActionId("mouse_rotatepitch"), &CPlayerInput::OnActionMouseRotatePitch);
-
 	m_actionHandler.AddHandler(ActionId("shoot"), &CPlayerInput::OnActionShoot);
 }
 
@@ -113,41 +87,6 @@ void CPlayerInput::OnAction(const ActionId &action, int activationMode, float va
 	m_actionHandler.Dispatch(this, GetEntityId(), action, activationMode, value);
 }
 
-bool CPlayerInput::OnActionMoveLeft(EntityId entityId, const ActionId& actionId, int activationMode, float value)
-{
-	HandleInputFlagChange(eInputFlag_MoveLeft, activationMode);
-	return true;
-}
-
-bool CPlayerInput::OnActionMoveRight(EntityId entityId, const ActionId& actionId, int activationMode, float value)
-{
-	HandleInputFlagChange(eInputFlag_MoveRight, activationMode);
-	return true;
-}
-
-bool CPlayerInput::OnActionMoveForward(EntityId entityId, const ActionId& actionId, int activationMode, float value)
-{
-	HandleInputFlagChange(eInputFlag_MoveForward, activationMode);
-	return true;
-}
-
-bool CPlayerInput::OnActionMoveBack(EntityId entityId, const ActionId& actionId, int activationMode, float value)
-{
-	HandleInputFlagChange(eInputFlag_MoveBack, activationMode);
-	return true;
-}
-
-bool CPlayerInput::OnActionMouseRotateYaw(EntityId entityId, const ActionId& actionId, int activationMode, float value)
-{
-	m_mouseDeltaRotation.x -= value;
-	return true;
-}
-
-bool CPlayerInput::OnActionMouseRotatePitch(EntityId entityId, const ActionId& actionId, int activationMode, float value)
-{
-	m_mouseDeltaRotation.y -= value;
-	return true;
-}
 
 bool CPlayerInput::OnActionShoot(EntityId entityId, const ActionId& actionId, int activationMode, float value)
 {
