@@ -82,15 +82,6 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 			// Update the Mannequin tags
 			m_pAnimationContext->state.Set(m_rotateTagId, abs(turnAngle) > 0);
 			m_pAnimationContext->state.Set(m_walkTagId, travelSpeed > 0.2f && m_pPlayer->GetMovement()->IsOnGround());
-
-			// Update the weapon's orientation to match ours
-			if (auto *pWeapon = m_pPlayer->GetCurrentWeapon())
-			{
-				const QuatT &weaponOrientation = pCharacter->GetISkeletonPose()->GetAbsJointByID(m_weaponJointId);
-				Matrix34 weaponTransform = GetEntity()->GetWorldTM() * Matrix34(weaponOrientation);
-
-				pWeapon->GetEntity()->SetWorldTM(weaponTransform);
-			}
 		}
 
 		// Send updated transform to the entity, only orientation changes
@@ -176,11 +167,6 @@ void CPlayerAnimations::OnPlayerModelChanged()
 	// Acquire tag identifiers to avoid doing so each update
 	m_rotateTagId = m_pAnimationContext->state.GetDef().Find("Rotate");
 	m_walkTagId = m_pAnimationContext->state.GetDef().Find("Walk");
-
-	// Cache the weapon joint id so that we avoid looking it up every frame by name
-	const char *weaponJointName = m_pPlayer->GetCVars().m_pWeaponJointName->GetString();
-
-	m_weaponJointId = pCharacterInstance->GetIDefaultSkeleton().GetJointIDByName(weaponJointName);
 
 	// Disable movement coming from the animation (root joint offset), we control this entirely via physics
 	pCharacterInstance->GetISkeletonAnim()->SetAnimationDrivenMotion(1);

@@ -46,8 +46,6 @@ public:
 		ICVar *m_pFirstPersonGeometry;
 		ICVar *m_pCameraJointName;
 
-		ICVar *m_pWeaponJointName;
-
 		ICVar *m_pFirstPersonMannequinContext;
 		ICVar *m_pFirstPersonAnimationDatabase;
 		ICVar *m_pFirstPersonControllerDefinition;

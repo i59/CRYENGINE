@@ -4,25 +4,25 @@
    <Fragment BlendOutDuration="0.2" Tags="Rotate">
     <AnimLayer>
      <Blend ExitTime="0" StartTime="0" Duration="0.2"/>
-     <Animation name="1DONE-BSpace_Rotate" flags="Loop"/>
+     <Animation name="1DONE-BSpace_RotateRIFLE" flags="Loop"/>
     </AnimLayer>
    </Fragment>
    <Fragment BlendOutDuration="0.2" Tags="Walk">
     <AnimLayer>
      <Blend ExitTime="0" StartTime="0" Duration="0.2"/>
-     <Animation name="2DONE-BSpace_MoveStrafe" flags="Loop"/>
+     <Animation name="2DONE-BSpace_MoveStrafeRIFLE" flags="Loop"/>
     </AnimLayer>
    </Fragment>
    <Fragment BlendOutDuration="0.2" Tags="Walk+Rotate">
     <AnimLayer>
      <Blend ExitTime="0" StartTime="0" Duration="0.2"/>
-     <Animation name="2DONE-BSpace_MoveStrafe" flags="Loop"/>
+     <Animation name="2DONE-BSpace_MoveStrafeRIFLE" flags="Loop"/>
     </AnimLayer>
    </Fragment>
    <Fragment BlendOutDuration="0.2" Tags="">
     <AnimLayer>
      <Blend ExitTime="0" StartTime="0" Duration="0.2"/>
-     <Animation name="idle_3p" flags="Loop"/>
+     <Animation name="rifleAim_idle_3p" flags="Loop"/>
     </AnimLayer>
    </Fragment>
   </Idle>

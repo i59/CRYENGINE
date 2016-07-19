@@ -39,6 +39,4 @@ protected:
 
 	TagID m_rotateTagId;
 	TagID m_walkTagId;
-
-	uint32 m_weaponJointId;
 };
