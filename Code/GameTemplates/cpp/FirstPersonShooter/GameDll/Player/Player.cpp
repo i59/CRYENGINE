@@ -173,11 +173,6 @@ void CPlayer::SetHealth(float health)
 
 void CPlayer::SelectSpawnPoint()
 {
-	// We only handle default spawning below for the Launcher
-	// Editor has special logic in CEditorGame
-	if (gEnv->IsEditor())
-		return;
-
 	// Spawn at first default spawner
 	auto *pEntityIterator = gEnv->pEntitySystem->GetEntityIterator();
 	pEntityIterator->MoveFirst();
