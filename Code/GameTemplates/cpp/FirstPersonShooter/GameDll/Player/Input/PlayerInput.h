@@ -12,11 +12,13 @@ class CPlayerInput
 	, public IActionListener
 {
 public:
+	CPlayerInput();
 	virtual ~CPlayerInput() {}
 
 	// ISimpleExtension
 	virtual void PostInit(IGameObject* pGameObject) override;
 	
+	virtual void ProcessEvent(SEntityEvent &event) override;
 	virtual void HandleEvent(const SGameObjectEvent &event) override;
 
 	virtual void Update(SEntityUpdateContext &ctx, int updateSlot) override;
@@ -29,6 +31,8 @@ public:
 	Vec3 GetWorldCursorPosition() const { return m_cursorPositionInWorld; }
 
 protected:
+	void SpawnCursorEntity();
+
 	void InitializeActionHandler();
 
 	// Start actions below
