@@ -46,8 +46,6 @@ class CPlayerRegistrator
 
 		m_pThirdPersonGeometry = REGISTER_STRING("pl_thirdPersonGeometry", "Objects/Characters/SampleCharacter/thirdperson.cdf", VF_CHEAT, "Sets the third person geometry to load");
 		
-		m_pWeaponJointName = REGISTER_STRING("pl_weaponJointName", "RT_weapon_R_default_target", VF_CHEAT, "Sets the name of the joint managing the weapon's position");
-
 		m_pThirdPersonMannequinContext = REGISTER_STRING("pl_thirdPersonMannequinContext", "FirstPersonCharacter", VF_CHEAT, "The name of the third person context used in Mannequin");
 		m_pThirdPersonAnimationDatabase = REGISTER_STRING("pl_thirdPersonAnimationDatabase", "Animations/Mannequin/ADB/FirstPerson.adb", VF_CHEAT, "Path to the animation database file to load");
 		m_pThirdPersonControllerDefinition = REGISTER_STRING("pl_thirdPersonControllerDefinition", "Animations/Mannequin/ADB/FirstPersonControllerDefinition.xml", VF_CHEAT, "Path to the controller definition file to load");

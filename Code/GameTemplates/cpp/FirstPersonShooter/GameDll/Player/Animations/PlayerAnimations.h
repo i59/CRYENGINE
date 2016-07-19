@@ -38,6 +38,4 @@ protected:
 	_smart_ptr<IAction> m_pIdleFragment;
 
 	TagID m_walkTagId;
-
-	uint32 m_weaponJointId;
 };
