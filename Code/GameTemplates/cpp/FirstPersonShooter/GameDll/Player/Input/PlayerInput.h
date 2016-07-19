@@ -38,6 +38,7 @@ protected:
 	// Start actions below
 protected:
 	bool OnActionShoot(EntityId entityId, const ActionId& actionId, int activationMode, float value);
+	bool OnActionNavigateTo(EntityId entityId, const ActionId& actionId, int activationMode, float value);
 
 protected:
 	CPlayer *m_pPlayer;

@@ -35,27 +35,27 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 	// Start updating the motion parameters used for blend spaces
 	if (auto *pPhysEnt = GetEntity()->GetPhysics())
 	{
-		Quat playerOrientation;
-
-		Vec3 cursorPositionWorldSpace = m_pPlayer->GetInput()->GetWorldCursorPosition();
-		if (!cursorPositionWorldSpace.IsZero())
-		{
-			Vec3 playerDirection = cursorPositionWorldSpace - GetEntity()->GetWorldPos();
-			playerDirection.Normalize();
-
-			playerDirection.z = 0;
-
-			playerOrientation = Quat::CreateRotationVDir(playerDirection);
-		}
-		else
-			playerOrientation = GetEntity()->GetWorldRotation();
-
 		auto *pCharacter = m_pPlayer->GetEntity()->GetCharacter(CPlayer::eGeometry_ThirdPerson);
 
 		// Get the player's velocity from physics
 		pe_status_dynamics playerDynamics;
 		if (pPhysEnt->GetStatus(&playerDynamics) != 0 && pCharacter != nullptr)
 		{
+			Quat playerOrientation;
+
+			// Update player orientation based on velocity
+			if (playerDynamics.v.GetLength() > 0)
+			{
+				playerOrientation = Quat::CreateRotationVDir(playerDynamics.v.GetNormalized());
+
+				// Send updated transform to the entity, only orientation changes
+				GetEntity()->SetPosRotScale(GetEntity()->GetWorldPos(), playerOrientation, Vec3(1, 1, 1));
+			}
+			else
+			{
+				playerOrientation = GetEntity()->GetWorldRotation();
+			}
+
 			// Set turn rate as the difference between previous and new entity rotation
 			float turnAngle = Ang3::CreateRadZ(GetEntity()->GetForwardDir(), playerOrientation.GetColumn1()) / ctx.fFrameTime;
 			float travelAngle = Ang3::CreateRadZ(GetEntity()->GetForwardDir(), playerDynamics.v.GetNormalized());
@@ -96,9 +96,6 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 				pWeapon->GetEntity()->SetWorldTM(weaponTransform);
 			}
 		}
-
-		// Send updated transform to the entity, only orientation changes
-		GetEntity()->SetPosRotScale(GetEntity()->GetWorldPos(), playerOrientation, Vec3(1, 1, 1));
 	}
 
 	if (m_pActionController != nullptr)

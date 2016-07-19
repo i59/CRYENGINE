@@ -9,6 +9,8 @@ class CPlayerMovement;
 class CPlayerView;
 class CPlayerAnimations;
 
+class CPlayerPathFinding;
+
 class CPlayer;
 
 class CSpawnPoint;
@@ -68,6 +70,7 @@ public:
 
 	CPlayerInput *GetInput() const { return m_pInput; }
 	CPlayerMovement *GetMovement() const { return m_pMovement; }
+	CPlayerPathFinding *GetPathFinding() const { return m_pPathFinding; }
 
 	ISimpleWeapon *GetCurrentWeapon() const { return m_pCurrentWeapon; }
 
@@ -86,6 +89,8 @@ protected:
 	CPlayerMovement *m_pMovement;
 	CPlayerView *m_pView;
 	CPlayerAnimations *m_pAnimations;
+
+	CPlayerPathFinding *m_pPathFinding;
 
 	bool m_bIsLocalClient;
 	bool m_bAlive;

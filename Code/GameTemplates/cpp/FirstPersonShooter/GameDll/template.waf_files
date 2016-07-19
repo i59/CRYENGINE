@@ -74,6 +74,11 @@
 		[
 			"Player/Animations/PlayerAnimations.cpp",
 			"Player/Animations/PlayerAnimations.h"
+		],
+		"Player\\PathFinding":
+		[
+			"Player/PathFinding/PlayerPathFinding.cpp",
+			"Player/PathFinding/PlayerPathFinding.h"
 		]
 	},
 	

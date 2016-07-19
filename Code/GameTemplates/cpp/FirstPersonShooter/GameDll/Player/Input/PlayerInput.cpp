@@ -2,6 +2,7 @@
 #include "PlayerInput.h"
 
 #include "Player/Player.h"
+#include "Player/PathFinding/PlayerPathFinding.h"
 
 #include "Entities/Gameplay/Weapons/ISimpleWeapon.h"
 
@@ -143,6 +144,7 @@ void CPlayerInput::Update(SEntityUpdateContext &ctx, int updateSlot)
 void CPlayerInput::InitializeActionHandler()
 {
 	m_actionHandler.AddHandler(ActionId("shoot"), &CPlayerInput::OnActionShoot);
+	m_actionHandler.AddHandler(ActionId("navigate_to"), &CPlayerInput::OnActionNavigateTo);
 }
 
 void CPlayerInput::OnAction(const ActionId &action, int activationMode, float value)
@@ -162,6 +164,26 @@ bool CPlayerInput::OnActionShoot(EntityId entityId, const ActionId& actionId, in
 		{
 			pWeapon->RequestFire();
 		}
+	}
+
+	return true;
+}
+
+bool CPlayerInput::OnActionNavigateTo(EntityId entityId, const ActionId& actionId, int activationMode, float value)
+{
+	if (activationMode != eIS_Pressed)
+		return true;
+
+	auto &pathFinding = *m_pPlayer->GetPathFinding();
+
+	if (pathFinding.IsProcessingRequest())
+	{
+		pathFinding.CancelCurrentRequest();
+	}
+
+	if(!m_cursorPositionInWorld.IsZero())
+	{
+		pathFinding.RequestMoveTo(m_cursorPositionInWorld);
 	}
 
 	return true;

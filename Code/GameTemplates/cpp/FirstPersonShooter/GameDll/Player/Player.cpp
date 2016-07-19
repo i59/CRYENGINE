@@ -5,6 +5,7 @@
 #include "Input/PlayerInput.h"
 #include "View/PlayerView.h"
 #include "Animations/PlayerAnimations.h"
+#include "PathFinding/PlayerPathFinding.h"
 
 #include "Game/GameFactory.h"
 #include "Game/GameRules.h"
@@ -29,6 +30,8 @@ class CPlayerRegistrator
 		CGameFactory::RegisterGameObjectExtension<CPlayerInput>("PlayerInput");
 		CGameFactory::RegisterGameObjectExtension<CPlayerView>("PlayerView");
 		CGameFactory::RegisterGameObjectExtension<CPlayerAnimations>("PlayerAnimations");
+
+		CGameFactory::RegisterGameObjectExtension<CPlayerPathFinding>("PlayerPathFinding");
 		
 		RegisterCVars();
 	}
@@ -97,6 +100,8 @@ void CPlayer::PostInit(IGameObject *pGameObject)
 	m_pInput = static_cast<CPlayerInput *>(GetGameObject()->AcquireExtension("PlayerInput"));
 
 	m_pView = static_cast<CPlayerView *>(GetGameObject()->AcquireExtension("PlayerView"));
+
+	m_pPathFinding = static_cast<CPlayerPathFinding *>(GetGameObject()->AcquireExtension("PlayerPathFinding"));
 
 	// Register with the actor system
 	gEnv->pGame->GetIGameFramework()->GetIActorSystem()->AddActor(GetEntityId(), this);
