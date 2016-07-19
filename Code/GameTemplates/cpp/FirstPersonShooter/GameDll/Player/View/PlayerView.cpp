@@ -23,6 +23,9 @@ void CPlayerView::PostInit(IGameObject *pGameObject)
 
 	const int requiredEvents[] = { eGFE_BecomeLocalPlayer };
 	pGameObject->RegisterExtForEvents(this, requiredEvents, sizeof(requiredEvents) / sizeof(int));
+
+	// Default view rotation to the entity's orientation
+	m_viewRotation = GetEntity()->GetWorldRotation();
 }
 
 void CPlayerView::HandleEvent(const SGameObjectEvent &event)
@@ -40,13 +43,8 @@ void CPlayerView::UpdateView(SViewParams &viewParams)
 
 	// Start with changing view rotation to the requested mouse look orientation
 	viewParams.rotation = Quat(m_pPlayer->GetInput()->GetLookOrientation());
+	m_viewRotation = viewParams.rotation;
 
 	// Start with matching view to the entity position
-	viewParams.position = entity.GetWorldPos();
-
-	// Offset the player along the forward axis (normally back)
-	viewParams.position += entity.GetWorldRotation().GetColumn1() * m_pPlayer->GetCVars().m_viewOffsetY;
-
-	// Offset the view upwards
-	viewParams.position.z += m_pPlayer->GetCVars().m_viewOffsetZ;
+	viewParams.position = entity.GetWorldPos() - viewParams.rotation.GetColumn1() * m_pPlayer->GetCVars().m_viewDistance;
 }

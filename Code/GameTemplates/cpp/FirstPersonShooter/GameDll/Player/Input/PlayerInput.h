@@ -66,8 +66,6 @@ protected:
 	bool OnActionMouseRotateYaw(EntityId entityId, const ActionId& actionId, int activationMode, float value);
 	bool OnActionMouseRotatePitch(EntityId entityId, const ActionId& actionId, int activationMode, float value);
 	
-	bool OnActionShoot(EntityId entityId, const ActionId& actionId, int activationMode, float value);
-
 protected:
 	CPlayer *m_pPlayer;
 

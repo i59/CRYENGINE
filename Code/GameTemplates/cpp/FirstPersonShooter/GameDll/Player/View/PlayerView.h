@@ -26,6 +26,10 @@ public:
 	virtual void PostUpdateView(SViewParams &viewParams) override {}
 	// ~IGameObjectView
 
+	const Quat &GetViewRotation() const { return m_viewRotation; }
+
 protected:
 	CPlayer *m_pPlayer;
+
+	Quat m_viewRotation;
 };

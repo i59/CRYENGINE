@@ -30,7 +30,7 @@ public:
 	struct SExternalCVars
 	{
 		float m_mass;
-		float m_moveSpeed;
+		float m_moveImpulseStrength;
 
 		float m_rotationSpeedYaw;
 		float m_rotationSpeedPitch;
@@ -38,18 +38,9 @@ public:
 		float m_rotationLimitsMinPitch;
 		float m_rotationLimitsMaxPitch;
 
-		float m_playerEyeHeight;
+		float m_viewDistance;
 
-		float m_viewOffsetY;
-		float m_viewOffsetZ;
-
-		ICVar *m_pThirdPersonGeometry;
-		
-		ICVar *m_pWeaponJointName;
-
-		ICVar *m_pThirdPersonMannequinContext;
-		ICVar *m_pThirdPersonAnimationDatabase;
-		ICVar *m_pThirdPersonControllerDefinition;
+		ICVar *m_pGeometry;
 	};
 
 public:
@@ -69,8 +60,7 @@ public:
 
 	CPlayerInput *GetInput() const { return m_pInput; }
 	CPlayerMovement *GetMovement() const { return m_pMovement; }
-
-	ISimpleWeapon *GetCurrentWeapon() const { return m_pCurrentWeapon; }
+	CPlayerView *GetView() const { return m_pView; }
 
 	const bool IsLocalClient() const { return m_bIsLocalClient; }
 
@@ -80,8 +70,6 @@ protected:
 	void SelectSpawnPoint();
 	void SetPlayerModel();
 
-	void CreateWeapon(const char *name);
-
 protected:
 	CPlayerInput *m_pInput;
 	CPlayerMovement *m_pMovement;
@@ -90,7 +78,4 @@ protected:
 
 	bool m_bIsLocalClient;
 	bool m_bAlive;
-
-	// Pointer to the weapon the player is currently using
-	ISimpleWeapon *m_pCurrentWeapon;
 };

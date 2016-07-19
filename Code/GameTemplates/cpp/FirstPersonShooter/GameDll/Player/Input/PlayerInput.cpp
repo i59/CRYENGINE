@@ -3,8 +3,6 @@
 
 #include "Player/Player.h"
 
-#include "Entities/Gameplay/Weapons/ISimpleWeapon.h"
-
 void CPlayerInput::PostInit(IGameObject *pGameObject)
 {
 	const int requiredEvents[] = { eGFE_BecomeLocalPlayer };
@@ -102,8 +100,6 @@ void CPlayerInput::InitializeActionHandler()
 
 	m_actionHandler.AddHandler(ActionId("mouse_rotateyaw"), &CPlayerInput::OnActionMouseRotateYaw);
 	m_actionHandler.AddHandler(ActionId("mouse_rotatepitch"), &CPlayerInput::OnActionMouseRotatePitch);
-
-	m_actionHandler.AddHandler(ActionId("shoot"), &CPlayerInput::OnActionShoot);
 }
 
 void CPlayerInput::OnAction(const ActionId &action, int activationMode, float value)
@@ -146,19 +142,5 @@ bool CPlayerInput::OnActionMouseRotateYaw(EntityId entityId, const ActionId& act
 bool CPlayerInput::OnActionMouseRotatePitch(EntityId entityId, const ActionId& actionId, int activationMode, float value)
 {
 	m_mouseDeltaRotation.y -= value;
-	return true;
-}
-
-bool CPlayerInput::OnActionShoot(EntityId entityId, const ActionId& actionId, int activationMode, float value)
-{
-	// Only fire on press, not release
-	if (activationMode == eIS_Pressed)
-	{
-		if (auto *pWeapon = m_pPlayer->GetCurrentWeapon())
-		{
-			pWeapon->RequestFire();
-		}
-	}
-
 	return true;
 }
