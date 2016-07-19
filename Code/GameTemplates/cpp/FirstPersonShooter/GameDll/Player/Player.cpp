@@ -32,7 +32,7 @@ class CPlayerRegistrator
 	void RegisterCVars()
 	{
 		REGISTER_CVAR2("pl_mass", &m_mass, 90.f, VF_CHEAT, "Mass of the player entity in kg");
-		REGISTER_CVAR2("pl_moveImpulseStrength", &m_moveImpulseStrength, 1.f, VF_CHEAT, "Strength of the per-frame impulse when holding inputs");
+		REGISTER_CVAR2("pl_moveImpulseStrength", &m_moveImpulseStrength, 800.f, VF_CHEAT, "Strength of the per-frame impulse when holding inputs");
 
 		REGISTER_CVAR2("pl_rotationSpeedYaw", &m_rotationSpeedYaw, 0.05f, VF_CHEAT, "Speed at which the player rotates entity yaw");
 		REGISTER_CVAR2("pl_rotationSpeedPitch", &m_rotationSpeedPitch, 0.05f, VF_CHEAT, "Speed at which the player rotates entity pitch");
