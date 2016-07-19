@@ -46,4 +46,7 @@ protected:
 	TActionHandler<CPlayerInput> m_actionHandler;
 
 	Vec3 m_cursorPositionInWorld;
+
+	// Entity used as cursor
+	IEntity *m_pCursorEntity;
 };
