@@ -38,12 +38,8 @@ void CPlayerView::UpdateView(SViewParams &viewParams)
 {
 	IEntity &entity = *GetEntity();
 
-	// Start with matching view to the entity position
-	viewParams.position = entity.GetWorldPos();
-
-	// Offset the camera upwards
-	viewParams.position.z += m_pPlayer->GetCVars().m_viewDistanceFromPlayer;
-
 	// Create rotation, facing the player
-	viewParams.rotation = Quat::CreateRotationX(DEG2RAD(-90));
+	viewParams.rotation = Quat::CreateRotationXYZ(Ang3(DEG2RAD(-45), 0, DEG2RAD(-45)));
+
+	viewParams.position = entity.GetWorldPos() - viewParams.rotation.GetColumn1() * m_pPlayer->GetCVars().m_viewDistanceFromPlayer;
 }
