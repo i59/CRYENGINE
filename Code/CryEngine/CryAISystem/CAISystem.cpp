@@ -75,6 +75,8 @@
 #include "FlowNodes/AIFlowBaseNode.h"
 #include "FlyHelpers_TacticalPointLanguageExtender.h"
 
+#include "PathFollower.h"
+
 #include <algorithm>  // std::min()
 
 FlyHelpers::CTacticalPointLanguageExtender g_flyHelpersTacticalLanguageExtender;
@@ -4288,6 +4290,11 @@ void CAISystem::NotifyTargetDead(IAIObject* pDeadObject)
 std::shared_ptr<IPathFollower> CAISystem::CreateAndReturnNewDefaultPathFollower(const PathFollowerParams& params, const IPathObstacles& pathObstacleObject)
 {
 	return IPathFollowerPtr(new CSmartPathFollower(params, pathObstacleObject));
+}
+
+IPathFollower *CAISystem::CreatePathFollower(const PathFollowerParams& params)
+{
+	return new CPathFollower(params);
 }
 
 //===================================================================

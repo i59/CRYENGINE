@@ -896,6 +896,8 @@ struct IAISystem
 	virtual void                           NotifyTargetDead(IAIObject* pDeadObject) = 0;
 
 	virtual std::shared_ptr<IPathFollower> CreateAndReturnNewDefaultPathFollower(const PathFollowerParams& params, const IPathObstacles& pathObstacleObject) = 0;
+
+	virtual IPathFollower *CreatePathFollower(const PathFollowerParams& params) = 0;
 	// </interfuscator:shuffle>
 };
 

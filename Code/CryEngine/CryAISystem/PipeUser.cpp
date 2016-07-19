@@ -4510,7 +4510,7 @@ IPathFollower* CPipeUser::CreatePathFollower(const PathFollowerParams& params)
 	}
 	else
 	{
-		pResult = new CPathFollower(params);
+		pResult = gEnv->pAISystem->CreatePathFollower(params);
 	}
 
 	assert(pResult);

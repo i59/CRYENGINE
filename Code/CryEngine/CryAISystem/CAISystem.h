@@ -498,6 +498,8 @@ public:
 
 	virtual std::shared_ptr<IPathFollower> CreateAndReturnNewDefaultPathFollower(const PathFollowerParams& params, const IPathObstacles& pathObstacleObject);
 
+	virtual IPathFollower *CreatePathFollower(const PathFollowerParams& params) override;
+
 	const AIActorSet& GetEnabledAIActorSet() const;
 
 	void              AddToFaction(CAIObject* pObject, uint8 factionID);
