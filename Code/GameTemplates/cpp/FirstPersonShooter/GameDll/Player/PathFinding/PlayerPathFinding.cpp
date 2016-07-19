@@ -42,8 +42,12 @@ void CPlayerPathFinding::PostInit(IGameObject *pGameObject)
 		params.minSpeed = 0.f;
 		params.normalSpeed = params.maxSpeed;
 
+		params.use2D = false;
+
 		m_pPathFollower = gEnv->pAISystem->CreatePathFollower(params);
 	}
+
+	m_movementAbility.b3DMove = true;
 }
 
 void CPlayerPathFinding::RequestMoveTo(const Vec3 &position)
@@ -92,11 +96,13 @@ void CPlayerPathFinding::OnMNMPathResult(const MNM::QueuedPathID& requestId, MNM
 	{
 		m_state = Movement::FoundPath;
 
+		SAFE_DELETE(m_pFoundPath);
 		m_pFoundPath = result.pPath->Clone();
 
 		// Bump version
 		m_pFoundPath->SetVersion(m_pFoundPath->GetVersion() + 1);
 
+		m_pPathFollower->Reset();
 		m_pPathFollower->AttachToPath(m_pFoundPath);
 	}
 	else
@@ -108,44 +114,27 @@ void CPlayerPathFinding::OnMNMPathResult(const MNM::QueuedPathID& requestId, MNM
 
 Vec3 CPlayerPathFinding::GetVelocity() const
 {
-	if (auto *pPhysicalEntity = GetEntity()->GetPhysics())
-	{
-		pe_status_living status;
-		if (pPhysicalEntity->GetStatus(&status))
-			return status.vel;
-
-		pe_status_dynamics dSt;
-		pPhysicalEntity->GetStatus(&dSt);
-
-		return dSt.v;
-	}
-
-	return ZERO;
+	return m_pPlayer->GetMovement()->GetVelocity();
 }
 
 void CPlayerPathFinding::SetMovementOutputValue(const PathFollowResult& result)
 {
-	if (auto *pPhysicalEntity = GetEntity()->GetPhysics())
+	float frameTime = gEnv->pTimer->GetFrameTime();
+	float moveStep = m_pPlayer->GetCVars().m_moveSpeed * frameTime;
+
+	auto &playerMovement = *m_pPlayer->GetMovement();
+
+	if (result.velocityOut.GetLength() > moveStep)
 	{
-		pe_action_move moveAction;
-
-		// Apply movement request directly to velocity
-		moveAction.iJump = 1;
-		
-		const float moveSpeed = m_pPlayer->GetCVars().m_moveSpeed;
-		moveAction.dir = result.velocityOut;
-
-		// Dispatch the movement request
-		pPhysicalEntity->Action(&moveAction);
+		playerMovement.RequestMove(result.velocityOut.GetNormalized() * moveStep);
+	}
+	else
+	{
+		playerMovement.SetVelocity(result.velocityOut);
 	}
 }
 
 void CPlayerPathFinding::ClearMovementState()
 {
-	if (auto *pPhysicalEntity = GetEntity()->GetPhysics())
-	{
-		pe_action_set_velocity setVel;
-		setVel.v = ZERO;
-		pPhysicalEntity->Action(&setVel);
-	}
+	m_pPlayer->GetMovement()->SetVelocity(ZERO);
 }

@@ -43,8 +43,11 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 		{
 			Quat playerOrientation;
 
+			float travelSpeed = playerDynamics.v.GetLength2D();
+			bool bWalking = travelSpeed > 0.2f;
+
 			// Update player orientation based on velocity
-			if (playerDynamics.v.GetLength() > 0.1f)
+			if (bWalking)
 			{
 				playerOrientation = Quat::CreateRotationVDir(playerDynamics.v.GetNormalized());
 
@@ -68,7 +71,6 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 			// Set turn rate as the difference between previous and new entity rotation
 			float turnAngle = Ang3::CreateRadZ(GetEntity()->GetForwardDir(), playerOrientation.GetColumn1()) / ctx.fFrameTime;
 			float travelAngle = Ang3::CreateRadZ(GetEntity()->GetForwardDir(), playerDynamics.v.GetNormalized());
-			float travelSpeed = playerDynamics.v.GetLength2D();
 
 			// Set the travel speed based on the physics velocity magnitude
 			// Keep in mind that the maximum number for motion parameters is 10.
@@ -94,7 +96,7 @@ void CPlayerAnimations::Update(SEntityUpdateContext& ctx, int updateSlot)
 
 			// Update the Mannequin tags
 			m_pAnimationContext->state.Set(m_rotateTagId, abs(turnAngle) > 0.05f);
-			m_pAnimationContext->state.Set(m_walkTagId, travelSpeed > 0.2f && m_pPlayer->GetMovement()->IsOnGround());
+			m_pAnimationContext->state.Set(m_walkTagId, bWalking && m_pPlayer->GetMovement()->IsOnGround());
 
 			// Update the weapon's orientation to match ours
 			if (auto *pWeapon = m_pPlayer->GetCurrentWeapon())

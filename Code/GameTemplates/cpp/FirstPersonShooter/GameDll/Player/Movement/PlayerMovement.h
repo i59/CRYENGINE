@@ -21,6 +21,11 @@ public:
 
 	void Physicalize();
 
+	void RequestMove(const Vec3 &direction);
+
+	void SetVelocity(const Vec3 &velocity);
+	Vec3 GetVelocity();
+
 	// Gets the requested movement direction based on input data
 	bool IsOnGround() const { return m_bOnGround; }
 	Vec3 GetGroundNormal() const { return m_groundNormal; }
@@ -28,8 +33,7 @@ public:
 protected:
 	// Get the stats from latest physics thread update
 	void GetLatestPhysicsStats(IPhysicalEntity &physicalEntity);
-	void UpdateMovementRequest(float frameTime, IPhysicalEntity &physicalEntity);
-
+	
 protected:
 	CPlayer *m_pPlayer;
 

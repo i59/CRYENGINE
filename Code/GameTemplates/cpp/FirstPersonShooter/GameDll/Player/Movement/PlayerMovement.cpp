@@ -51,6 +51,47 @@ void CPlayerMovement::Physicalize()
 	GetEntity()->Physicalize(physParams);
 }
 
+void CPlayerMovement::RequestMove(const Vec3 &direction)
+{
+	if (auto *pPhysicalEntity = GetEntity()->GetPhysics())
+	{
+		pe_action_move moveAction;
+		// Add dir to velocity
+		moveAction.iJump = 2;
+		moveAction.dir = direction;
+
+		// Dispatch the movement request
+		pPhysicalEntity->Action(&moveAction);
+	}
+}
+
+void CPlayerMovement::SetVelocity(const Vec3 &velocity)
+{
+	if (auto *pPhysicalEntity = GetEntity()->GetPhysics())
+	{
+		pe_action_move moveAction;
+		// Change velocity instantaneously
+		moveAction.iJump = 1;
+
+		moveAction.dir = velocity;
+
+		// Dispatch the movement request
+		pPhysicalEntity->Action(&moveAction);
+	}
+}
+
+Vec3 CPlayerMovement::GetVelocity()
+{
+	if (auto *pPhysicalEntity = GetEntity()->GetPhysics())
+	{
+		pe_status_living status;
+		if (pPhysicalEntity->GetStatus(&status))
+			return status.vel;
+	}
+
+	return ZERO;
+}
+
 void CPlayerMovement::Update(SEntityUpdateContext &ctx, int updateSlot)
 {
 	IEntity &entity = *GetEntity();
@@ -60,9 +101,6 @@ void CPlayerMovement::Update(SEntityUpdateContext &ctx, int updateSlot)
 
 	// Obtain stats from the living entity implementation
 	GetLatestPhysicsStats(*pPhysicalEntity);
-
-	// Send latest input data to physics indicating desired movement direction
-	UpdateMovementRequest(ctx.fFrameTime, *pPhysicalEntity);
 }
 
 void CPlayerMovement::GetLatestPhysicsStats(IPhysicalEntity &physicalEntity)
@@ -75,22 +113,5 @@ void CPlayerMovement::GetLatestPhysicsStats(IPhysicalEntity &physicalEntity)
 		// Store the ground normal in case it is needed
 		// Note that users have to check if we're on ground before using, is considered invalid in air.
 		m_groundNormal = livingStatus.groundSlope;
-	}
-}
-
-void CPlayerMovement::UpdateMovementRequest(float frameTime, IPhysicalEntity &physicalEntity)
-{
-	if(m_bOnGround)
-	{
-		pe_action_move moveAction;
-
-		// Apply movement request directly to velocity
-		moveAction.iJump = 2;
-
-		const float moveSpeed = m_pPlayer->GetCVars().m_moveSpeed;
-		//moveAction.dir = GetEntity()->GetWorldRotation() * GetLocalMoveDirection() * moveSpeed * frameTime;
-
-		// Dispatch the movement request
-		//physicalEntity.Action(&moveAction);
 	}
 }
