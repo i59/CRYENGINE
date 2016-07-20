@@ -120,5 +120,15 @@
 		"executable_name"     : "TemplateFirstPersonShooter",
 
 		"product_name"        : "First Person Shooter Template"
+	},
+	"GameRollingBall" :
+	{
+		"code_folder"         : "Code/GameTemplates/cpp/RollingBall",
+		"game_data_dir"       : "TemplateRollingBall",
+		"game_dll_filename"   : "CryGameTemplateRollingBall.dll",
+
+		"executable_name"     : "TemplateRollingBall",
+
+		"product_name"        : "Rolling Ball Template"
 	}
 }
