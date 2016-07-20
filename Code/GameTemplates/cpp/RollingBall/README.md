@@ -1,5 +1,7 @@
-# First Person Shooter template
-This directory containg the source code for the FPS template originally based on GameZero.
+# Template Description
+This directory containg the source code for the Rolling Ball template originally based on GameZero.
+
+The sample implements basic impulse-based movement of a rolling sphere in a basic level.
 
 ## Future Extractions
 The sample aims to extract additional logic into the engine itself, in order to minimize the amount of code required to get started.
