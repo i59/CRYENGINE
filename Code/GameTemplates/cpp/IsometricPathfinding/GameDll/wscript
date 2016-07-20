@@ -1,7 +1,7 @@
 def build(bld):
 
 	bld.CryEngineModule(
-		target        = 'CryGameTemplateFPS',
+		target        = 'CryGameTemplateIsometricPathfinding',
 		vs_filter     = 'Templates',
 		file_list     = 'template.waf_files',
 		pch           = 'StdAfx.cpp',
