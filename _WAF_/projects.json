@@ -101,7 +101,7 @@
 			"data_folder"      : "/data/sdk/"
 		}
 	},
-	"CryGameTemplateIsometricPathfinding" :
+	"GameTemplateIsometricPathfinding" :
 	{
 		"code_folder"         : "Code/GameTemplates/cpp/IsometricPathfinding",
 		"game_data_dir"       : "TemplateIsometricPathfinding",
@@ -110,5 +110,15 @@
 		"executable_name"     : "TemplateIsometricPathfinding",
 
 		"product_name"        : "Isometric Pathfinding Template"
+	},
+	"GameTemplateFPS" :
+	{
+		"code_folder"         : "Code/GameTemplates/cpp/FirstPersonShooter",
+		"game_data_dir"       : "TemplateFirstPersonShooter",
+		"game_dll_filename"   : "CryGameTemplateFPS.dll",
+
+		"executable_name"     : "TemplateFirstPersonShooter",
+
+		"product_name"        : "First Person Shooter Template"
 	}
 }
