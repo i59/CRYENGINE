@@ -130,5 +130,15 @@
 		"executable_name"     : "TemplateRollingBall",
 
 		"product_name"        : "Rolling Ball Template"
+	},
+	"GameSidescroller" :
+	{
+		"code_folder"         : "Code/GameTemplates/cpp/Sidescroller",
+		"game_data_dir"       : "TemplateSidescroller",
+		"game_dll_filename"   : "CryGameTemplateSidescroller.dll",
+
+		"executable_name"     : "TemplateSidescroller",
+
+		"product_name"        : "Sidescroller Template"
 	}
 }
