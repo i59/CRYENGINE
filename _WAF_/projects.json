@@ -121,6 +121,16 @@
 
 		"product_name"        : "First Person Shooter Template"
 	},
+	"GameTemplateTPS" :
+	{
+		"code_folder"         : "Code/GameTemplates/cpp/ThirdPersonShooter",
+		"game_data_dir"       : "TemplateThirdPersonShooter",
+		"game_dll_filename"   : "CryGameTemplatetTPS.dll",
+
+		"executable_name"     : "TemplateThirdPersonShooter",
+
+		"product_name"        : "Third Person Shooter Template"
+	},
 	"GameRollingBall" :
 	{
 		"code_folder"         : "Code/GameTemplates/cpp/RollingBall",

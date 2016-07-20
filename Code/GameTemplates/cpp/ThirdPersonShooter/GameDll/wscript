@@ -1,0 +1,10 @@
+def build(bld):
+
+	bld.CryEngineModule(
+		target        = 'CryGameTemplateTPS',
+		vs_filter     = 'Templates',
+		file_list     = 'template.waf_files',
+		pch           = 'StdAfx.cpp',
+		includes      = [ '.',  Path('Code/CryEngine/CryAction')],
+		win_lib       = [ 'shell32', 'Gdi32' ],
+	)
