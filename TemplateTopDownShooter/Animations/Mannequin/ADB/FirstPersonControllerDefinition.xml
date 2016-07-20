@@ -1,0 +1,13 @@
+<ControllerDef>
+ <Tags filename="Animations/Mannequin/ADB/PlayerTags.xml"/>
+ <Fragments filename="Animations/Mannequin/ADB/PlayerFragmentIds.xml"/>
+ <FragmentDefs>
+  <Idle scopes="FullBody" flags="Persistent+AutoReinstall"/>
+ </FragmentDefs>
+ <ScopeContextDefs>
+  <FirstPersonCharacter />
+ </ScopeContextDefs>
+ <ScopeDefs>
+  <FullBody layer="0" numLayers="3" context="FirstPersonCharacter"/>
+ </ScopeDefs>
+</ControllerDef>

@@ -150,5 +150,15 @@
 		"executable_name"     : "TemplateSidescroller",
 
 		"product_name"        : "Sidescroller Template"
+	},
+	"GameTopDownShooter" :
+	{
+		"code_folder"         : "Code/GameTemplates/cpp/TopDownShooter",
+		"game_data_dir"       : "TemplateTopDownShooter",
+		"game_dll_filename"   : "CryGameTopDownShooter.dll",
+
+		"executable_name"     : "TemplateTopDownShooter",
+
+		"product_name"        : "Top Down Shooter Template"
 	}
 }
