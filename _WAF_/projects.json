@@ -125,13 +125,13 @@
 	{
 		"code_folder"         : "Code/GameTemplates/cpp/ThirdPersonShooter",
 		"game_data_dir"       : "TemplateThirdPersonShooter",
-		"game_dll_filename"   : "CryGameTemplatetTPS.dll",
+		"game_dll_filename"   : "CryGameTemplateTPS.dll",
 
 		"executable_name"     : "TemplateThirdPersonShooter",
 
 		"product_name"        : "Third Person Shooter Template"
 	},
-	"GameRollingBall" :
+	"GameTemplateRollingBall" :
 	{
 		"code_folder"         : "Code/GameTemplates/cpp/RollingBall",
 		"game_data_dir"       : "TemplateRollingBall",
@@ -141,7 +141,7 @@
 
 		"product_name"        : "Rolling Ball Template"
 	},
-	"GameSidescroller" :
+	"GameTemplateSidescroller" :
 	{
 		"code_folder"         : "Code/GameTemplates/cpp/Sidescroller",
 		"game_data_dir"       : "TemplateSidescroller",
@@ -151,7 +151,7 @@
 
 		"product_name"        : "Sidescroller Template"
 	},
-	"GameTopDownShooter" :
+	"GameTemplateTopDownShooter" :
 	{
 		"code_folder"         : "Code/GameTemplates/cpp/TopDownShooter",
 		"game_data_dir"       : "TemplateTopDownShooter",
