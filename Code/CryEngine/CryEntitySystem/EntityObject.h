@@ -137,7 +137,7 @@ public:
 	// Compute lod for slot from wanted
 	CLodValue ComputeLod(int wantedLod, const SRenderingPassInfo& passInfo);
 	// Render slot.
-	void Render(CEntity * pEntity, SRendParams & rParams, int nRndFlags, class CRenderProxy * pRenderProxy, const SRenderingPassInfo &passInfo);
+	void Render(CEntity * pEntity, SRendParams & rParams, int nRndFlags, class CRenderComponent * pRenderComponent, const SRenderingPassInfo &passInfo);
 	// Update slot (when entity is updated)
 	void Update(CEntity* pEntity, bool bVisible, bool& bBoundsChanged);
 

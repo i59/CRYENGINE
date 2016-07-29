@@ -8,54 +8,23 @@
 #include <CrySerialization/IArchiveHost.h>
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityAttributesProxy::ProcessEvent(SEntityEvent& event) {}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityAttributesProxy::Initialize(SComponentInitializer const& inititializer)
+void CEntityAttributesComponent::Initialize(IEntity &entity)
 {
 	if (m_attributes.empty())
 	{
-		if (IEntityArchetype* pArchetype = inititializer.m_pEntity->GetArchetype())
+		if (IEntityArchetype* pArchetype = m_pEntity->GetArchetype())
 		{
 			EntityAttributeUtils::CloneAttributes(pArchetype->GetAttributes(), m_attributes);
 		}
 		else
 		{
-			EntityAttributeUtils::CloneAttributes(inititializer.m_pEntity->GetClass()->GetEntityAttributes(), m_attributes);
+			EntityAttributeUtils::CloneAttributes(m_pEntity->GetClass()->GetEntityAttributes(), m_attributes);
 		}
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-EEntityProxy CEntityAttributesProxy::GetType()
-{
-	return ENTITY_PROXY_ATTRIBUTES;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityAttributesProxy::Release()
-{
-	delete this;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityAttributesProxy::Done() {}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityAttributesProxy::Update(SEntityUpdateContext& context) {}
-
-//////////////////////////////////////////////////////////////////////////
-bool CEntityAttributesProxy::Init(IEntity* pEntity, SEntitySpawnParams& params)
-{
-	if (params.pArchetype)
-	{
-		EntityAttributeUtils::CloneAttributes(params.pArchetype->GetAttributes(), m_attributes);
-	}
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntityAttributesProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
+void CEntityAttributesComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	if (params.pArchetype)
 	{
@@ -64,9 +33,9 @@ void CEntityAttributesProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityAttributesProxy::SerializeXML(XmlNodeRef& entityNodeXML, bool loading)
+void CEntityAttributesComponent::SerializeXML(XmlNodeRef& entityNodeXML, bool bLoading, bool bFromInit)
 {
-	if (loading == true)
+	if (bLoading)
 	{
 		if (XmlNodeRef attributesNodeXML = entityNodeXML->findChild("Attributes"))
 		{
@@ -88,28 +57,28 @@ void CEntityAttributesProxy::SerializeXML(XmlNodeRef& entityNodeXML, bool loadin
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityAttributesProxy::Serialize(TSerialize serialize) {}
+void CEntityAttributesComponent::Serialize(TSerialize serialize) {}
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntityAttributesProxy::NeedSerialize()
+bool CEntityAttributesComponent::NeedSerialize()
 {
 	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntityAttributesProxy::GetSignature(TSerialize signature)
+bool CEntityAttributesComponent::GetSignature(TSerialize signature)
 {
 	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityAttributesProxy::GetMemoryUsage(ICrySizer* pSizer) const
+void CEntityAttributesComponent::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityAttributesProxy::SetAttributes(const TEntityAttributeArray& attributes)
+void CEntityAttributesComponent::SetAttributes(const TEntityAttributeArray& attributes)
 {
 	const size_t attributeCount = attributes.size();
 	m_attributes.resize(attributeCount);
@@ -129,13 +98,13 @@ void CEntityAttributesProxy::SetAttributes(const TEntityAttributeArray& attribut
 }
 
 //////////////////////////////////////////////////////////////////////////
-TEntityAttributeArray& CEntityAttributesProxy::GetAttributes()
+TEntityAttributeArray& CEntityAttributesComponent::GetAttributes()
 {
 	return m_attributes;
 }
 
 //////////////////////////////////////////////////////////////////////////
-const TEntityAttributeArray& CEntityAttributesProxy::GetAttributes() const
+const TEntityAttributeArray& CEntityAttributesComponent::GetAttributes() const
 {
 	return m_attributes;
 }

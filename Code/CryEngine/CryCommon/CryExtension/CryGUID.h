@@ -75,21 +75,24 @@ struct CryGUID
 	}
 };
 
-// This is only used by the editor where we use C++ 11.
-#if __cplusplus > 199711L
-namespace std
+namespace stl
 {
-template<> struct hash<CryGUID>
-{
-public:
-	size_t operator()(const CryGUID& guid) const
+	// Hash helper to allow CryGUID in unordered_map
+	struct hash_guid
 	{
-		std::hash<uint64> hasher;
-		return hasher(guid.lopart) ^ hasher(guid.hipart);
-	}
-};
+	public:
+		size_t operator()(const CryGUID& guid) const
+		{
+			std::hash<uint64> hasher;
+			return hasher(guid.lopart) ^ hasher(guid.hipart);
+		}
+
+		bool operator()(const CryGUID& guid1, const CryGUID& guid2) const
+		{
+			return guid1.lopart == guid2.lopart && guid1.hipart == guid2.hipart;
+		}
+	};
 }
-#endif
 
 #define MAKE_CRYGUID(high, low) CryGUID::Construct((uint64) high ## LL, (uint64) low ## LL)
 

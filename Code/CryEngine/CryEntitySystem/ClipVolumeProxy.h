@@ -15,31 +15,24 @@
 // Description:
 //    Proxy for storage of entity attributes.
 //////////////////////////////////////////////////////////////////////////
-class CClipVolumeProxy : public IClipVolumeProxy
+class CClipVolumeComponent : public IClipVolumeComponent
 {
 public:
-	CClipVolumeProxy();
+	CClipVolumeComponent();
+	virtual ~CClipVolumeComponent();
 
-	// IComponent interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init) override {};
+	// IEntityComponent
+	virtual void Initialize(IEntity &entity) override;
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 	virtual void ProcessEvent(SEntityEvent& event) override;
-	//////////////////////////////////////////////////////////////////////////
 
-	// IEntityProxy
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType() override                             { return ENTITY_PROXY_CLIPVOLUME; }
-	virtual void         Release() override;
-	virtual void         Done() override                                {};
-	virtual void         Update(SEntityUpdateContext& context) override {};
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params) override;
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params) override;
-	virtual void         SerializeXML(XmlNodeRef& entityNodeXML, bool loading) override;
-	virtual void         Serialize(TSerialize serialize) override {};
-	virtual bool         NeedSerialize() override                 { return false; }
-	virtual bool         GetSignature(TSerialize signature) override;
-	virtual void         GetMemoryUsage(ICrySizer* pSizer) const override;
-	//////////////////////////////////////////////////////////////////////////
+	virtual void Serialize(TSerialize ser) override {}
+	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) override;
+
+	virtual bool GetSignature(TSerialize signature) override;
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;
+	// ~IEntityComponent
 
 	virtual void         UpdateRenderMesh(IRenderMesh* pRenderMesh, const DynArray<Vec3>& meshFaces) override;
 	virtual IClipVolume* GetClipVolume() const override { return m_pClipVolume; }
@@ -49,10 +42,9 @@ public:
 private:
 	bool LoadFromFile(const char* szFilePath);
 
-private:
-	// Host entity.
-	IEntity* m_pEntity;
+	void Reset();
 
+private:
 	// Engine clip volume
 	IClipVolume* m_pClipVolume;
 
@@ -69,6 +61,6 @@ private:
 	uint32 m_nFlags;
 };
 
-DECLARE_SHARED_POINTERS(CClipVolumeProxy)
+DECLARE_SHARED_POINTERS(CClipVolumeComponent)
 
 #endif //__CLIPVOLUMEPROXY_H__

@@ -16,14 +16,14 @@
 #include "Entity.h"
 #include <CryNetwork/ISerialize.h>
 
-void CSubstitutionProxy::Done()
+CSubstitutionComponent::~CSubstitutionComponent()
 {
 	// Substitution proxy does not need to be restored if entity system is being rested.
 	if (m_pSubstitute && !g_pIEntitySystem->m_bReseting)
 	{
-		//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionProxy::Done: Ptr=%d", (int)m_pSubstitute);
-		//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionProxy::Done: %s", m_pSubstitute->GetName());
-		//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionProxy::Done: Pos=(%.2f,%.2f,%.2f)", m_pSubstitute->GetPos().x, m_pSubstitute->GetPos().y, m_pSubstitute->GetPos().z);
+		//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionComponent::Done: Ptr=%d", (int)m_pSubstitute);
+		//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionComponent::Done: %s", m_pSubstitute->GetName());
+		//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionComponent::Done: Pos=(%.2f,%.2f,%.2f)", m_pSubstitute->GetPos().x, m_pSubstitute->GetPos().y, m_pSubstitute->GetPos().z);
 		gEnv->p3DEngine->RegisterEntity(m_pSubstitute);
 		m_pSubstitute->Physicalize(true);
 		AABB WSBBox = m_pSubstitute->GetBBox();
@@ -34,30 +34,32 @@ void CSubstitutionProxy::Done()
 			gEnv->pPhysicalWorld->AddRefEntInPODGrid(m_pSubstitute->GetPhysics(), &WSBBox.min);
 		m_pSubstitute = 0;
 	}
+
+	if (m_pSubstitute) m_pSubstitute->ReleaseNode();
 }
 
-void CSubstitutionProxy::SetSubstitute(IRenderNode* pSubstitute)
+void CSubstitutionComponent::SetSubstitute(IRenderNode* pSubstitute)
 {
 	m_pSubstitute = pSubstitute;
-	//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionProxy::SetSubstitute: Ptr=%d", (int)m_pSubstitute);
-	//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionProxy::SetSubstitute: %s", m_pSubstitute->GetName());
-	//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionProxy::SetSubstitute: Pos=(%.2f,%.2f,%.2f)", m_pSubstitute->GetPos().x, m_pSubstitute->GetPos().y, m_pSubstitute->GetPos().z);
+	//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionComponent::SetSubstitute: Ptr=%d", (int)m_pSubstitute);
+	//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionComponent::SetSubstitute: %s", m_pSubstitute->GetName());
+	//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionComponent::SetSubstitute: Pos=(%.2f,%.2f,%.2f)", m_pSubstitute->GetPos().x, m_pSubstitute->GetPos().y, m_pSubstitute->GetPos().z);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSubstitutionProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
+void CSubstitutionComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	m_pSubstitute = 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CSubstitutionProxy::NeedSerialize()
+bool CSubstitutionComponent::NeedSerialize()
 {
 	return m_pSubstitute != 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
-bool CSubstitutionProxy::GetSignature(TSerialize signature)
+bool CSubstitutionComponent::GetSignature(TSerialize signature)
 {
 	signature.BeginGroup("SubstitutionProxy");
 	signature.EndGroup();
@@ -65,7 +67,7 @@ bool CSubstitutionProxy::GetSignature(TSerialize signature)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSubstitutionProxy::Serialize(TSerialize ser)
+void CSubstitutionComponent::Serialize(TSerialize ser)
 {
 	Vec3 center, pos;
 	if (ser.IsReading())
@@ -85,9 +87,9 @@ void CSubstitutionProxy::Serialize(TSerialize ser)
 				m_pSubstitute = 0;
 			else if (m_pSubstitute)
 			{
-				//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionProxy::Serialize: Ptr=%d", (int)m_pSubstitute);
-				//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionProxy::Serialize: %s", m_pSubstitute->GetName());
-				//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionProxy::Serialize: Pos=(%.2f,%.2f,%.2f)", m_pSubstitute->GetPos().x, m_pSubstitute->GetPos().y, m_pSubstitute->GetPos().z);
+				//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionComponent::Serialize: Ptr=%d", (int)m_pSubstitute);
+				//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionComponent::Serialize: %s", m_pSubstitute->GetName());
+				//gEnv->pLog->Log("CRYSIS-3502: CSubstitutionComponent::Serialize: Pos=(%.2f,%.2f,%.2f)", m_pSubstitute->GetPos().x, m_pSubstitute->GetPos().y, m_pSubstitute->GetPos().z);
 
 				m_pSubstitute->Dephysicalize();
 				gEnv->p3DEngine->UnRegisterEntityAsJob(m_pSubstitute);

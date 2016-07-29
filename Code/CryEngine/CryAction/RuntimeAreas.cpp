@@ -148,49 +148,46 @@ void CRuntimeAreaManager::CreateAreas()
 		areaSpawnParams.sName = szName;
 		areaSpawnParams.vPosition = cluster.extents.GetCenter() - Vec3(0.0f, 0.0f, cluster.extents.GetSize().z * 0.5f);//??
 
-		IEntityAreaProxy* pAreaProxy = NULL;
 		IEntity* pNewAreaEntity = gEnv->pEntitySystem->SpawnEntity(areaSpawnParams);
 		if (pNewAreaEntity)
 		{
 			EntityId const nAreaEntityID = pNewAreaEntity->GetId();
 
-			pAreaProxy = static_cast<IEntityAreaProxy*>(pNewAreaEntity->CreateProxy(ENTITY_PROXY_AREA).get());
-			if (pAreaProxy)
+			auto &areaComponent = pNewAreaEntity->CreateAreaComponent();
+
+			size_t const nPointCount = cluster.boundary_points.size();
+			DynArray<bool> abObstructSound(nPointCount + 2, false);
+			points.resize(nPointCount);
+			for (size_t j = 0; j < points.size(); ++j)
+				points[j] = Vec3(
+					cluster.boundary_points[j].x,
+					cluster.boundary_points[j].y,
+					areaSpawnParams.vPosition.z) - areaSpawnParams.vPosition;
+
+			areaComponent.SetPoints(&points[0], &abObstructSound[0], points.size(), cluster.extents.GetSize().z);
+			areaComponent.SetID(11001100 + i);
+			areaComponent.SetPriority(100);
+			areaComponent.SetGroup(110011);
+
+			SEntitySpawnParams areaObjectSpawnParams;
+			areaObjectSpawnParams.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("RuntimeAreaObject");
+			areaObjectSpawnParams.nFlags = ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_NO_SAVE;
+			areaObjectSpawnParams.sLayerName = "global";
+
+			IEntity* pNewAreaObjectEntity = gEnv->pEntitySystem->SpawnEntity(areaObjectSpawnParams);
+
+			if (pNewAreaObjectEntity != NULL)
 			{
-				size_t const nPointCount = cluster.boundary_points.size();
-				DynArray<bool> abObstructSound(nPointCount + 2, false);
-				points.resize(nPointCount);
-				for (size_t j = 0; j < points.size(); ++j)
-					points[j] = Vec3(
-					  cluster.boundary_points[j].x,
-					  cluster.boundary_points[j].y,
-					  areaSpawnParams.vPosition.z) - areaSpawnParams.vPosition;
+				EntityId const nAreaObjectEntityID = pNewAreaObjectEntity->GetId();
 
-				pAreaProxy->SetPoints(&points[0], &abObstructSound[0], points.size(), cluster.extents.GetSize().z);
-				pAreaProxy->SetID(11001100 + i);
-				pAreaProxy->SetPriority(100);
-				pAreaProxy->SetGroup(110011);
+				areaComponent.AddEntity(nAreaObjectEntityID);
 
-				SEntitySpawnParams areaObjectSpawnParams;
-				areaObjectSpawnParams.pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("RuntimeAreaObject");
-				areaObjectSpawnParams.nFlags = ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_NO_SAVE;
-				areaObjectSpawnParams.sLayerName = "global";
-
-				IEntity* pNewAreaObjectEntity = gEnv->pEntitySystem->SpawnEntity(areaObjectSpawnParams);
-
-				if (pNewAreaObjectEntity != NULL)
-				{
-					EntityId const nAreaObjectEntityID = pNewAreaObjectEntity->GetId();
-
-					pAreaProxy->AddEntity(nAreaObjectEntityID);
-
-					m_areaObjects.push_back(nAreaObjectEntityID);
-					m_areas.push_back(nAreaEntityID);
-				}
-				else
-				{
-					gEnv->pEntitySystem->RemoveEntity(nAreaEntityID, true);
-				}
+				m_areaObjects.push_back(nAreaObjectEntityID);
+				m_areas.push_back(nAreaEntityID);
+			}
+			else
+			{
+				gEnv->pEntitySystem->RemoveEntity(nAreaEntityID, true);
 			}
 		}
 	}

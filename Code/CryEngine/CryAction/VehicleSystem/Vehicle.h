@@ -736,7 +736,7 @@ protected:
 
 	EntityId                     m_lastWeaponId;
 
-	IEntityAudioProxyPtr         m_pIEntityAudioProxy;
+	IEntityAudioComponent*         m_pIEntityAudioProxy;
 
 	typedef std::vector<SVehicleSoundInfo> TVehicleSoundEvents;
 	TVehicleSoundEvents m_soundEvents;

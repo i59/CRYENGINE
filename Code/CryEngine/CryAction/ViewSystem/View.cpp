@@ -825,8 +825,7 @@ void CView::CreateAudioListener()
 			sTemp.Format("AudioListener(%d)", static_cast<int>(m_pAudioListener->GetId()));
 			m_pAudioListener->SetName(sTemp.c_str());
 
-			IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(m_pAudioListener->CreateProxy(ENTITY_PROXY_AUDIO));
-			CRY_ASSERT(pIEntityAudioProxy.get());
+			m_pAudioListener->CreateAudioComponent();
 		}
 		else
 		{

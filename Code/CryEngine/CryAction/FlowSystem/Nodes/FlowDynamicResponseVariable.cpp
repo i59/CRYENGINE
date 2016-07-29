@@ -15,11 +15,9 @@ DRS::IVariableCollection* GetVariableCollection(EntityId entityID, const string&
 		IEntity* pVariableCollectionOwningEntity = gEnv->pEntitySystem->GetEntity(entityID);
 		if (pVariableCollectionOwningEntity)
 		{
-			const IEntityDynamicResponseProxyPtr pIEntityDrsProxy = crycomponent_cast<IEntityDynamicResponseProxyPtr>(pVariableCollectionOwningEntity->CreateProxy(ENTITY_PROXY_DYNAMICRESPONSE));
-			if (pIEntityDrsProxy)
-			{
-				return pIEntityDrsProxy->GetLocalVariableCollection();
-			}
+			auto &dynamicResponseComponent = pVariableCollectionOwningEntity->CreateDynamicResponseComponent();
+
+			return dynamicResponseComponent.GetLocalVariableCollection();
 		}
 	}
 	else

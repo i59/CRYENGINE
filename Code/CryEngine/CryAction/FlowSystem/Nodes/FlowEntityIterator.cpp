@@ -613,17 +613,16 @@ public:
 			IEntity* pArea = pEntitySystem->FindEntityByName(area);
 			if (pArea)
 			{
-				IEntityAreaProxy* pAreaProxy = (IEntityAreaProxy*)pArea->GetProxy(ENTITY_PROXY_AREA);
-				if (pAreaProxy)
+				if (auto *pAreaComponent = pArea->QueryComponent<IEntityAreaComponent>())
 				{
 					Vec3 worldPos(pArea->GetWorldPos());
-					EEntityAreaType areaType = pAreaProxy->GetAreaType();
+					EEntityAreaType areaType = pAreaComponent->GetAreaType();
 
 					switch (areaType)
 					{
 					case ENTITY_AREA_TYPE_BOX:
 						{
-							pAreaProxy->GetBox(m_min, m_max);
+						pAreaComponent->GetBox(m_min, m_max);
 							m_min += worldPos;
 							m_max += worldPos;
 							break;
@@ -632,7 +631,7 @@ public:
 						{
 							Vec3 center;
 							float radius = 0.f;
-							pAreaProxy->GetSphere(center, radius);
+							pAreaComponent->GetSphere(center, radius);
 
 							m_min.Set(center.x - radius, center.y - radius, center.z - radius);
 							m_max.Set(center.x + radius, center.y + radius, center.z + radius);
@@ -640,8 +639,8 @@ public:
 						}
 					case ENTITY_AREA_TYPE_SHAPE:
 						{
-							const Vec3* points = pAreaProxy->GetPoints();
-							const int count = pAreaProxy->GetPointsCount();
+							const Vec3* points = pAreaComponent->GetPoints();
+							const int count = pAreaComponent->GetPointsCount();
 							if (count > 0)
 							{
 								Vec3 p = worldPos + points[0];

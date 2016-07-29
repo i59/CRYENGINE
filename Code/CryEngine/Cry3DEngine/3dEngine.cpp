@@ -4980,7 +4980,7 @@ void C3DEngine::CleanUpOldDecals()
 
 void C3DEngine::UpdateRenderTypeEnableLookup()
 {
-	SetRenderNodeTypeEnabled(eERType_RenderProxy, (GetCVars()->e_Entities != 0));
+	SetRenderNodeTypeEnabled(eERType_RenderComponent, (GetCVars()->e_Entities != 0));
 	SetRenderNodeTypeEnabled(eERType_Brush, (GetCVars()->e_Brushes != 0));
 	SetRenderNodeTypeEnabled(eERType_Vegetation, (GetCVars()->e_Vegetation != 0));
 }
@@ -6218,7 +6218,7 @@ void C3DEngine::AsyncOctreeUpdate(IRenderNode* pEnt, int nSID, int nSIDConsidere
 	{
 		UnRegisterEntityImpl(pEnt);
 	}
-	else if (GetCVars()->e_StreamCgf && eERType == eERType_RenderProxy)
+	else if (GetCVars()->e_StreamCgf && eERType == eERType_RenderComponent)
 	{
 		//  Temporary solution: Force streaming priority update for objects that was not registered before
 		//  and was not visible before since usual prediction system was not able to detect them

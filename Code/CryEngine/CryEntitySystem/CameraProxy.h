@@ -24,50 +24,32 @@ struct SProximityElement;
 // Description:
 //    Handles sounds in the entity.
 //////////////////////////////////////////////////////////////////////////
-class CCameraProxy : public IEntityCameraProxy
+class CCameraComponent : public IEntityCameraComponent
 {
 public:
-	CCameraProxy();
-	CEntity* GetEntity() const { return m_pEntity; };
+	// IEntityComponent
+	virtual void Initialize(IEntity &entity) override;
+	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init);
-	virtual void ProcessEvent(SEntityEvent& event);
-	//////////////////////////////////////////////////////////////////////////
+	virtual void Serialize(TSerialize ser) override {}
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType()                         { return ENTITY_PROXY_CAMERA; }
-	virtual void         Release();
-	virtual void         Done()                            {};
-	virtual void         Update(SEntityUpdateContext& ctx) {};
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) {};
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         NeedSerialize()                                     { return false; };
-	virtual bool         GetSignature(TSerialize signature);
-	//////////////////////////////////////////////////////////////////////////
+	virtual bool GetSignature(TSerialize signature) override;
 
-	virtual void     SetCamera(CCamera& cam);
-	virtual CCamera& GetCamera() { return m_camera; };
-	//////////////////////////////////////////////////////////////////////////
-
-	void         UpdateMaterialCamera();
-
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->AddObject(this, sizeof(*this));
 	}
-private:
-	//////////////////////////////////////////////////////////////////////////
-	// Private member variables.
-	//////////////////////////////////////////////////////////////////////////
-	// Host entity.
-	CEntity* m_pEntity;
+	// ~IEntityComponent
+
+	// IEntityCameraComponent
+	virtual void     SetCamera(CCamera& cam);
+	virtual CCamera& GetCamera() { return m_camera; };
+	// ~IEntityCameraComponent
+
+	void         UpdateMaterialCamera();
+
+private:;
 	CCamera  m_camera;
 };
 

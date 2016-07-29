@@ -11,40 +11,40 @@ struct SEntityEvent;
 // Description:
 //    Handles sounds in the entity.
 //////////////////////////////////////////////////////////////////////////
-struct CAreaProxy : public IEntityAreaProxy
+struct CAreaComponent : public IEntityAreaComponent
 {
 public:
 	static void ResetTempState();
 
 public:
-	CAreaProxy();
-	virtual ~CAreaProxy();
-	CEntity* GetEntity() const { return m_pEntity; };
+	CAreaComponent();
+	virtual ~CAreaComponent();
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init) override;
+	// IEntityComponent
+	virtual void Initialize(IEntity &entity) override;
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
+
 	virtual void ProcessEvent(SEntityEvent& event) override;
-	//////////////////////////////////////////////////////////////////////////
+
+	virtual void Serialize(TSerialize ser) override;
+	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) override;
+
+	virtual bool GetSignature(TSerialize signature) override;
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
+	{
+		SIZER_COMPONENT_NAME(pSizer, "CAreaComponent");
+		pSizer->AddObject(this, sizeof(*this));
+		pSizer->AddContainer(m_localPoints);
+		pSizer->AddContainer(m_bezierPoints);
+		pSizer->AddContainer(m_bezierPointsTmp);
+		if (m_pArea)
+			m_pArea->GetMemoryUsage(pSizer);
+	}
+	// ~IEntityComponent
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType() override                                          { return ENTITY_PROXY_AREA; }
-	virtual void         Release() override;
-	virtual void         Done() override                                             {}
-	virtual void         Update(SEntityUpdateContext& ctx) override                  {}
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params) override { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params) override;
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) override;
-	virtual void         Serialize(TSerialize ser) override;
-	virtual bool         NeedSerialize() override { return false; }
-	virtual bool         GetSignature(TSerialize signature) override;
-	//////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityAreaProxy interface.
+	// IEntityAreaComponent interface.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void            SetFlags(int nAreaProxyFlags) override { m_nFlags = nAreaProxyFlags; }
 	virtual int             GetFlags() override                    { return m_nFlags; }
@@ -96,16 +96,6 @@ public:
 	virtual float           GetInnerFadeDistance() const override               { return m_pArea->GetInnerFadeDistance(); }
 	virtual void            SetInnerFadeDistance(float const distance) override { m_pArea->SetInnerFadeDistance(distance); }
 
-	virtual void            GetMemoryUsage(ICrySizer* pSizer) const override
-	{
-		SIZER_COMPONENT_NAME(pSizer, "CAreaProxy");
-		pSizer->AddObject(this, sizeof(*this));
-		pSizer->AddContainer(m_localPoints);
-		pSizer->AddContainer(m_bezierPoints);
-		pSizer->AddContainer(m_bezierPointsTmp);
-		if (m_pArea)
-			m_pArea->GetMemoryUsage(pSizer);
-	}
 private:
 	void OnMove();
 	void Reset();
@@ -121,9 +111,6 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	// Private member variables.
 	//////////////////////////////////////////////////////////////////////////
-	// Host entity.
-	CEntity* m_pEntity;
-
 	int      m_nFlags;
 
 	typedef std::vector<bool> tSoundObstruction;

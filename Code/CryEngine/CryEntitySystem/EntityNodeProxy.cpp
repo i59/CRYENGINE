@@ -17,12 +17,7 @@
 #include <CryAction/IMaterialEffects.h>
 #include <CryAnimation/ICryAnimation.h>
 
-void CEntityNodeProxy::Initialize(const SComponentInitializer& init)
-{
-	m_pEntity = init.m_pEntity;
-}
-
-void CEntityNodeProxy::ProcessEvent(SEntityEvent& event)
+void CEntityNodeComponent::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)
 	{

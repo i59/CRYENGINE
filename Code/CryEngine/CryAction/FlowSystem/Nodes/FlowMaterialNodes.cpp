@@ -157,15 +157,11 @@ public:
 						{
 							ActivateOutput(pActInfo, OUT_VALUE, string(pEntity->GetMaterial()->GetName()));
 						}
-						else
+						else if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 						{
-							IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-							if (pRenderProxy)
-							{
-								IMaterial* pMtl = pRenderProxy->GetRenderMaterial(0);
-								if (pMtl)
-									ActivateOutput(pActInfo, OUT_VALUE, string(pMtl->GetName()));
-							}
+							IMaterial* pMtl = pRenderComponent->GetRenderMaterial(0);
+							if (pMtl)
+								ActivateOutput(pActInfo, OUT_VALUE, string(pMtl->GetName()));
 						}
 					}
 				}
@@ -193,9 +189,9 @@ public:
 		}
 		else
 		{
-			if (IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
+			if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 			{
-				pRenderProxy->SetSlotMaterial(slot, pMtl);
+				pRenderComponent->SetSlotMaterial(slot, pMtl);
 			}
 		}
 	}
@@ -811,11 +807,11 @@ public:
 		if (!pEntity)
 			return false;
 
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy == 0)
+		auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>();
+		if (pRenderComponent == 0)
 			return false;
 
-		IMaterial* pMaterial = pRenderProxy->GetRenderMaterial(slot);
+		IMaterial* pMaterial = pRenderComponent->GetRenderMaterial(slot);
 		if (pMaterial == 0)
 		{
 			GameWarning("[flow] CFlowNodeEntityMaterialShaderParam: Entity '%s' [%d] has no material at slot %d", pEntity->GetName(), pEntity->GetId(), slot);
@@ -830,7 +826,7 @@ public:
 				GameWarning("[flow] CFlowNodeEntityMaterialShaderParam: Entity '%s' [%d] Can't clone material at slot %d", pEntity->GetName(), pEntity->GetId(), slot);
 				return false;
 			}
-			pRenderProxy->SetSlotMaterial(slot, pMaterial);
+			pRenderComponent->SetSlotMaterial(slot, pMaterial);
 			m_pMaterial = pMaterial;
 		}
 
@@ -942,10 +938,10 @@ public:
 	{
 		if (pEntity == 0)
 			return;
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy == 0)
+		auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>();
+		if (pRenderComponent == 0)
 			return;
-		pRenderProxy->SetSlotMaterial(slot, 0);
+		pRenderComponent->SetSlotMaterial(slot, 0);
 	}
 
 	void CloneAndApplyMaterial(IEntity* pEntity, int slot)
@@ -953,22 +949,22 @@ public:
 		if (pEntity == 0)
 			return;
 
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy == 0)
+		auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>();
+		if (pRenderComponent == 0)
 			return;
 
-		IMaterial* pMtl = pRenderProxy->GetSlotMaterial(slot);
+		IMaterial* pMtl = pRenderComponent->GetSlotMaterial(slot);
 		if (pMtl)
 			return;
 
-		pMtl = pRenderProxy->GetRenderMaterial(slot);
+		pMtl = pRenderComponent->GetRenderMaterial(slot);
 		if (pMtl == 0)
 		{
 			GameWarning("[flow] CFlowNodeEntityCloneMaterial: Entity '%s' [%d] has no material at slot %d", pEntity->GetName(), pEntity->GetId(), slot);
 			return;
 		}
 		pMtl = gEnv->p3DEngine->GetMaterialManager()->CloneMultiMaterial(pMtl);
-		pRenderProxy->SetSlotMaterial(slot, pMtl);
+		pRenderComponent->SetSlotMaterial(slot, pMtl);
 	}
 
 	virtual void GetMemoryUsage(ICrySizer* s) const

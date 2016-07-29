@@ -25,52 +25,36 @@ struct SScriptState;
 
 //////////////////////////////////////////////////////////////////////////
 // Description:
-//    CScriptProxy object handles all the interaction of the entity with
+//    CScriptComponent object handles all the interaction of the entity with
 //    the entity script.
 //////////////////////////////////////////////////////////////////////////
-class CScriptProxy : public IEntityScriptProxy
+class CScriptComponent : public IEntityScriptComponent
 {
 public:
 
-	CScriptProxy();
-	~CScriptProxy();
+	CScriptComponent();
+	~CScriptComponent();
 
-	struct SComponentInitializerScriptProxy : public SComponentInitializer
-	{
-		CEntityScript*      m_pScript;
-		SEntitySpawnParams* m_pSpawnParams;
-		SComponentInitializerScriptProxy(IEntity* pEntity, CEntityScript* pScript = NULL, SEntitySpawnParams* pSpawnParams = NULL)
-			: SComponentInitializer(pEntity)
-			, m_pScript(pScript)
-			, m_pSpawnParams(pSpawnParams)
-		{}
-	};
+	// IEntityComponent
+	virtual void PostInit() override;
 
-	virtual void Initialize(const SComponentInitializer& init);
+	virtual void ProcessEvent(SEntityEvent& event) override;
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void ProcessEvent(SEntityEvent& event);
-	//////////////////////////////////////////////////////////////////////////
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
+	virtual void Update(SEntityUpdateContext& ctx) override;
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType() { return ENTITY_PROXY_SCRIPT; }
-	virtual void         Release() { delete this; };
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         Done();
-	virtual void         Update(SEntityUpdateContext& ctx);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading);
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         NeedSerialize();
-	virtual bool         GetSignature(TSerialize signature);
-	//////////////////////////////////////////////////////////////////////////
+	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) override;
+	virtual void Serialize(TSerialize ser) override;
+
+	virtual bool NeedSerialize() override;
+
+	virtual bool GetSignature(TSerialize signature) override;
+	// ~IEntityComponent
+
+	void InitializeScript(IEntityScript *pScript, IScriptTable *pPropertiesTable);
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityScriptProxy implementation.
+	// IEntityScriptComponent implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void          SetScriptUpdateRate(float fUpdateEveryNSeconds) { m_fScriptUpdateRate = fUpdateEveryNSeconds; };
 	virtual IScriptTable* GetScriptTable()                                { return m_pThis; };
@@ -88,7 +72,7 @@ public:
 	virtual void          SendScriptEvent(int Event, const char* str, bool* pRet = NULL);
 	virtual void          SendScriptEvent(int Event, int nParam, bool* pRet = NULL);
 
-	virtual void          ChangeScript(IEntityScript* pScript, SEntitySpawnParams* params);
+	virtual void          ChangeScript(IEntityScript* pScript, IScriptTable *pScriptTable);
 	//////////////////////////////////////////////////////////////////////////
 
 	virtual void OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass);
@@ -113,7 +97,7 @@ public:
 
 private:
 	SScriptState*  CurrentState() { return m_pScript->GetState(m_nCurrStateId); }
-	void           CreateScriptTable(SEntitySpawnParams* pSpawnParams);
+	void           CreateScriptTable(IScriptTable *pPropertiesTable);
 	void           SetEventTargets(XmlNodeRef& eventTargets);
 	IScriptSystem* GetIScriptSystem() const { return gEnv->pScriptSystem; }
 
@@ -121,7 +105,6 @@ private:
 	bool           HaveTable(const char* name);
 
 private:
-	CEntity*       m_pEntity;
 	CEntityScript* m_pScript;
 	IScriptTable*  m_pThis;
 

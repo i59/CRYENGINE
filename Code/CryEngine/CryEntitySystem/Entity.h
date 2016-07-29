@@ -19,30 +19,6 @@
 	#include <CryEntitySystem/IEntity.h>
 
 //////////////////////////////////////////////////////////////////////////
-// This is the order in which the proxies are serialized
-const static EEntityProxy ProxySerializationOrder[] = {
-	ENTITY_PROXY_RENDER,
-	ENTITY_PROXY_SCRIPT,
-	ENTITY_PROXY_AUDIO,
-	ENTITY_PROXY_AI,
-	ENTITY_PROXY_AREA,
-	ENTITY_PROXY_BOIDS,
-	ENTITY_PROXY_BOID_OBJECT,
-	ENTITY_PROXY_CAMERA,
-	ENTITY_PROXY_FLOWGRAPH,
-	ENTITY_PROXY_SUBSTITUTION,
-	ENTITY_PROXY_TRIGGER,
-	ENTITY_PROXY_USER,
-	ENTITY_PROXY_PHYSICS,
-	ENTITY_PROXY_ROPE,
-	ENTITY_PROXY_ENTITYNODE,
-	ENTITY_PROXY_ATTRIBUTES,
-	ENTITY_PROXY_CLIPVOLUME,
-	ENTITY_PROXY_DYNAMICRESPONSE,
-	ENTITY_PROXY_LAST
-};
-
-//////////////////////////////////////////////////////////////////////////
 // These headers cannot be replaced with forward references.
 // They are needed for correct up casting from IEntityProxy to real proxy class.
 	#include "RenderProxy.h"
@@ -202,6 +178,9 @@ public:
 	virtual void                SetUpdatePolicy(EEntityUpdatePolicy eUpdatePolicy) override;
 	virtual EEntityUpdatePolicy GetUpdatePolicy() const override { return (EEntityUpdatePolicy)m_eUpdatePolicy; }
 
+	virtual void RegisterEntityComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent) override;
+	virtual IEntityComponent *GetComponentByTypeId(const CryInterfaceID &interfaceID) const override;
+
 	//////////////////////////////////////////////////////////////////////////
 	// Entity Proxies Interfaces access functions.
 	//////////////////////////////////////////////////////////////////////////
@@ -216,6 +195,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void             Physicalize(SEntityPhysicalizeParams& params) override;
 	virtual void             EnablePhysics(bool enable) override;
+
 	virtual IPhysicalEntity* GetPhysics() const override;
 
 	virtual int              PhysicalizeSlot(int slot, SEntityPhysicalizeParams& params) override;
@@ -223,6 +203,14 @@ public:
 	virtual void             UpdateSlotPhysics(int slot) override;
 
 	virtual void             SetPhysicsState(XmlNodeRef& physicsState) override;
+
+	virtual IEntityPhysicsComponent &CreatePhysicsComponent() override;
+	virtual IEntityTriggerComponent &CreateTriggerComponent() override;
+	virtual IEntityAudioComponent &CreateAudioComponent() override;
+	virtual IEntitySubstitutionComponent &CreatSubstitutionComponent() override;
+	virtual IEntityAreaComponent &CreateAreaComponent() override;
+	virtual IEntityDynamicResponseComponent &CreateDynamicResponseComponent() override;
+	virtual void CreateEntityNodeComponent() override;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Custom entity material.
@@ -282,7 +270,7 @@ public:
 	virtual void InvalidateTM(int nWhyFlags = 0, bool bRecalcPhyBounds = false) override;
 
 	// Load/Save entity parameters in XML node.
-	virtual void         SerializeXML(XmlNodeRef& node, bool bLoading) override;
+	virtual void         SerializeXML(XmlNodeRef& node, bool bLoading, bool bFromInit) override;
 
 	virtual IEntityLink* GetEntityLinks() override;
 	virtual IEntityLink* AddEntityLink(const char* sLinkName, EntityId entityId, EntityGUID entityGuid = 0) override;
@@ -310,14 +298,6 @@ public:
 
 	// Specializations for the EntityPool
 	bool                  GetSignature(TSerialize& signature);
-	void                  SerializeXML_ExceptScriptProxy(XmlNodeRef& node, bool bLoading);
-	// Get render proxy object.
-	ILINE CRenderProxy*   GetRenderProxy() const   { return (CRenderProxy*)CEntity::GetProxy(ENTITY_PROXY_RENDER); }
-	// Get physics proxy object.
-	ILINE CPhysicalProxy* GetPhysicalProxy() const { return (CPhysicalProxy*)CEntity::GetProxy(ENTITY_PROXY_PHYSICS); }
-	// Get script proxy object.
-	ILINE CScriptProxy*   GetScriptProxy() const   { return (CScriptProxy*)CEntity::GetProxy(ENTITY_PROXY_SCRIPT); }
-	//////////////////////////////////////////////////////////////////////////
 
 	// For internal use.
 	CEntitySystem* GetCEntitySystem() const { return g_pIEntitySystem; }
@@ -391,9 +371,9 @@ private:
 	friend class CEntitySystem;
 	friend class CPhysicsEventListener; // For faster access to internals.
 	friend class CEntityObject;         // For faster access to internals.
-	friend class CRenderProxy;          // For faster access to internals.
-	friend class CTriggerProxy;
-	friend class CPhysicalProxy;
+	friend class CRenderComponent;          // For faster access to internals.
+	friend class CTriggerComponent;
+	friend class CPhysicsComponent;
 
 	// Childs structure, only allocated when any child entity is attached.
 	struct SBindings
@@ -491,6 +471,10 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	typedef std::set<IComponentPtr> TComponents;
 	TComponents m_components;
+
+	typedef std::unordered_map<const CryInterfaceID, std::shared_ptr<IEntityComponent>, stl::hash_guid> TEntityComponentMap;
+	// Store components in map for lookup by type id
+	TEntityComponentMap m_entityComponentMap;
 
 	// Entity Links.
 	IEntityLink* m_pEntityLinks;

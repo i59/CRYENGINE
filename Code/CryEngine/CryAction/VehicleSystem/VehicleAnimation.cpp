@@ -226,8 +226,7 @@ bool CVehicleAnimation::StartAnimation()
 
 			if (!animState.sound.empty())
 			{
-				IEntityAudioProxyPtr pEntitySoundsProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-				CRY_ASSERT(pEntitySoundsProxy.get());
+				auto &audioComponent = pEntity->CreateAudioComponent();
 
 				REINST("send an animation start event?");
 				/*int soundFlags = FLAG_SOUND_DEFAULT_3D;
@@ -274,7 +273,7 @@ void CVehicleAnimation::StopAnimation()
 	REINST("send an animation stop event?");
 	/*if (animState.soundId != INVALID_SOUNDID)
 	   {
-	   IEntityAudioProxyPtr pEntitySoundsProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	   IEntityAudioComponent* pEntitySoundsProxy = crycomponent_cast<IEntityAudioComponent*>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
 	   CRY_ASSERT(pEntitySoundsProxy.get());
 
 	   pEntitySoundsProxy->StopSound(animState.soundId);

@@ -145,12 +145,9 @@ void CScriptBind_Particle::CreateDecalInternal(IFunctionHandler* pH, const Vec3&
 
 		if (pEntity)
 		{
-			IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-			;
-
-			if (pRenderProxy)
+			if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 			{
-				decal.ownerInfo.pRenderNode = pRenderProxy->GetRenderNode();
+				decal.ownerInfo.pRenderNode = pRenderComponent->GetRenderNode();
 			}
 		}
 	}

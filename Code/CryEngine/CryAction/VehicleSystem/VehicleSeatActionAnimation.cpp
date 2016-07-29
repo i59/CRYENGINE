@@ -58,7 +58,7 @@ bool CVehicleSeatActionAnimation::Init(IVehicle* pVehicle, IVehicleSeat* pSeat, 
 	animTable.getAttr("speed", m_speed);
 
 	REINST("start/stop event?");
-	/*m_pIEntityAudioProxy = (IEntityAudioProxy*)m_pVehicle->GetEntity()->GetProxy(ENTITY_PROXY_AUDIO);
+	/*m_pIEntityAudioProxy = (IEntityAudioComponent*)m_pVehicle->GetEntity()->GetProxy(ENTITY_PROXY_AUDIO);
 
 	   if (m_pIEntityAudioProxy)
 	   {

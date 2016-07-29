@@ -162,10 +162,10 @@ private:
 	Vec3   m_eventPos;
 	uint32 m_hash;
 
-	void FillDrawDistance(IEntity* pEnt)
+	void FillDrawDistance(IEntity* pEntity)
 	{
-		if (IEntityRenderProxy* pRP = (IEntityRenderProxy*)pEnt->GetProxy(ENTITY_PROXY_RENDER))
-			if (IRenderNode* pRN = pRP->GetRenderNode())
+		if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
+			if (IRenderNode* pRN = pRenderComponent->GetRenderNode())
 				m_drawDistance = pRN->GetMaxViewDist();
 	}
 };

@@ -165,11 +165,8 @@ IEntity* CGameObjectSystem::CreatePlayerProximityTrigger()
 	IEntity* pEntity = pES->SpawnEntity(params);
 	if (!pEntity)
 		return NULL;
-	if (!pEntity->CreateProxy(ENTITY_PROXY_TRIGGER))
-	{
-		pES->RemoveEntity(pEntity->GetId());
-		return NULL;
-	}
+
+	pEntity->CreateTriggerComponent();
 	return pEntity;
 }
 

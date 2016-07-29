@@ -590,9 +590,9 @@ void CAnimSequence::PrecacheEntity(IEntity* pEntity)
 {
 	if (m_precachedEntitiesSet.find(pEntity) != m_precachedEntitiesSet.end())
 	{
-		if (IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
+		if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 		{
-			if (IRenderNode* pRenderNode = pRenderProxy->GetRenderNode())
+			if (IRenderNode* pRenderNode = pRenderComponent->GetRenderNode())
 			{
 				gEnv->p3DEngine->PrecacheRenderNode(pRenderNode, 4.f);
 			}

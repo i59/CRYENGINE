@@ -796,19 +796,12 @@ void C3DEngine::DebugDraw_UpdateDebugNode()
 
 			if (pEntity)
 			{
-				IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-
-				if (pRenderProxy)
+				if(auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 				{
-					IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
+					gEnv->pRenderer->SetDebugRenderNode(pRenderComponent->GetRenderNode());
 
-					if (pRenderNode)
-					{
-						gEnv->pRenderer->SetDebugRenderNode(pRenderNode);
-
-						//CryLogAlways(	"Hit: %s(0x%p), ipart: %d, partid: %d, surafce_idx: %d, iNode: %d, \n",
-						//pRenderNode->GetName(), pRenderNode, rayHit.ipart, rayHit.partid, rayHit.surface_idx, rayHit.iNode);
-					}
+					//CryLogAlways(	"Hit: %s(0x%p), ipart: %d, partid: %d, surafce_idx: %d, iNode: %d, \n",
+					//pRenderNode->GetName(), pRenderNode, rayHit.ipart, rayHit.partid, rayHit.surface_idx, rayHit.iNode);
 				}
 			}
 		}
@@ -3349,7 +3342,7 @@ void C3DEngine::DisplayInfo(float& fTextPosX, float& fTextPosY, float& fTextStep
 		DRAW_OBJ_STATS(eERType_VolumeObject);
 		DRAW_OBJ_STATS(eERType_Rope);
 		DRAW_OBJ_STATS(eERType_PrismObject);
-		DRAW_OBJ_STATS(eERType_RenderProxy);
+		DRAW_OBJ_STATS(eERType_RenderComponent);
 		DRAW_OBJ_STATS(eERType_GameEffect);
 		DRAW_OBJ_STATS(eERType_BreakableGlass);
 		DRAW_OBJ_STATS(eERType_MergedMesh);

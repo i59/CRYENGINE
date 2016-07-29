@@ -418,8 +418,7 @@ bool CVehicle::Init(IGameObject* pGameObject)
 		}
 	}
 
-	m_pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-	CRY_ASSERT(m_pIEntityAudioProxy && "no sound proxy on entity");
+	m_pIEntityAudioProxy = &pEntity->CreateAudioComponent();
 
 	m_pVehicleSystem = CCryAction::GetCryAction()->GetIVehicleSystem();
 	m_engineSlotBySpeed = true;
@@ -739,12 +738,11 @@ bool CVehicle::Init(IGameObject* pGameObject)
 
 	pEntity->AddFlags(ENTITY_FLAG_CASTSHADOW | ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO | ENTITY_FLAG_TRIGGER_AREAS);
 	//////////////////////////////////////////////////////////////////////////
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
 		int viewDistRatio = DEFAULT_VEHICLE_VIEW_DIST_RATIO;
 		vehicleParams.getAttr("viewDistRatio", viewDistRatio);
-		pRenderProxy->GetRenderNode()->SetViewDistRatio(viewDistRatio);
+		pRenderComponent->GetRenderNode()->SetViewDistRatio(viewDistRatio);
 	}
 	//////////////////////////////////////////////////////////////////////////
 
@@ -1323,15 +1321,14 @@ void CVehicle::OnMaterialLayerChanged(const SEntityEvent& event)
 		for (int i = 0; i < n; ++i)
 		{
 			IEntity* pChild = GetEntity()->GetChild(i);
-			IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pChild->GetProxy(ENTITY_PROXY_RENDER);
-			if (pRenderProxy)
+			if (auto *pRenderComponent = pChild->QueryComponent<IEntityRenderComponent>())
 			{
 				if (IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(pChild->GetId()))
 					if (pActor->IsPlayer()) // don't freeze players inside vehicles
 						continue;
 
-				uint8 mask = pRenderProxy->GetMaterialLayersMask();
-				pRenderProxy->SetMaterialLayersMask(frozen ? mask | MTL_LAYER_FROZEN : mask & ~MTL_LAYER_FROZEN);
+				uint8 mask = pRenderComponent->GetMaterialLayersMask();
+				pRenderComponent->SetMaterialLayersMask(frozen ? mask | MTL_LAYER_FROZEN : mask & ~MTL_LAYER_FROZEN);
 			}
 		}
 	}
@@ -2586,7 +2583,7 @@ bool CVehicle::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile
 
 		NET_PROFILE_SCOPE("Physics", ser.IsReading());
 
-		IEntityPhysicalProxy* pEPP = (IEntityPhysicalProxy*) GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
+		IEntityPhysicsComponent* pEPP = (IEntityPhysicsComponent*) GetEntity()->QueryComponent<IEntityPhysicsComponent>();
 		if (!pEPP && ser.IsWriting())
 		{
 			gEnv->pPhysicalWorld->SerializeGarbageTypedSnapshot(ser, type, 0);
@@ -3506,7 +3503,7 @@ void CVehicle::OnPhysPostStep(const EventPhys* pEvent, bool logged)
 			}
 
 			IEntity* pEntity = GetEntity();
-			IEntityPhysicalProxy* pEPP = (IEntityPhysicalProxy*) pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
+			IEntityPhysicsComponent* pEPP = (IEntityPhysicsComponent*) pEntity->QueryComponent<IEntityPhysicsComponent>();
 			if (pEPP)
 			{
 				// Potential optimisation: Should stop CPhysicalProxy::OnPhysicsPostStep from also calling SetPosRotScale as it gets overridden here anyway

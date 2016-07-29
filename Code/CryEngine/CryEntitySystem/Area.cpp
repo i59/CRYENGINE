@@ -2506,11 +2506,9 @@ float CArea::GetFadeDistance()
 
 			if (pIEntity != nullptr)
 			{
-				IEntityAudioProxy const* const pIEntityAudioProxy = static_cast<IEntityAudioProxy*>(pIEntity->GetProxy(ENTITY_PROXY_AUDIO));
-
-				if (pIEntityAudioProxy != nullptr)
+				if(auto *pAudioComponent = pIEntity->QueryComponent<IEntityAudioComponent>())
 				{
-					m_fadeDistance = std::max<float>(m_fadeDistance, pIEntityAudioProxy->GetFadeDistance());
+					m_fadeDistance = std::max<float>(m_fadeDistance, pAudioComponent->GetFadeDistance());
 				}
 			}
 		}
@@ -2532,11 +2530,9 @@ float CArea::GetEnvironmentFadeDistance()
 
 			if (pIEntity != nullptr)
 			{
-				IEntityAudioProxy const* const pIEntityAudioProxy = static_cast<IEntityAudioProxy*>(pIEntity->GetProxy(ENTITY_PROXY_AUDIO));
-
-				if (pIEntityAudioProxy != nullptr)
+				if (auto *pAudioComponent = pIEntity->QueryComponent<IEntityAudioComponent>())
 				{
-					m_environmentFadeDistance = std::max<float>(m_environmentFadeDistance, pIEntityAudioProxy->GetEnvironmentFadeDistance());
+					m_environmentFadeDistance = std::max<float>(m_environmentFadeDistance, pAudioComponent->GetEnvironmentFadeDistance());
 				}
 			}
 		}
@@ -2560,11 +2556,9 @@ float CArea::GetGreatestFadeDistance()
 
 			if (pIEntity != nullptr)
 			{
-				IEntityAudioProxy const* const pIEntityAudioProxy = static_cast<IEntityAudioProxy*>(pIEntity->GetProxy(ENTITY_PROXY_AUDIO));
-
-				if (pIEntityAudioProxy != nullptr)
+				if (auto *pAudioComponent = pIEntity->QueryComponent<IEntityAudioComponent>())
 				{
-					m_greatestFadeDistance = std::max<float>(m_greatestFadeDistance, pIEntityAudioProxy->GetGreatestFadeDistance());
+					m_greatestFadeDistance = std::max<float>(m_greatestFadeDistance, pAudioComponent->GetGreatestFadeDistance());
 				}
 			}
 		}

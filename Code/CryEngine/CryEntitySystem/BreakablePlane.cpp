@@ -18,6 +18,8 @@
 #include <CrySystem/ITimer.h>
 #include "BreakableManager.h"
 
+#include "RenderProxy.h"
+
 template<class T> struct triplet
 {
 	triplet(T* ptr) { pdata = ptr; }
@@ -1143,7 +1145,7 @@ int CBreakablePlane::ProcessImpact(const SProcessImpactIn& in, SProcessImpactOut
 							pEntity = pEntitySystem->SpawnEntity(params);
 							if (!in.bLoading)
 								in.addChunkFunc(pEntity->GetId());
-							pEntity->CreateProxy(ENTITY_PROXY_RENDER);
+							pEntity->AcquireComponent<CRenderComponent>();
 							pEntity->SetStatObj(pNewStatObj, 0, false);
 							//if (!bRigidBody)
 							//	pEntity->SetSlotLocalTM(0, Matrix34::CreateTranslationMat(-center));

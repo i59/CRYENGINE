@@ -251,7 +251,7 @@ void CVehicleSeatActionRotateBone::UpdateSound(const float dt)
 		return;
 
 	IEntity* pEntity = m_pVehicle->GetEntity();
-	if (IEntityAudioProxy* pIEntityAudioProxy = (IEntityAudioProxy*)pEntity->GetProxy(ENTITY_PROXY_AUDIO))
+	if (auto *pAudioComponent = pEntity->QueryComponent<IEntityAudioComponent>())
 	{
 		if (m_stopCurrentSound)
 		{
@@ -369,7 +369,7 @@ void CVehicleSeatActionRotateBone::OnVehicleEvent(EVehicleEvent event, const SVe
 	else if (event == eVE_Destroyed || (event == eVE_Hide && params.iParam))
 	{
 		IEntity* pEntity = m_pVehicle->GetEntity();
-		if (IEntityAudioProxy* pIEntityAudioProxy = (IEntityAudioProxy*)pEntity->GetProxy(ENTITY_PROXY_AUDIO))
+		if (auto *pAudioComponent = pEntity->QueryComponent<IEntityAudioComponent>())
 		{
 			m_stopCurrentSound = 0;
 			//StopSound(*pIEntityAudioProxy, m_rotatingSoundID);
@@ -378,12 +378,12 @@ void CVehicleSeatActionRotateBone::OnVehicleEvent(EVehicleEvent event, const SVe
 
 }
 
-///*static*/ tSoundID CVehicleSeatActionRotateBone::PlaySound( IEntityAudioProxy& rIEntityAudioProxy, const char * soundName )
+///*static*/ tSoundID CVehicleSeatActionRotateBone::PlaySound( IEntityAudioComponent& rIEntityAudioProxy, const char * soundName )
 //{
 //	return rIEntityAudioProxy.PlaySoundEx(soundName, ZERO, FORWARD_DIRECTION, FLAG_SOUND_DEFAULT_3D, 0, 1.0f, 0, 0, eSoundSemantic_Weapon);
 //}
 //
-///*static*/ void CVehicleSeatActionRotateBone::SetSoundParam(IEntityAudioProxy& rIEntityAudioProxy, tSoundID soundID, const char* param, float value)
+///*static*/ void CVehicleSeatActionRotateBone::SetSoundParam(IEntityAudioComponent& rIEntityAudioProxy, tSoundID soundID, const char* param, float value)
 //{
 //	if(ISound* pSound = rIEntityAudioProxy.GetSound(soundID))
 //	{
@@ -391,7 +391,7 @@ void CVehicleSeatActionRotateBone::OnVehicleEvent(EVehicleEvent event, const SVe
 //	}
 //}
 //
-///*static*/ void CVehicleSeatActionRotateBone::StopSound( IEntityAudioProxy& rIEntityAudioProxy, tSoundID soundID )
+///*static*/ void CVehicleSeatActionRotateBone::StopSound( IEntityAudioComponent& rIEntityAudioProxy, tSoundID soundID )
 //{
 //	rIEntityAudioProxy.StopSound(soundID);
 //}

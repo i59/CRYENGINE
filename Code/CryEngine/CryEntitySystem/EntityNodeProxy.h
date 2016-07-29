@@ -18,34 +18,23 @@
 #include "EntitySystem.h"
 #include <CryNetwork/ISerialize.h>
 
-class CEntityNodeProxy :
-	public IEntityProxy
+class CEntityNodeComponent : public IEntityComponent
 {
 public:
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init);
-	virtual void ProcessEvent(SEntityEvent& event);
-	//////////////////////////////////////////////////////////////////////////
+	DECLARE_COMPONENT("EntityNodeComponent", 0x3592CE70D61B47FF, 0xBCC75AA894E236F7)
 
-	void         GetMemoryUsage(ICrySizer* pSizer) const              {};
-	EEntityProxy GetType()                                            { return ENTITY_PROXY_ENTITYNODE; };
+	// IEntityComponent
+	virtual void ProcessEvent(SEntityEvent& event) override;
 
-	bool         Init(IEntity* pEntity, SEntitySpawnParams& params)   { m_pEntity = pEntity; return true; };
-	void         Reload(IEntity* pEntity, SEntitySpawnParams& params) { m_pEntity = pEntity; };
+	virtual void Serialize(TSerialize ser) override {}
 
-	void         Done()                                               {};
-	void         Release()                                            { delete this; }
-	void         Update(SEntityUpdateContext& ctx)                    {};
+	virtual bool GetSignature(TSerialize signature) override { return true; }
 
-	void         SerializeXML(XmlNodeRef& entityNode, bool bLoading)  {};
-	void         Serialize(TSerialize ser)                            {};
-	bool         NeedSerialize()                                      { return false; };
-	bool         GetSignature(TSerialize signature)                   { return true; };
-
-private:
-	IEntity* m_pEntity;
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
+	{
+		pSizer->AddObject(this, sizeof(*this));
+	}
+	// ~IEntityComponent
 };
 
 #endif

@@ -507,6 +507,7 @@
     ],
     "CryEntitySystem":[
       "CryEntitySystem/IComponent.h",
+	  "CryEntitySystem/IEntityComponent.h",
       "CryEntitySystem/IEntitySystem.h",
       "CryEntitySystem/IEntity.h",
       "CryEntitySystem/IEntityAttributesProxy.h",

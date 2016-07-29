@@ -42,7 +42,7 @@ public:
 	{
 		BaseClass::Initialise(entity, actionController);
 
-		m_pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(entity.CreateProxy(ENTITY_PROXY_AUDIO));
+		m_pIEntityAudioProxy = &entity.CreateAudioComponent();
 	}
 
 	virtual void Update(float timePassed) override
@@ -77,7 +77,7 @@ public:
 
 private:
 
-	IEntityAudioProxyPtr m_pIEntityAudioProxy;
+	IEntityAudioComponent* m_pIEntityAudioProxy;
 };
 
 CAudioContext::CAudioContext() : m_pIEntityAudioProxy()

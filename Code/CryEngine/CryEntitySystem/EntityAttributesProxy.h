@@ -15,28 +15,21 @@
 // Description:
 //    Proxy for storage of entity attributes.
 //////////////////////////////////////////////////////////////////////////
-class CEntityAttributesProxy : public IEntityAttributesProxy
+class CEntityAttributesComponent : public IEntityAttributesComponent
 {
 public:
+	// IEntityComponent
+	virtual void Initialize(IEntity &entity) override;
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 
-	// IComponent
-	virtual void ProcessEvent(SEntityEvent& event) override;
-	virtual void Initialize(SComponentInitializer const& inititializer) override;
-	// ~IComponent
+	virtual void Serialize(TSerialize ser) override;
+	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) override;
 
-	// IEntityProxy
-	virtual EEntityProxy GetType() override;
-	virtual void         Release() override;
-	virtual void         Done() override;
-	virtual void         Update(SEntityUpdateContext& context) override;
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params) override;
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params) override;
-	virtual void         SerializeXML(XmlNodeRef& entityNodeXML, bool loading) override;
-	virtual void         Serialize(TSerialize serialize) override;
-	virtual bool         NeedSerialize() override;
-	virtual bool         GetSignature(TSerialize signature) override;
-	virtual void         GetMemoryUsage(ICrySizer* pSizer) const override;
-	// ~IEntityProxy
+	virtual bool NeedSerialize() override;
+	virtual bool GetSignature(TSerialize signature) override;
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;
+	// ~IEntityComponent
 
 	// IEntityAttributesProxy
 	virtual void                         SetAttributes(const TEntityAttributeArray& attributes) override;
@@ -49,6 +42,6 @@ private:
 	TEntityAttributeArray m_attributes;
 };
 
-DECLARE_SHARED_POINTERS(CEntityAttributesProxy)
+DECLARE_SHARED_POINTERS(CEntityAttributesComponent)
 
 #endif //__ENTITYATTRIBUTESPROXY_H__

@@ -538,13 +538,13 @@ public:
 
 				if (IsPortActive(pActInfo, IN_ENABLE))
 				{
-					IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
+					IEntityPhysicsComponent* pPhysicalProxy = (IEntityPhysicsComponent*)pActInfo->pEntity->QueryComponent<IEntityPhysicsComponent>();
 					if (pPhysicalProxy)
 						pPhysicalProxy->EnablePhysics(true);
 				}
 				if (IsPortActive(pActInfo, IN_DISABLE))
 				{
-					IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
+					IEntityPhysicsComponent* pPhysicalProxy = (IEntityPhysicsComponent*)pActInfo->pEntity->QueryComponent<IEntityPhysicsComponent>();
 					if (pPhysicalProxy)
 						pPhysicalProxy->EnablePhysics(false);
 				}

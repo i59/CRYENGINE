@@ -9,37 +9,29 @@
 // Description:
 //    Implements dynamic response proxy class for entity.
 //////////////////////////////////////////////////////////////////////////
-class CDynamicResponseProxy final : public IEntityDynamicResponseProxy
+class CDynamicResponseComponent final : public IEntityDynamicResponseComponent
 {
 public:
-	CDynamicResponseProxy();
-	virtual ~CDynamicResponseProxy();
+	CDynamicResponseComponent();
+	virtual ~CDynamicResponseComponent();
 
-	//IComponent override
-	virtual void Initialize(SComponentInitializer const& init) override;
+	// IEntityComponent
+	virtual void Initialize(IEntity &entity) override;
+	virtual void ProcessEvent(SEntityEvent& event) override;
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void         ProcessEvent(SEntityEvent& event) override;
-	virtual EEntityProxy GetType() override                                          { return ENTITY_PROXY_DYNAMICRESPONSE; }
-	virtual void         Release() override;
-	virtual void         Done() override                                             {}
-	virtual void         Update(SEntityUpdateContext& ctx) override;
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params) override { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params) override;
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) override;
-	virtual bool         NeedSerialize() override;
-	virtual void         Serialize(TSerialize ser) override;
-	virtual bool         GetSignature(TSerialize signature) override;
-	virtual void         GetMemoryUsage(ICrySizer* pSizer) const override
+	virtual void Serialize(TSerialize ser) override {}
+
+	virtual bool NeedSerialize() override { return true; }
+	virtual bool GetSignature(TSerialize signature) override;
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->AddObject(this, sizeof(*this));
 	}
-	//////////////////////////////////////////////////////////////////////////
+	// ~IEntityComponent
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityDynamicResponseProxy interface implementation.
+	// IEntityDynamicResponseComponent interface implementation.
 	//////////////////////////////////////////////////////////////////////////
 	virtual DRS::IVariableCollection* GetLocalVariableCollection() const override;
 	virtual DRS::IResponseActor*      GetResponseActor() const override;

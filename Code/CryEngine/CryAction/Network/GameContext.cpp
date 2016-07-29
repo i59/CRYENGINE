@@ -1008,9 +1008,9 @@ ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectTyp
 					return eSOR_Failed;
 				}
 			}
-			else if (pProxy = pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
+			else if (auto *pPhysicsComponent = pEntity->QueryComponent<IEntityPhysicsComponent>())
 			{
-				((IEntityPhysicalProxy*)pProxy)->Serialize(serialize);
+				pPhysicsComponent->Serialize(serialize);
 			}
 			if (m_pPhysicsSync && serialize.IsReading() && serialize.ShouldCommitValues())
 				m_pPhysicsSync->UpdatedEntity(entityId);
@@ -1018,11 +1018,11 @@ ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectTyp
 		break;
 	case eEA_Script:
 		{
-			IEntityScriptProxy* pScriptProxy = static_cast<IEntityScriptProxy*>(pEntity->GetProxy(ENTITY_PROXY_SCRIPT));
-			if (pScriptProxy)
+
+			if(auto *pScriptComponent = pEntity->QueryComponent<IEntityScriptComponent>())
 			{
 				NET_PROFILE_SCOPE("ScriptProxy", serialize.IsReading());
-				pScriptProxy->Serialize(serialize);
+				pScriptComponent->Serialize(serialize);
 			}
 
 			NET_PROFILE_SCOPE("ScriptRMI", serialize.IsReading());
@@ -1207,7 +1207,7 @@ void CGameContext::ControlObject(EntityId id, bool bHaveControl)
 		{
 			pGameObject->SetAuthority(bHaveControl);
 		}
-		if (IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*) pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
+		if (IEntityPhysicsComponent* pPhysicalProxy = (IEntityPhysicsComponent*) pEntity->QueryComponent<IEntityPhysicsComponent>())
 		{
 			if (IPhysicalEntity* pPhysicalEntity = pPhysicalProxy->GetPhysicalEntity())
 			{
@@ -1325,7 +1325,7 @@ void CGameContext::OnSpawn(IEntity* pEntity, SEntitySpawnParams& params)
 	CryLogAlways("  net aspects: 0x%.8x", aspects);
 #endif
 
-	if (pEntity->GetProxy(ENTITY_PROXY_SCRIPT))
+	if (auto *pScriptComponent = pEntity->QueryComponent<IEntityScriptComponent>())
 	{
 		m_pScriptRMI->SetupEntity(params.id, pEntity, true, true);
 	}
@@ -1439,7 +1439,7 @@ void CGameContext::OnReused(IEntity* pEntity, SEntitySpawnParams& params)
 
 	m_pScriptRMI->RemoveEntity(params.prevId);
 
-	if (pEntity->GetProxy(ENTITY_PROXY_SCRIPT))
+	if (auto *pScriptComponent = pEntity->QueryComponent<IEntityScriptComponent>())
 	{
 		m_pScriptRMI->SetupEntity(params.id, pEntity, true, true);
 	}
@@ -1512,8 +1512,8 @@ void CGameContext::OnEvent(IEntity* pEntity, SEntityEvent& event)
 			}
 #if FULL_ON_SCHEDULING
 			float drawDistance = -1;
-			if (IEntityRenderProxy* pRP = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
-				if (IRenderNode* pRN = pRP->GetRenderNode())
+			if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
+				if (IRenderNode* pRN = pRenderComponent->GetRenderNode())
 					drawDistance = pRN->GetMaxViewDist();
 			m_pNetContext->ChangedTransform(entId, pEntity->GetWorldPos(), pEntity->GetWorldRotation(), drawDistance);
 #endif

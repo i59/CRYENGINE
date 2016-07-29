@@ -2499,10 +2499,10 @@ void CSvoEnv::CollectAnalyticalOccluders()
 
 	Vec3 vCamPos = CVoxelSegment::m_voxCam.GetPosition();
 
-	if (int nCount = gEnv->p3DEngine->GetObjectsByTypeInBox(eERType_RenderProxy, areaBox, (IRenderNode**)0))
+	if (int nCount = gEnv->p3DEngine->GetObjectsByTypeInBox(eERType_RenderComponent, areaBox, (IRenderNode**)0))
 	{
 		PodArray<IRenderNode*> arrObjects(nCount, nCount);
-		nCount = gEnv->p3DEngine->GetObjectsByTypeInBox(eERType_RenderProxy, areaBox, arrObjects.GetElements());
+		nCount = gEnv->p3DEngine->GetObjectsByTypeInBox(eERType_RenderComponent, areaBox, arrObjects.GetElements());
 
 		Vec3 camPos = gEnv->pSystem->GetViewCamera().GetPosition();
 

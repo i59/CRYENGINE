@@ -422,17 +422,17 @@ bool CBreakableGlassSystem::ExtractPhysDataFromEvent(const EventPhysCollision& p
 				pStatObj = pEntity->GetStatObj(entPart);
 				entityMat = pEntity->GetSlotWorldTM(entPart);
 
-				if (IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
+				if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 				{
-					pRenderMat = pRenderProxy->GetRenderMaterial(entPart);
+					pRenderMat = pRenderComponent->GetRenderMaterial(entPart);
 
-					IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
+					IRenderNode* pRenderNode = pRenderComponent->GetRenderNode();
 					renderFlags = pRenderNode ? pRenderNode->GetRndFlags() : 0;
 
 					// Fall back to top level material if sub-object fails to find it
 					if (!pRenderMat)
 					{
-						pRenderMat = pRenderProxy->GetRenderMaterial();
+						pRenderMat = pRenderComponent->GetRenderMaterial();
 
 						if (!pRenderMat && pStatObj)
 						{

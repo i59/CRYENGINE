@@ -597,11 +597,9 @@ void CAnimSceneNode::ApplyCameraKey(SCameraKey& key, SAnimContext& animContext)
 
 		if (pSecondCameraEntity)
 		{
-			IEntityCameraProxy* pSecondCameraProxy = (IEntityCameraProxy*)pSecondCameraEntity->GetProxy(ENTITY_PROXY_CAMERA);
-
-			if (pSecondCameraProxy)
+			if (auto *pCameraComponent = pSecondCameraEntity->QueryComponent<IEntityCameraComponent>())
 			{
-				CCamera& camera = pSecondCameraProxy->GetCamera();
+				CCamera& camera = pCameraComponent->GetCamera();
 				fSecondCameraFOV = RAD2DEG(camera.GetFov());
 			}
 		}

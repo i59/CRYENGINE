@@ -6,20 +6,22 @@
 #include <CryNetwork/ISerialize.h>
 
 //////////////////////////////////////////////////////////////////////////
-CDynamicResponseProxy::CDynamicResponseProxy()
+CDynamicResponseComponent::CDynamicResponseComponent()
 	: m_pResponseActor(nullptr)
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
-CDynamicResponseProxy::~CDynamicResponseProxy()
+CDynamicResponseComponent::~CDynamicResponseComponent()
 {
+	gEnv->pDynamicResponseSystem->ReleaseResponseActor(m_pResponseActor);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::Initialize(SComponentInitializer const& init)
+void CDynamicResponseComponent::Initialize(IEntity &entity)
 {
-	const char* szEntityName = init.m_pEntity->GetName();
+	m_pEntity = &entity;
+
+	const char* szEntityName = m_pEntity->GetName();
 	m_pResponseActor = gEnv->pDynamicResponseSystem->GetResponseActor(szEntityName);
 	if (m_pResponseActor)
 	{
@@ -27,32 +29,14 @@ void CDynamicResponseProxy::Initialize(SComponentInitializer const& init)
 	}
 	else
 	{
-		m_pResponseActor = gEnv->pDynamicResponseSystem->CreateResponseActor(szEntityName, init.m_pEntity->GetId());
+		m_pResponseActor = gEnv->pDynamicResponseSystem->CreateResponseActor(szEntityName, m_pEntity->GetId());
 	}
 	SET_DRS_USER_SCOPED("DrsProxy Initialize");
 	m_pResponseActor->GetLocalVariables()->SetVariableValue("Name", CHashedString(szEntityName));
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::Release()
-{
-	gEnv->pDynamicResponseSystem->ReleaseResponseActor(m_pResponseActor);
-	m_pResponseActor = nullptr;
-	delete this;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::Update(SEntityUpdateContext& ctx)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::ProcessEvent(SEntityEvent& event)
+void CDynamicResponseComponent::ProcessEvent(SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_RESET)
 	{
@@ -62,13 +46,7 @@ void CDynamicResponseProxy::ProcessEvent(SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CDynamicResponseProxy::NeedSerialize()
-{
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CDynamicResponseProxy::GetSignature(TSerialize signature)
+bool CDynamicResponseComponent::GetSignature(TSerialize signature)
 {
 	signature.BeginGroup("DynamicResponseProxy");
 	signature.EndGroup();
@@ -76,26 +54,14 @@ bool CDynamicResponseProxy::GetSignature(TSerialize signature)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::Serialize(TSerialize ser)
-{
-
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CDynamicResponseProxy::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
-{
-
-}
-
-//////////////////////////////////////////////////////////////////////////
-DRS::IVariableCollection* CDynamicResponseProxy::GetLocalVariableCollection() const
+DRS::IVariableCollection* CDynamicResponseComponent::GetLocalVariableCollection() const
 {
 	CRY_ASSERT_MESSAGE(m_pResponseActor, "DRS Proxy without an Actor detected. Should never happen.");
 	return m_pResponseActor->GetLocalVariables();
 }
 
 //////////////////////////////////////////////////////////////////////////
-DRS::IResponseActor* CDynamicResponseProxy::GetResponseActor() const
+DRS::IResponseActor* CDynamicResponseComponent::GetResponseActor() const
 {
 	CRY_ASSERT_MESSAGE(m_pResponseActor, "DRS Proxy without an Actor detected. Should never happen.");
 	return m_pResponseActor;

@@ -239,11 +239,9 @@ public:
 			{
 				if (pActInfo->pEntity)
 				{
-					IEntityRenderProxy* pRenderProxy((IEntityRenderProxy*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_RENDER));
-
-					if (pRenderProxy)
+					if (auto *pRenderComponent = pActInfo->pEntity->QueryComponent<IEntityRenderComponent>())
 					{
-						IMaterial* pMtl(pRenderProxy->GetRenderMaterial(-1)); // material will be taken from the first renderable slot.
+						IMaterial* pMtl(pRenderComponent->GetRenderMaterial(-1)); // material will be taken from the first renderable slot.
 						if (pMtl)
 						{
 							IFlashPlayer* pFlashPlayer = CMaterialFlashInvokeNode::GetFlashPlayerFromMaterialIncludingSubMaterials(pMtl);
@@ -324,11 +322,9 @@ public:
 			{
 				if (pActInfo->pEntity)
 				{
-					IEntityRenderProxy* pRenderProxy((IEntityRenderProxy*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_RENDER));
-
-					if (pRenderProxy)
+					if (auto *pRenderComponent = pActInfo->pEntity->QueryComponent<IEntityRenderComponent>())
 					{
-						IMaterial* pMtl(pRenderProxy->GetRenderMaterial(-1)); // material will be taken from the first renderable slot.
+						IMaterial* pMtl(pRenderComponent->GetRenderMaterial(-1)); // material will be taken from the first renderable slot.
 						if (pMtl)
 						{
 							IFlashPlayer* pFlashPlayer = CMaterialFlashInvokeNode::GetFlashPlayerFromMaterialIncludingSubMaterials(pMtl);
@@ -481,11 +477,9 @@ private:
 
 	bool SetFSCommandHandler(IEntity* pEntity, const bool bEnable)
 	{
-		IEntityRenderProxy* pRenderProxy((IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER));
-
-		if (pRenderProxy)
+		if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 		{
-			IMaterial* pMtl(pRenderProxy->GetRenderMaterial(-1)); // material will be taken from the first renderable slot.
+			IMaterial* pMtl(pRenderComponent->GetRenderMaterial(-1)); // material will be taken from the first renderable slot.
 			if (pMtl)
 			{
 				IFlashPlayer* pFlashPlayer = CMaterialFlashInvokeNode::GetFlashPlayerFromMaterialIncludingSubMaterials(pMtl);

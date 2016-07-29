@@ -9260,7 +9260,7 @@ int CScriptBind_AI::MeleePunchableObject(IFunctionHandler* pH)
 
 	if (Distance::Point_PointSq(pObject->GetWorldPos(), origPos) < 0.5f)
 	{
-		IEntityPhysicalProxy* pPhysicsProxy = (IEntityPhysicalProxy*)pObject->GetProxy(ENTITY_PROXY_PHYSICS);
+		IEntityPhysicsComponent* pPhysicsProxy = (IEntityPhysicsComponent*)pObject->QueryComponent<IEntityPhysicsComponent>();
 		if (pPhysicsProxy && pObject->GetPhysics())
 		{
 			pe_status_dynamics dyn;

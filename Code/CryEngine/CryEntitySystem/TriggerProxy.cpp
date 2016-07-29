@@ -17,24 +17,23 @@
 #include "ProximityTriggerSystem.h"
 
 //////////////////////////////////////////////////////////////////////////
-CTriggerProxy::CTriggerProxy()
-	: m_pEntity(NULL)
-	, m_forwardingEntity(0)
+CTriggerComponent::CTriggerComponent()
+	: m_forwardingEntity(0)
 	, m_pProximityTrigger(NULL)
 	, m_aabb(AABB::RESET)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-CTriggerProxy::~CTriggerProxy()
+CTriggerComponent::~CTriggerComponent()
 {
 	GetTriggerSystem()->RemoveTrigger(m_pProximityTrigger);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTriggerProxy::Initialize(const SComponentInitializer& init)
+void CTriggerComponent::Initialize(IEntity &entity)
 {
-	m_pEntity = (CEntity*)init.m_pEntity;
+	m_pEntity = &entity;
 
 	m_pProximityTrigger = GetTriggerSystem()->CreateTrigger();
 	m_pProximityTrigger->id = m_pEntity->GetId();
@@ -43,12 +42,14 @@ void CTriggerProxy::Initialize(const SComponentInitializer& init)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTriggerProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
+CEntity *CTriggerComponent::GetCEntity() const
 {
-	assert(pEntity);
+	return static_cast<CEntity *>(m_pEntity);
+}
 
-	m_pEntity = (CEntity*)pEntity;
-
+//////////////////////////////////////////////////////////////////////////
+void CTriggerComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+{
 	assert(m_pProximityTrigger);
 	if (m_pProximityTrigger)
 	{
@@ -59,32 +60,26 @@ void CTriggerProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTriggerProxy::Reset()
+void CTriggerComponent::Reset()
 {
-	m_pEntity->m_bTrigger = true;
+	GetCEntity()->m_bTrigger = true;
 	m_forwardingEntity = 0;
 
 	// Release existing proximity entity if present, triggers should not trigger themself.
-	if (m_pEntity->m_pProximityEntity)
+	if (GetCEntity()->m_pProximityEntity)
 	{
-		GetTriggerSystem()->RemoveEntity(m_pEntity->m_pProximityEntity);
-		m_pEntity->m_pProximityEntity = 0;
+		GetTriggerSystem()->RemoveEntity(GetCEntity()->m_pProximityEntity);
+		GetCEntity()->m_pProximityEntity = 0;
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTriggerProxy::Release()
-{
-	delete this;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CTriggerProxy::Update(SEntityUpdateContext& ctx)
+void CTriggerComponent::Update(SEntityUpdateContext& ctx)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTriggerProxy::ProcessEvent(SEntityEvent& event)
+void CTriggerComponent::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -110,13 +105,13 @@ void CTriggerProxy::ProcessEvent(SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CTriggerProxy::NeedSerialize()
+bool CTriggerComponent::NeedSerialize()
 {
 	return true;
 };
 
 //////////////////////////////////////////////////////////////////////////
-bool CTriggerProxy::GetSignature(TSerialize signature)
+bool CTriggerComponent::GetSignature(TSerialize signature)
 {
 	signature.BeginGroup("TriggerProxy");
 	signature.EndGroup();
@@ -124,7 +119,7 @@ bool CTriggerProxy::GetSignature(TSerialize signature)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTriggerProxy::Serialize(TSerialize ser)
+void CTriggerComponent::Serialize(TSerialize ser)
 {
 	if (ser.GetSerializationTarget() != eST_Network)
 	{
@@ -141,7 +136,7 @@ void CTriggerProxy::Serialize(TSerialize ser)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTriggerProxy::OnMove(bool invalidateAABB)
+void CTriggerComponent::OnMove(bool invalidateAABB)
 {
 	Vec3 pos = m_pEntity->GetWorldPos();
 	AABB box = m_aabb;
@@ -151,13 +146,13 @@ void CTriggerProxy::OnMove(bool invalidateAABB)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTriggerProxy::InvalidateTrigger()
+void CTriggerComponent::InvalidateTrigger()
 {
 	OnMove(true);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTriggerProxy::SetAABB(const AABB& aabb)
+void CTriggerComponent::SetAABB(const AABB& aabb)
 {
 	m_aabb = aabb;
 	OnMove();

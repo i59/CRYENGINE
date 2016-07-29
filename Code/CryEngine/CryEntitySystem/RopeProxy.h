@@ -24,34 +24,29 @@ struct IPhysicalWorld;
 // Description:
 //    Implements rope proxy class for entity.
 //////////////////////////////////////////////////////////////////////////
-class CRopeProxy : public IEntityRopeProxy
+class CRopeComponent : public IEntityRopeComponent
 {
 public:
-	CRopeProxy();
-	~CRopeProxy();
-	CEntity* GetEntity() const { return m_pEntity; };
+	CRopeComponent();
+	virtual ~CRopeComponent();
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init);
-	virtual void ProcessEvent(SEntityEvent& event);
-	//////////////////////////////////////////////////////////////////////////
+	// IEntityComponent
+	virtual void Initialize(IEntity &entity) override;
+	virtual void ProcessEvent(SEntityEvent& event) override;
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType()                                          { return ENTITY_PROXY_ROPE; }
-	virtual void         Release();
-	virtual void         Done()                                             {};
-	virtual void         Update(SEntityUpdateContext& ctx);
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params) { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading);
-	virtual bool         NeedSerialize();
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         GetSignature(TSerialize signature);
-	//////////////////////////////////////////////////////////////////////////
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
+
+	virtual void Serialize(TSerialize ser) override;
+	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) override;
+
+	virtual bool NeedSerialize() override { return true; }
+	virtual bool GetSignature(TSerialize signature) override;
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
+	{
+		pSizer->AddObject(this, sizeof(*this));
+	}
+	// ~IEntityComponent
 
 	//////////////////////////////////////////////////////////////////////////
 	/// IEntityRopeProxy
@@ -59,14 +54,8 @@ public:
 	virtual IRopeRenderNode* GetRopeRenderNode() { return m_pRopeRenderNode; };
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		pSizer->AddObject(this, sizeof(*this));
-	}
 	void PreserveParams();
 protected:
-	CEntity*         m_pEntity;
-
 	IRopeRenderNode* m_pRopeRenderNode;
 	int              m_nSegmentsOrg;
 	float            m_texTileVOrg;

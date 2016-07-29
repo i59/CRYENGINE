@@ -696,7 +696,7 @@ void CAnimEntityNode::EnableEntityPhysics(bool bEnable)
 {
 	if (IEntity* pEntity = GetEntity())
 	{
-		IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
+		IEntityPhysicsComponent* pPhysicalProxy = (IEntityPhysicsComponent*)pEntity->QueryComponent<IEntityPhysicsComponent>();
 
 		if (pPhysicalProxy && pPhysicalProxy->IsPhysicsEnabled() != bEnable)
 		{
@@ -722,10 +722,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 		return;
 	}
 
-	if (!pEntity->GetProxy(ENTITY_PROXY_ENTITYNODE))
-	{
-		pEntity->CreateProxy(ENTITY_PROXY_ENTITYNODE);
-	}
+	pEntity->CreateEntityNodeComponent();
 	
 	// Here in Animate always get local pos, rot, scale value instead of pEntity->GetScale, to avoid comparing Track View value, to Track View value, which will always be the same.
 	// pEntity->GetPos,pEntity->GetRotation, pEntity->GetScale are updated before this, by delegated mode, from Track View key value
@@ -1019,12 +1016,10 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 						{
 							if (audioFileInfo.audioKeyStart < audioFileKeyNum)
 							{
-								IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-								if (pIEntityAudioProxy)
-								{
-									const SAudioPlayFileInfo audioPlayFileInfo(audioFileKey.m_audioFile, audioFileKey.m_bIsLocalized);
-									pIEntityAudioProxy->PlayFile(audioPlayFileInfo);
-								}
+								auto &audioComponent = pEntity->CreateAudioComponent();
+
+								const SAudioPlayFileInfo audioPlayFileInfo(audioFileKey.m_audioFile, audioFileKey.m_bIsLocalized);
+								audioComponent.PlayFile(audioPlayFileInfo);
 							}
 							audioFileInfo.audioKeyStart = audioFileKeyNum;
 						}
@@ -1058,12 +1053,10 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 					float& prevAudioParameterValue = m_audioParameterTracks[numAudioParameterTracks-1];
 					if (fabs(prevAudioParameterValue - newAudioParameterValue) > FLT_EPSILON)
 					{
-						IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-						if (pIEntityAudioProxy)
-						{
-							pIEntityAudioProxy->SetRtpcValue(audioParameterId, newAudioParameterValue);
-							prevAudioParameterValue = newAudioParameterValue;
-						}
+						auto &audioComponent = pEntity->CreateAudioComponent();
+
+						audioComponent.SetRtpcValue(audioParameterId, newAudioParameterValue);
+						prevAudioParameterValue = newAudioParameterValue;
 					}
 				}
 
@@ -1093,12 +1086,10 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 							AudioSwitchStateId audioSwitchStateId = audioSwitchKey.m_audioSwitchStateId;
 							if (audioSwitchId != INVALID_AUDIO_CONTROL_ID && audioSwitchStateId != INVALID_AUDIO_SWITCH_STATE_ID)
 							{
-								IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-								if (pIEntityAudioProxy)
-								{
-									pIEntityAudioProxy->SetSwitchState(audioSwitchId, audioSwitchStateId);
-									prevAudioSwitchKeyNum = newAudioSwitchKeyNum;
-								}
+								auto &audioComponent = pEntity->CreateAudioComponent();
+
+								audioComponent.SetSwitchState(audioSwitchId, audioSwitchStateId);
+								prevAudioSwitchKeyNum = newAudioSwitchKeyNum;
 							}
 						}
 					}
@@ -1126,7 +1117,8 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 								sequenceName.Format("SendDrsSignal from Sequence '%s'", animContext.pSequence->GetName());
 								SET_DRS_USER_SCOPED(sequenceName);
 
-								const IEntityDynamicResponseProxyPtr pIEntityDrsProxy = crycomponent_cast<IEntityDynamicResponseProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_DYNAMICRESPONSE));
+								auto &dynamicResponseComponent = pEntity->CreateDynamicResponseComponent();
+
 								DRS::IVariableCollectionSharedPtr pContextVariableCollection = nullptr;
 
 								if (key.m_contextVariableName[0] != 0)
@@ -1135,7 +1127,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 									pContextVariableCollection->SetVariableValue(key.m_contextVariableName, CHashedString(key.m_contextVariableValue));
 								}
 
-								pIEntityDrsProxy->GetResponseActor()->QueueSignal(key.m_signalName, pContextVariableCollection);
+								dynamicResponseComponent.GetResponseActor()->QueueSignal(key.m_signalName, pContextVariableCollection);
 							}
 						}
 					}
@@ -1671,7 +1663,7 @@ void CAnimEntityNode::OnStart()
 
 		if (IEntity* pEntity = GetEntity())
 		{
-			IEntityPhysicalProxy* pPhysicalProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
+			IEntityPhysicsComponent* pPhysicalProxy = (IEntityPhysicsComponent*)pEntity->QueryComponent<IEntityPhysicsComponent>();
 
 			if (pPhysicalProxy)
 			{
@@ -1810,9 +1802,7 @@ void CAnimEntityNode::ApplyEventKey(CEventTrack* track, int keyIndex, SEventKey&
 	if (key.m_event.size() > 0) // if there's an event
 	{
 		// Fire event on Entity.
-		IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
-
-		if (pScriptProxy)
+		if (auto *pScriptComponent = pEntity->QueryComponent<IEntityScriptComponent>())
 		{
 			// Find event
 			int type = -1;
@@ -1840,15 +1830,15 @@ void CAnimEntityNode::ApplyEventKey(CEventTrack* track, int keyIndex, SEventKey&
 			case IEntityClass::EVT_INT:
 			case IEntityClass::EVT_FLOAT:
 			case IEntityClass::EVT_ENTITY:
-				pScriptProxy->CallEvent(key.m_event, (float)atof(key.m_eventValue));
+				pScriptComponent->CallEvent(key.m_event, (float)atof(key.m_eventValue));
 				break;
 
 			case IEntityClass::EVT_BOOL:
-				pScriptProxy->CallEvent(key.m_event, atoi(key.m_eventValue) != 0 ? true : false);
+				pScriptComponent->CallEvent(key.m_event, atoi(key.m_eventValue) != 0 ? true : false);
 				break;
 
 			case IEntityClass::EVT_STRING:
-				pScriptProxy->CallEvent(key.m_event, key.m_eventValue);
+				pScriptComponent->CallEvent(key.m_event, key.m_eventValue);
 				break;
 
 			case IEntityClass::EVT_VECTOR:
@@ -1858,13 +1848,13 @@ void CAnimEntityNode::ApplyEventKey(CEventTrack* track, int keyIndex, SEventKey&
 					int res = sscanf(key.m_eventValue, "%f,%f,%f", &x, &y, &z);
 					assert(res == 3);
 					vTemp(x, y, z);
-					pScriptProxy->CallEvent(key.m_event, vTemp);
+					pScriptComponent->CallEvent(key.m_event, vTemp);
 				}
 				break;
 
 			case -1:
 			default:
-				pScriptProxy->CallEvent(key.m_event);
+				pScriptComponent->CallEvent(key.m_event);
 			}
 		}
 	}
@@ -1878,17 +1868,15 @@ void CAnimEntityNode::ApplyAudioTriggerKey(AudioControlId audioTriggerId, bool c
 		IEntity* const pEntity = GetEntity();
 
 		// Get or create sound proxy if necessary.
-		IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-		if (pIEntityAudioProxy)
+		auto &audioComponent = pEntity->CreateAudioComponent();
+
+		if (bPlay)
 		{
-			if (bPlay)
-			{
-				pIEntityAudioProxy->ExecuteTrigger(audioTriggerId);
-			}
-			else
-			{
-				pIEntityAudioProxy->StopTrigger(audioTriggerId);
-			}
+			audioComponent.ExecuteTrigger(audioTriggerId);
+		}
+		else
+		{
+			audioComponent.StopTrigger(audioTriggerId);
 		}
 	}
 }

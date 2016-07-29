@@ -265,7 +265,7 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 		{
 			if (priority > activateSpeaker.priority || (m_samePrioCancelsLinesCVar != 0 && priority >= activateSpeaker.priority && lineID != activateSpeaker.lineID))  //if the new line is not less important, stop the old one
 			{
-				const IEntityAudioProxyPtr pEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+				auto &audioComponent = pEntity->CreateAudioComponent();
 
 				//if someone is waiting for this line to finish, and now we are replacing that line, we have to remove the queued line as well
 				for (QueuedSpeakerList::iterator itQueued = m_queuedSpeakers.begin(); itQueued != m_queuedSpeakers.end(); )
@@ -286,10 +286,10 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 					//soft interruption: we execute the stop trigger on the old line. That trigger should cause the old line to end after a while. And only then, do we start the playback of the next line
 					pLine = (pLineSet) ? pLineSet->PickLine() : nullptr;
 					SAudioCallBackInfo callbackInfo(this, (void* const)(pLine), (void* const)(activateSpeaker.pActor), eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
-					if (!pEntityAudioProxy->ExecuteTrigger(activateSpeaker.stopTriggerID, activateSpeaker.speechAuxProxy, callbackInfo))
+					if (!audioComponent.ExecuteTrigger(activateSpeaker.stopTriggerID, activateSpeaker.speechAuxProxy, callbackInfo))
 					{
 						//failed to start the stop trigger, therefore we fallback to hard-interruption by stopping the start trigger
-						pEntityAudioProxy->StopTrigger(activateSpeaker.startTriggerID, activateSpeaker.speechAuxProxy);
+						audioComponent.StopTrigger(activateSpeaker.startTriggerID, activateSpeaker.speechAuxProxy);
 					}
 					else
 					{
@@ -312,11 +312,11 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 				{
 					if (activateSpeaker.startTriggerID != INVALID_AUDIO_CONTROL_ID)
 					{
-						pEntityAudioProxy->StopTrigger(activateSpeaker.startTriggerID, activateSpeaker.speechAuxProxy);
+						audioComponent.StopTrigger(activateSpeaker.startTriggerID, activateSpeaker.speechAuxProxy);
 					}
 					if (!activateSpeaker.standaloneFile.empty())
 					{
-						pEntityAudioProxy->StopFile(activateSpeaker.standaloneFile.c_str(), activateSpeaker.speechAuxProxy);
+						audioComponent.StopFile(activateSpeaker.standaloneFile.c_str(), activateSpeaker.speechAuxProxy);
 					}
 					InformListener(pActor, activateSpeaker.lineID, DRS::ISpeakerManager::IListener::eLineEvent_Canceled, activateSpeaker.pPickedLine);
 				}
@@ -361,8 +361,7 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 void CSpeakerManager::UpdateAudioProxyPosition(IEntity* pEntity, const SSpeakInfo& speakerInfo)
 {
 	//todo: check if we can use a 'head' proxy created and defined in schematyc
-	IEntityAudioProxy* const pEntityAudioProxy = static_cast<IEntityAudioProxy*>(pEntity->GetProxy(ENTITY_PROXY_AUDIO));
-	if (pEntityAudioProxy)
+	if (auto *pAudioComponent = pEntity->QueryComponent<IEntityAudioComponent>())
 	{
 		const ICharacterInstance* pCharacter = pEntity->GetCharacter(s_characterSlot);
 		if (pCharacter)
@@ -373,7 +372,7 @@ void CSpeakerManager::UpdateAudioProxyPosition(IEntity* pEntity, const SSpeakInf
 				const IAttachment* pAttachment = pAttachmentManager->GetInterfaceByIndex(speakerInfo.voiceAttachmentIndex);
 				if (pAttachment)
 				{
-					pEntityAudioProxy->SetAuxAudioProxyOffset(Matrix34(pAttachment->GetAttModelRelative()), speakerInfo.speechAuxProxy);
+					pAudioComponent->SetAuxAudioProxyOffset(Matrix34(pAttachment->GetAttModelRelative()), speakerInfo.speechAuxProxy);
 				}
 			}
 		}
@@ -420,23 +419,22 @@ void CSpeakerManager::ReleaseSpeakerAudioProxy(SSpeakInfo& speakerInfo, bool sto
 		IEntity* pEntity = speakerInfo.pActor->GetLinkedEntity();
 		if (pEntity)
 		{
-			IEntityAudioProxy* const pEntityAudioProxy = static_cast<IEntityAudioProxy*>(pEntity->GetProxy(ENTITY_PROXY_AUDIO));
-			if (pEntityAudioProxy)
+			if (auto *pAudioComponent = pEntity->QueryComponent<IEntityAudioComponent>())
 			{
 				if (stopTrigger)
 				{
 					if (speakerInfo.startTriggerID != INVALID_AUDIO_CONTROL_ID)
 					{
-						pEntityAudioProxy->StopTrigger(speakerInfo.startTriggerID, speakerInfo.speechAuxProxy);
+						pAudioComponent->StopTrigger(speakerInfo.startTriggerID, speakerInfo.speechAuxProxy);
 					}
 					if (!speakerInfo.standaloneFile.empty())
 					{
-						pEntityAudioProxy->StopFile(speakerInfo.standaloneFile, speakerInfo.speechAuxProxy);
+						pAudioComponent->StopFile(speakerInfo.standaloneFile, speakerInfo.speechAuxProxy);
 					}
 				}
 				if (speakerInfo.speechAuxProxy != DEFAULT_AUDIO_PROXY_ID)
 				{
-					pEntityAudioProxy->RemoveAuxAudioProxy(speakerInfo.speechAuxProxy);
+					pAudioComponent->RemoveAuxAudioProxy(speakerInfo.speechAuxProxy);
 					speakerInfo.speechAuxProxy = DEFAULT_AUDIO_PROXY_ID;
 				}
 			}
@@ -633,11 +631,11 @@ void CryDRS::CSpeakerManager::StartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 
 	if (bHasAudioAsset)
 	{
-		const IEntityAudioProxyPtr pEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pSpeakerInfoToUse->pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+		auto &audioComponent = pSpeakerInfoToUse->pEntity->CreateAudioComponent();
 
 		if (m_audioRtpcIdLocal != INVALID_AUDIO_CONTROL_ID)
 		{
-			pEntityAudioProxy->SetRtpcValue(m_audioRtpcIdLocal, 1.0f, INVALID_AUDIO_PROXY_ID);
+			audioComponent.SetRtpcValue(m_audioRtpcIdLocal, 1.0f, INVALID_AUDIO_PROXY_ID);
 		}
 
 		if (pSpeakerInfoToUse->speechAuxProxy == DEFAULT_AUDIO_PROXY_ID)
@@ -653,7 +651,7 @@ void CryDRS::CSpeakerManager::StartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 						pSpeakerInfoToUse->voiceAttachmentIndex = pAttachmentManager->GetIndexByName("eye_left");
 					if (pSpeakerInfoToUse->voiceAttachmentIndex != -1)
 					{
-						pSpeakerInfoToUse->speechAuxProxy = pEntityAudioProxy->CreateAuxAudioProxy();
+						pSpeakerInfoToUse->speechAuxProxy = audioComponent.CreateAuxAudioProxy();
 						UpdateAudioProxyPosition(pSpeakerInfoToUse->pEntity, *pSpeakerInfoToUse);
 					}
 				}
@@ -666,11 +664,11 @@ void CryDRS::CSpeakerManager::StartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 
 		if (pSpeakerInfoToUse->startTriggerID)
 		{
-			bAudioPlaybackStarted = pEntityAudioProxy->ExecuteTrigger(pSpeakerInfoToUse->startTriggerID, pSpeakerInfoToUse->speechAuxProxy, callbackInfo);
+			bAudioPlaybackStarted = audioComponent.ExecuteTrigger(pSpeakerInfoToUse->startTriggerID, pSpeakerInfoToUse->speechAuxProxy, callbackInfo);
 		}
 		else
 		{
-			bAudioPlaybackStarted = pEntityAudioProxy->PlayFile(pSpeakerInfoToUse->standaloneFile.c_str(), pSpeakerInfoToUse->speechAuxProxy, callbackInfo);
+			bAudioPlaybackStarted = audioComponent.PlayFile(pSpeakerInfoToUse->standaloneFile.c_str(), pSpeakerInfoToUse->speechAuxProxy, callbackInfo);
 		}
 		if (bAudioPlaybackStarted)
 		{

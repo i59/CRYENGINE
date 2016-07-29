@@ -97,19 +97,22 @@ CCryPakFile::CCryPakFile(const char* fileName, const char* szMode)
 			bool isEncrypted = false;
 			if (fileSize >= pMagic->size())
 			{
-				std::vector<uint8> magic;
-				magic.resize(pMagic->size());
-				FReadRaw(&magic[0], 1, magic.size(), m_pFile);
-				fileSize -= magic.size();
-				isEncrypted = 0 == memcmp(&magic[0], &pMagic->front(), magic.size());
-				if (isEncrypted)
+				if (pMagic->size() > 0)
 				{
-					m_data.resize(fileSize);
-				}
-				else
-				{
-					memcpy(&m_data[0], &magic[0], magic.size());
-					m_filePos += magic.size();
+					std::vector<uint8> magic;
+					magic.resize(pMagic->size());
+					FReadRaw(&magic[0], 1, magic.size(), m_pFile);
+					fileSize -= magic.size();
+					isEncrypted = 0 == memcmp(&magic[0], &pMagic->front(), magic.size());
+					if (isEncrypted)
+					{
+						m_data.resize(fileSize);
+					}
+					else
+					{
+						memcpy(&m_data[0], &magic[0], magic.size());
+						m_filePos += magic.size();
+					}
 				}
 			}
 

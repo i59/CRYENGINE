@@ -6,6 +6,11 @@
 #include "EntitySystem.h"
 #include "BreakableManager.h"
 
+#include "TriggerProxy.h"
+#include "EntityAudioProxy.h"
+#include "CameraProxy.h"
+#include "DynamicResponseProxy.h"
+
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ILog.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -85,7 +90,7 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 #define SCRIPT_REG_CLASSNAME &CScriptBind_Entity::
 
 	SCRIPT_REG_FUNC(DeleteThis);
-	SCRIPT_REG_FUNC(CreateRenderProxy);
+	SCRIPT_REG_FUNC(CreateRenderComponent);
 	SCRIPT_REG_FUNC(CheckShaderParamCallbacks);
 	SCRIPT_REG_TEMPLFUNC(LoadObject, "nSlot,sFilename");
 	SCRIPT_REG_TEMPLFUNC(LoadObjectWithFlags, "nSlot,sFilename, nFlags");
@@ -1076,24 +1081,24 @@ int CScriptBind_Entity::GetArchetype(IFunctionHandler* pH)
 }
 
 // Creates a render proxy on the entity but doesn't load anything in
-int CScriptBind_Entity::CreateRenderProxy(IFunctionHandler* pH)
+int CScriptBind_Entity::CreateRenderComponent(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 
-	pEntity->CreateProxy(ENTITY_PROXY_RENDER);
+	pEntity->AcquireComponent<CRenderComponent>();
 
 	return pH->EndFunction();
 }
 
-// Check all the currently set shader param callbacks on the renderproxy with the current state of the entity
+// Check all the currently set shader param callbacks on the render component with the current state of the entity
 int CScriptBind_Entity::CheckShaderParamCallbacks(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 
-	if (IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		pRenderProxy->ClearShaderParamCallbacks();
-		pRenderProxy->CheckShaderParamCallbacks();
+		pRenderComponent->ClearShaderParamCallbacks();
+		pRenderComponent->CheckShaderParamCallbacks();
 	}
 
 	return pH->EndFunction();
@@ -1278,13 +1283,14 @@ int CScriptBind_Entity::SetSelfAsLightCasterException(IFunctionHandler* pH, int 
 		return pH->EndFunction();
 
 	ILightSource* pLightSource = slotLightInfo.pLight;
-	IRenderNode* pRenderNode = nullptr;
-	if (IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
-		pRenderNode = pRenderProxy->GetRenderNode();
-
-	if (pLightSource && pRenderNode)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		pLightSource->SetCastingException(pRenderNode);
+		IRenderNode* pRenderNode = pRenderComponent->GetRenderNode();
+
+		if (pLightSource && pRenderNode)
+		{
+			pLightSource->SetCastingException(pRenderNode);
+		}
 	}
 
 	return pH->EndFunction();
@@ -1708,11 +1714,9 @@ int CScriptBind_Entity::SetSlotHud3D(IFunctionHandler* pH, int nSlot)
 	pEntity->SetFlags(ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_NO_PROXIMITY | ENTITY_FLAG_MODIFIED_BY_PHYSICS | ENTITY_FLAG_NO_SAVE);
 	pEntity->SetSlotFlags(nSlot, pEntity->GetSlotFlags(nSlot) | ENTITY_SLOT_RENDER_AFTER_POSTPROCESSING | ENTITY_SLOT_RENDER_NEAREST);
 
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	IRenderNode* pRenderNode = pRenderProxy ? pRenderProxy->GetRenderNode() : nullptr;
-	if (pRenderNode)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		pRenderNode->SetRndFlags(ERF_HUD | ERF_RENDER_ALWAYS | ERF_NO_DECALNODE_DECALS, true);
+		pRenderComponent->GetRenderNode()->SetRndFlags(ERF_HUD | ERF_RENDER_ALWAYS | ERF_NO_DECALNODE_DECALS, true);
 	}
 	return pH->EndFunction();
 }
@@ -1824,12 +1828,11 @@ int CScriptBind_Entity::FreeAllSlots(IFunctionHandler* pH)
 int CScriptBind_Entity::DestroyPhysics(IFunctionHandler* pH)
 {
 	GET_ENTITY;
-	IEntityPhysicalProxy* pPhysicsProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
-	if (pPhysicsProxy)
+	if (auto *pPhysicsComponent = pEntity->QueryComponent<IEntityPhysicsComponent>())
 	{
 		SEntityPhysicalizeParams params;
 		params.type = PE_NONE;
-		pPhysicsProxy->Physicalize(params);
+		pPhysicsComponent->Physicalize(params);
 	}
 	return pH->EndFunction();
 }
@@ -1839,16 +1842,9 @@ int CScriptBind_Entity::EnablePhysics(IFunctionHandler* pH, bool bEnable)
 {
 	GET_ENTITY;
 
-	IEntityPhysicalProxyPtr pPhysicsProxy = crycomponent_cast<IEntityPhysicalProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_PHYSICS));
-	if (!pPhysicsProxy)
-	{
-		return pH->EndFunction();
-	}
+	auto &physicsComponent = pEntity->AcquireComponent<CPhysicsComponent>();
 
-	if (pPhysicsProxy)
-	{
-		pPhysicsProxy->EnablePhysics(bEnable);
-	}
+	physicsComponent.EnablePhysics(bEnable);
 
 	return pH->EndFunction();
 }
@@ -1868,6 +1864,8 @@ int CScriptBind_Entity::Physicalize(IFunctionHandler* pH, int nSlot, int nPhysic
 		IPhysicalEntity* pPhysicalEntity = pEntity->GetPhysics();
 		if (pPhysicalEntity)
 		{
+			auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(pEntity->QueryComponent<IEntityPhysicsComponent>());
+
 			pe_simulation_params sim_params;
 			sim_params.maxLoggedCollisions = 1; // By default only report max 1 collision event.
 			pPhysicalEntity->SetParams(&sim_params);
@@ -1875,7 +1873,7 @@ int CScriptBind_Entity::Physicalize(IFunctionHandler* pH, int nSlot, int nPhysic
 			// By default such entities are marked as unimportant.
 			pe_params_foreign_data pfd;
 			pfd.iForeignFlagsOR = PFF_UNIMPORTANT;
-			if (!(pEntity->GetPhysicalProxy()->GetFlags() & CPhysicalProxy::FLAG_ATTACH_CLOTH_WHEN_VISIBLE))
+			if (!(pPhysicsComponent->GetFlags() & CPhysicsComponent::FLAG_ATTACH_CLOTH_WHEN_VISIBLE))
 				pPhysicalEntity->SetParams(&pfd);
 
 			if (nPhysicsType == PE_WHEELEDVEHICLE)
@@ -1896,7 +1894,10 @@ int CScriptBind_Entity::ReattachSoftEntityVtx(IFunctionHandler* pH, ScriptHandle
 	IEntity* pEntityAttach = gEnv->pEntitySystem->GetEntity(attachEntityToId);
 	IPhysicalEntity* pPhysEntityAttach = pEntityAttach ? pEntityAttach->GetPhysics() : nullptr;
 
-	pEntity->GetPhysicalProxy()->ReattachSoftEntityVtx(pPhysEntityAttach, partId);
+	if (auto *pPhysicsComponent = pEntity->QueryComponent<IEntityPhysicsComponent>())
+	{
+		pPhysicsComponent->ReattachSoftEntityVtx(pPhysEntityAttach, partId);
+	}
 
 	return pH->EndFunction();
 }
@@ -3266,21 +3267,15 @@ int CScriptBind_Entity::RenderShadow(IFunctionHandler* pH)
 		pH->GetParam(2, IRenderNode);
 	}
 
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		struct IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
-		if (pRenderNode)
+		if (IRenderNode == -1 || IRenderNode == 1)
 		{
-
-			if (IRenderNode == -1 || IRenderNode == 1)
-			{
-				pRenderNode->SetRndFlags(ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS, true);
-			}
-			else
-			{
-				pRenderNode->SetRndFlags(ERF_CASTSHADOWMAPS, false);
-			}
+			pRenderComponent->GetRenderNode()->SetRndFlags(ERF_CASTSHADOWMAPS | ERF_HAS_CASTSHADOWMAPS, true);
+		}
+		else
+		{
+			pRenderComponent->GetRenderNode()->SetRndFlags(ERF_CASTSHADOWMAPS, false);
 		}
 	}
 
@@ -3363,12 +3358,13 @@ int CScriptBind_Entity::SetCharacterPhysicParams(IFunctionHandler* pH)
 		return pH->EndFunction();
 
 	ICharacterInstance* pCharacter = pEntity->GetCharacter(nSlot);
+
+	auto *pPhysicsComponent = pEntity->QueryComponent<IEntityPhysicsComponent>();
+
 	IFoliage* pFoliage;
 	IPhysicalEntity* pe;
-	CPhysicalProxy* pPhysProxy;
 	if (!pCharacter || !(pe = pCharacter->GetISkeletonPose()->GetCharacterPhysics(pRootBoneName)))
-		if (!(pPhysProxy = pEntity->GetPhysicalProxy()) ||
-		    !(pFoliage = pPhysProxy->GetFoliage(nSlot)) && (!pPhysProxy->PhysicalizeFoliage(nSlot) || !(pFoliage = pPhysProxy->GetFoliage(nSlot))) ||
+		if (!(pFoliage = pPhysicsComponent->GetFoliage(nSlot)) && (!pPhysicsComponent->PhysicalizeFoliage(nSlot) || !(pFoliage = pPhysicsComponent->GetFoliage(nSlot))) ||
 		    !pRootBoneName || !(pe = pFoliage->GetBranchPhysics(atol(pRootBoneName))))
 			return pH->EndFunction();
 
@@ -4109,10 +4105,9 @@ int CScriptBind_Entity::AddImpulse(IFunctionHandler* pH)
 
 		if (!angularImpulse && dir.GetLengthSquared() > 0)
 		{
-			IEntityPhysicalProxy* pPhysicsProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
-			if (pPhysicsProxy)
+			if (auto *pPhysicsComponent = pEntity->QueryComponent<IEntityPhysicsComponent>())
 			{
-				pPhysicsProxy->AddImpulse(ipart, pos, dir.GetNormalized() * impulse, bPos, impulseScale);
+				pPhysicsComponent->AddImpulse(ipart, pos, dir.GetNormalized() * impulse, bPos, impulseScale);
 			}
 		}
 
@@ -4250,14 +4245,9 @@ int CScriptBind_Entity::GetAllAuxAudioProxiesID(IFunctionHandler* pH)
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
-	{
-		return pH->EndFunction(IntToHandle(INVALID_AUDIO_PROXY_ID));
-	}
-
-	return pH->EndFunction();
+	return pH->EndFunction(IntToHandle(INVALID_AUDIO_PROXY_ID));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4266,14 +4256,9 @@ int CScriptBind_Entity::GetDefaultAuxAudioProxyID(IFunctionHandler* pH)
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
-	{
-		return pH->EndFunction(IntToHandle(DEFAULT_AUDIO_PROXY_ID));
-	}
-
-	return pH->EndFunction();
+	return pH->EndFunction(IntToHandle(DEFAULT_AUDIO_PROXY_ID));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4282,14 +4267,9 @@ int CScriptBind_Entity::CreateAuxAudioProxy(IFunctionHandler* pH)
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
-	{
-		return pH->EndFunction(IntToHandle(pIEntityAudioProxy->CreateAuxAudioProxy()));
-	}
-
-	return pH->EndFunction();
+	return pH->EndFunction(IntToHandle(audioComponent.CreateAuxAudioProxy()));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -4298,12 +4278,9 @@ int CScriptBind_Entity::RemoveAuxAudioProxy(IFunctionHandler* pH, ScriptHandle c
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
-	{
-		pIEntityAudioProxy->RemoveAuxAudioProxy(HandleToInt<AudioProxyId>(hAudioProxyLocalID));
-	}
+	audioComponent.RemoveAuxAudioProxy(HandleToInt<AudioProxyId>(hAudioProxyLocalID));
 
 	return pH->EndFunction();
 }
@@ -4314,19 +4291,17 @@ int CScriptBind_Entity::ExecuteAudioTrigger(IFunctionHandler* pH, ScriptHandle c
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-	if (pIEntityAudioProxy)
-	{
-		// This is an optimizations as AddRequestListener is a blocking request.
-		if (!m_bIsAudioEventListener)
-		{
-			gEnv->pAudioSystem->AddRequestListener(&CScriptBind_Entity::OnAudioTriggerFinishedEvent, this, eAudioRequestType_AudioCallbackManagerRequest, eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance);
-			m_bIsAudioEventListener = true;
-		}
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-		SAudioCallBackInfo const callbackInfo(this, reinterpret_cast<void*>((UINT_PTR)pEntity->GetId()), this, eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
-		pIEntityAudioProxy->ExecuteTrigger(HandleToInt<AudioControlId>(hTriggerID), HandleToInt<AudioProxyId>(hAudioProxyLocalID), callbackInfo);
+	// This is an optimizations as AddRequestListener is a blocking request.
+	if (!m_bIsAudioEventListener)
+	{
+		gEnv->pAudioSystem->AddRequestListener(&CScriptBind_Entity::OnAudioTriggerFinishedEvent, this, eAudioRequestType_AudioCallbackManagerRequest, eAudioCallbackManagerRequestType_ReportFinishedTriggerInstance);
+		m_bIsAudioEventListener = true;
 	}
+
+	SAudioCallBackInfo const callbackInfo(this, reinterpret_cast<void*>((UINT_PTR)pEntity->GetId()), this, eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
+	audioComponent.ExecuteTrigger(HandleToInt<AudioControlId>(hTriggerID), HandleToInt<AudioProxyId>(hAudioProxyLocalID), callbackInfo);
 
 	return pH->EndFunction();
 }
@@ -4337,12 +4312,9 @@ int CScriptBind_Entity::StopAudioTrigger(IFunctionHandler* pH, ScriptHandle cons
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
-	{
-		pIEntityAudioProxy->StopTrigger(HandleToInt<AudioControlId>(hTriggerID), HandleToInt<AudioProxyId>(hAudioProxyLocalID));
-	}
+	audioComponent.StopTrigger(HandleToInt<AudioControlId>(hTriggerID), HandleToInt<AudioProxyId>(hAudioProxyLocalID));
 
 	return pH->EndFunction();
 }
@@ -4353,14 +4325,11 @@ int CScriptBind_Entity::SetAudioSwitchState(IFunctionHandler* pH, ScriptHandle c
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
-	{
-		pIEntityAudioProxy->SetSwitchState(
-		  HandleToInt<AudioControlId>(hSwitchID),
-		  HandleToInt<AudioSwitchStateId>(hSwitchStateID), HandleToInt<AudioProxyId>(hAudioProxyLocalID));
-	}
+	audioComponent.SetSwitchState(
+		HandleToInt<AudioControlId>(hSwitchID),
+		HandleToInt<AudioSwitchStateId>(hSwitchStateID), HandleToInt<AudioProxyId>(hAudioProxyLocalID));
 
 	return pH->EndFunction();
 }
@@ -4371,33 +4340,30 @@ int CScriptBind_Entity::SetAudioObstructionCalcType(IFunctionHandler* pH, int co
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
+	EAudioOcclusionType audioOcclusionType = eAudioOcclusionType_None;
+
+	switch (nObstructionCalcType)
 	{
-		EAudioOcclusionType audioOcclusionType = eAudioOcclusionType_None;
-
-		switch (nObstructionCalcType)
-		{
-		case 1:
-			audioOcclusionType = eAudioOcclusionType_Ignore;
-			break;
-		case 2:
-			audioOcclusionType = eAudioOcclusionType_Adaptive;
-			break;
-		case 3:
-			audioOcclusionType = eAudioOcclusionType_Low;
-			break;
-		case 4:
-			audioOcclusionType = eAudioOcclusionType_Medium;
-			break;
-		case 5:
-			audioOcclusionType = eAudioOcclusionType_High;
-			break;
-		}
-
-		pIEntityAudioProxy->SetObstructionCalcType(audioOcclusionType, HandleToInt<AudioProxyId>(hAudioProxyLocalID));
+	case 1:
+		audioOcclusionType = eAudioOcclusionType_Ignore;
+		break;
+	case 2:
+		audioOcclusionType = eAudioOcclusionType_Adaptive;
+		break;
+	case 3:
+		audioOcclusionType = eAudioOcclusionType_Low;
+		break;
+	case 4:
+		audioOcclusionType = eAudioOcclusionType_Medium;
+		break;
+	case 5:
+		audioOcclusionType = eAudioOcclusionType_High;
+		break;
 	}
+
+	audioComponent.SetObstructionCalcType(audioOcclusionType, HandleToInt<AudioProxyId>(hAudioProxyLocalID));
 
 	return pH->EndFunction();
 }
@@ -4408,13 +4374,10 @@ int CScriptBind_Entity::SetFadeDistance(IFunctionHandler* pH, float const fFadeD
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
-	{
-		pIEntityAudioProxy->SetFadeDistance(fFadeDistance);
-		m_pEntitySystem->GetAreaManager()->SetAreasDirty();
-	}
+	audioComponent.SetFadeDistance(fFadeDistance);
+	m_pEntitySystem->GetAreaManager()->SetAreasDirty();
 
 	return pH->EndFunction();
 }
@@ -4425,12 +4388,9 @@ int CScriptBind_Entity::SetAudioProxyOffset(IFunctionHandler* pH, Vec3 const vOf
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
-	{
-		pIEntityAudioProxy->SetAuxAudioProxyOffset(Matrix34(IDENTITY, vOffset), HandleToInt<AudioProxyId>(hAudioProxyLocalID));
-	}
+	audioComponent.SetAuxAudioProxyOffset(Matrix34(IDENTITY, vOffset), HandleToInt<AudioProxyId>(hAudioProxyLocalID));
 
 	return pH->EndFunction();
 }
@@ -4441,12 +4401,9 @@ int CScriptBind_Entity::SetEnvironmentFadeDistance(IFunctionHandler* pH, float c
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
-	{
-		pIEntityAudioProxy->SetEnvironmentFadeDistance(fEnvironmentFadeDistance);
-	}
+	audioComponent.SetEnvironmentFadeDistance(fEnvironmentFadeDistance);
 
 	return pH->EndFunction();
 }
@@ -4457,63 +4414,58 @@ int CScriptBind_Entity::SetAudioEnvironmentID(IFunctionHandler* pH, ScriptHandle
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
+	AudioEnvironmentId const audioEnvironmentIdToSet = HandleToInt<AudioEnvironmentId>(hAudioEnvironmentID);
+	AudioEnvironmentId const audioEnvironmentIdToUnset = audioComponent.GetEnvironmentId();
+
+	audioComponent.SetEnvironmentId(audioEnvironmentIdToSet);
+
+	int flag = 0;
+	flag |= (audioEnvironmentIdToSet == INVALID_AUDIO_ENVIRONMENT_ID && audioEnvironmentIdToUnset != INVALID_AUDIO_ENVIRONMENT_ID) << 0;
+	flag |= (audioEnvironmentIdToSet != INVALID_AUDIO_ENVIRONMENT_ID && audioEnvironmentIdToUnset == INVALID_AUDIO_ENVIRONMENT_ID) << 1;
+	flag |= (audioEnvironmentIdToSet != INVALID_AUDIO_ENVIRONMENT_ID && audioEnvironmentIdToUnset != INVALID_AUDIO_ENVIRONMENT_ID) << 2;
+
+	// The audio environment is being tampered with, we need to inform all entities affected by the area.
+	TAreaPointers areas;
+
+	if (flag > 0 && static_cast<CAreaManager*>(m_pEntitySystem->GetAreaManager())->GetLinkedAreas(pEntity->GetId(), -1, areas))
 	{
-		AudioEnvironmentId const audioEnvironmentIdToSet = HandleToInt<AudioEnvironmentId>(hAudioEnvironmentID);
-		AudioEnvironmentId const audioEnvironmentIdToUnset = pIEntityAudioProxy->GetEnvironmentId();
-
-		pIEntityAudioProxy->SetEnvironmentId(audioEnvironmentIdToSet);
-
-		int flag = 0;
-		flag |= (audioEnvironmentIdToSet == INVALID_AUDIO_ENVIRONMENT_ID && audioEnvironmentIdToUnset != INVALID_AUDIO_ENVIRONMENT_ID) << 0;
-		flag |= (audioEnvironmentIdToSet != INVALID_AUDIO_ENVIRONMENT_ID && audioEnvironmentIdToUnset == INVALID_AUDIO_ENVIRONMENT_ID) << 1;
-		flag |= (audioEnvironmentIdToSet != INVALID_AUDIO_ENVIRONMENT_ID && audioEnvironmentIdToUnset != INVALID_AUDIO_ENVIRONMENT_ID) << 2;
-
-		// The audio environment is being tampered with, we need to inform all entities affected by the area.
-		TAreaPointers areas;
-
-		if (flag > 0 && static_cast<CAreaManager*>(m_pEntitySystem->GetAreaManager())->GetLinkedAreas(pEntity->GetId(), -1, areas))
+		for (auto const pArea : areas)
 		{
-			for (auto const pArea : areas)
+			SEntityProximityQuery query;
+			query.nEntityFlags = 0;
+			query.pEntityClass = nullptr;
+			Vec3 boxMin, boxMax;
+			pArea->GetWorldBox(boxMin, boxMax);
+			float const environmentFadeDistance = pArea->GetEnvironmentFadeDistance();
+			query.box.min = boxMin - Vec3(environmentFadeDistance, environmentFadeDistance, environmentFadeDistance);
+			query.box.max = boxMax + Vec3(environmentFadeDistance, environmentFadeDistance, environmentFadeDistance);
+			gEnv->pEntitySystem->QueryProximity(query);
+
+			for (int i = 0; i < query.nCount; ++i)
 			{
-				SEntityProximityQuery query;
-				query.nEntityFlags = 0;
-				query.pEntityClass = nullptr;
-				Vec3 boxMin, boxMax;
-				pArea->GetWorldBox(boxMin, boxMax);
-				float const environmentFadeDistance = pArea->GetEnvironmentFadeDistance();
-				query.box.min = boxMin - Vec3(environmentFadeDistance, environmentFadeDistance, environmentFadeDistance);
-				query.box.max = boxMax + Vec3(environmentFadeDistance, environmentFadeDistance, environmentFadeDistance);
-				gEnv->pEntitySystem->QueryProximity(query);
+				IEntity* const pIEntity = query.pEntities[i];
 
-				for (int i = 0; i < query.nCount; ++i)
+				if (pIEntity != nullptr)
 				{
-					IEntity* const pIEntity = query.pEntities[i];
-
-					if (pIEntity != nullptr)
+					if (auto *pOtherEntityAudioComponent = pIEntity->QueryComponent<IEntityAudioComponent>())
 					{
-						IEntityAudioProxy* const pIEntityAudioProxyToAdjust = (IEntityAudioProxy*)pIEntity->GetProxy(ENTITY_PROXY_AUDIO);
-
-						if (pIEntityAudioProxyToAdjust != nullptr)
+						switch (flag)
 						{
-							switch (flag)
-							{
-							case 1 << 0:
-								  pIEntityAudioProxyToAdjust->SetEnvironmentAmount(audioEnvironmentIdToUnset, 0.0f, INVALID_AUDIO_PROXY_ID);
-								break;
-							case 1 << 1:
-								  pIEntityAudioProxyToAdjust->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
-								break;
-							case 1 << 2:
-								  pIEntityAudioProxyToAdjust->SetEnvironmentAmount(audioEnvironmentIdToUnset, 0.0f, INVALID_AUDIO_PROXY_ID);
-								pIEntityAudioProxyToAdjust->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
-								break;
-							default:
-								CRY_ASSERT(false);
-								break;
-							}
+						case 1 << 0:
+							pOtherEntityAudioComponent->SetEnvironmentAmount(audioEnvironmentIdToUnset, 0.0f, INVALID_AUDIO_PROXY_ID);
+							break;
+						case 1 << 1:
+							pOtherEntityAudioComponent->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
+							break;
+						case 1 << 2:
+							pOtherEntityAudioComponent->SetEnvironmentAmount(audioEnvironmentIdToUnset, 0.0f, INVALID_AUDIO_PROXY_ID);
+							pOtherEntityAudioComponent->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
+							break;
+						default:
+							CRY_ASSERT(false);
+							break;
 						}
 					}
 				}
@@ -4530,13 +4482,10 @@ int CScriptBind_Entity::SetCurrentAudioEnvironments(IFunctionHandler* pH)
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
-	{
-		// Passing INVALID_AUDIO_PROXY_ID to address all auxiliary AudioProxies on pIEntityAudioProxy.
-		pIEntityAudioProxy->SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
-	}
+	// Passing INVALID_AUDIO_PROXY_ID to address all auxiliary AudioProxies on pIEntityAudioProxy.
+	audioComponent.SetCurrentEnvironments(INVALID_AUDIO_PROXY_ID);
 
 	return pH->EndFunction();
 }
@@ -4547,12 +4496,9 @@ int CScriptBind_Entity::SetAudioRtpcValue(IFunctionHandler* pH, ScriptHandle con
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
-	{
-		pIEntityAudioProxy->SetRtpcValue(HandleToInt<AudioControlId>(hRtpcID), fValue, HandleToInt<AudioProxyId>(hAudioProxyLocalID));
-	}
+	audioComponent.SetRtpcValue(HandleToInt<AudioControlId>(hRtpcID), fValue, HandleToInt<AudioProxyId>(hAudioProxyLocalID));
 
 	return pH->EndFunction();
 }
@@ -4563,12 +4509,9 @@ int CScriptBind_Entity::AuxAudioProxiesMoveWithEntity(IFunctionHandler* pH, bool
 	GET_ENTITY;
 
 	// Get or create an AudioProxy on the entity if necessary.
-	IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 
-	if (pIEntityAudioProxy)
-	{
-		pIEntityAudioProxy->AuxAudioProxiesMoveWithEntity(bCanMoveWithEntity);
-	}
+	audioComponent.AuxAudioProxiesMoveWithEntity(bCanMoveWithEntity);
 
 	return pH->EndFunction();
 }
@@ -4629,15 +4572,14 @@ int CScriptBind_Entity::SetLocalBBox(IFunctionHandler* pH, Vec3 vMin, Vec3 vMax)
 {
 	GET_ENTITY;
 
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		pRenderProxy->SetLocalBounds(AABB(vMin, vMax), true);
+		pRenderComponent->SetLocalBounds(AABB(vMin, vMax), true);
 	}
-	else if (IEntityRopeProxy* pRope = (IEntityRopeProxy*)pEntity->GetProxy(ENTITY_PROXY_ROPE))
+	else if (auto *pRopeComponent = pEntity->QueryComponent<IEntityRopeComponent>())
 	{
 		Vec3 pos = pEntity->GetWorldPos();
-		pRope->GetRopeRenderNode()->SetBBox(AABB(pos + vMin, pos + vMax));
+		pRopeComponent->GetRopeRenderNode()->SetBBox(AABB(pos + vMin, pos + vMax));
 	}
 	return pH->EndFunction();
 }
@@ -4648,10 +4590,9 @@ int CScriptBind_Entity::GetLocalBBox(IFunctionHandler* pH)
 	GET_ENTITY;
 
 	AABB box(Vec3(0, 0, 0), Vec3(0, 0, 0));
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		pRenderProxy->GetLocalBounds(box);
+		pRenderComponent->GetLocalBounds(box);
 		//apply scaling if there is any
 		box.SetTransformedAABB(Matrix33::CreateScale(pEntity->GetScale()), box);
 	}
@@ -4664,10 +4605,9 @@ int CScriptBind_Entity::GetWorldBBox(IFunctionHandler* pH)
 	GET_ENTITY;
 
 	AABB box(Vec3(0, 0, 0), Vec3(0, 0, 0));
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		pRenderProxy->GetWorldBounds(box);
+		pRenderComponent->GetWorldBounds(box);
 	}
 	return pH->EndFunction(Script::SetCachedVector(box.min, pH, 1), Script::SetCachedVector(box.max, pH, 2));
 }
@@ -4678,11 +4618,10 @@ int CScriptBind_Entity::GetProjectedWorldBBox(IFunctionHandler* pH)
 	GET_ENTITY;
 
 	AABB aabb(Vec3(0, 0, 0), Vec3(0, 0, 0));
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
 
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		pRenderProxy->GetLocalBounds(aabb);
+		pRenderComponent->GetLocalBounds(aabb);
 
 		Matrix33 tm = Matrix33(pEntity->GetWorldTM());
 		Vec3 pt = pEntity->GetWorldTM().GetTranslation();
@@ -4730,12 +4669,9 @@ int CScriptBind_Entity::SetTriggerBBox(IFunctionHandler* pH, Vec3 vMin, Vec3 vMa
 {
 	GET_ENTITY;
 
-	IEntityTriggerProxyPtr pTriggerProxy = crycomponent_cast<IEntityTriggerProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_TRIGGER));
+	auto &triggerComponent = pEntity->AcquireComponent<CTriggerComponent>();
 
-	if (pTriggerProxy)
-	{
-		pTriggerProxy->SetTriggerBounds(AABB(vMin, vMax));
-	}
+	triggerComponent.SetTriggerBounds(AABB(vMin, vMax));
 
 	return pH->EndFunction();
 }
@@ -4746,11 +4682,12 @@ int CScriptBind_Entity::GetTriggerBBox(IFunctionHandler* pH)
 	GET_ENTITY;
 
 	AABB box(Vec3(0, 0, 0), Vec3(0, 0, 0));
-	IEntityTriggerProxy* pTriggerProxy = (IEntityTriggerProxy*)pEntity->GetProxy(ENTITY_PROXY_TRIGGER);
-	if (pTriggerProxy)
+
+	if (auto *pTriggerComponent = pEntity->QueryComponent<IEntityTriggerComponent>())
 	{
-		pTriggerProxy->GetTriggerBounds(box);
+		pTriggerComponent->GetTriggerBounds(box);
 	}
+
 	return pH->EndFunction(box.min, box.max);
 }
 
@@ -4759,11 +4696,11 @@ int CScriptBind_Entity::InvalidateTrigger(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 
-	IEntityTriggerProxy* pTriggerProxy = (IEntityTriggerProxy*)pEntity->GetProxy(ENTITY_PROXY_TRIGGER);
-	if (pTriggerProxy)
+	if (auto *pTriggerComponent = pEntity->QueryComponent<IEntityTriggerComponent>())
 	{
-		pTriggerProxy->InvalidateTrigger();
+		pTriggerComponent->InvalidateTrigger();
 	}
+
 	return pH->EndFunction();
 }
 
@@ -4771,9 +4708,8 @@ int CScriptBind_Entity::ForwardTriggerEventsTo(IFunctionHandler* pH, ScriptHandl
 {
 	GET_ENTITY;
 
-	IEntityTriggerProxy* pTriggerProxy = (IEntityTriggerProxy*)pEntity->GetProxy(ENTITY_PROXY_TRIGGER);
-	if (pTriggerProxy)
-		pTriggerProxy->ForwardEventsTo((EntityId)entityId.n);
+	if (auto *pTriggerComponent = pEntity->QueryComponent<IEntityTriggerComponent>())
+		pTriggerComponent->ForwardEventsTo((EntityId)entityId.n);
 
 	return pH->EndFunction();
 }
@@ -4971,7 +4907,7 @@ int CScriptBind_Entity::DisableAnimationEvent(IFunctionHandler* pH, int nSlot, c
 	   if (!pCharacter)
 	    return pH->EndFunction();
 
-	   IEntityScriptProxy *pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
+	   IEntityScriptComponent *pScriptProxy = (IEntityScriptComponent*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
 	   if (pScriptProxy)
 	   {
 	    ICharInstanceSink *pSink = pScriptProxy->GetCharacterScriptSink();
@@ -5426,10 +5362,9 @@ int CScriptBind_Entity::GotoState(IFunctionHandler* pH, const char* sStateName)
 	GET_ENTITY;
 
 	bool bRes = false;
-	IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
-	if (pScriptProxy)
+	if (auto *pScriptComponent = pEntity->QueryComponent<IEntityScriptComponent>())
 	{
-		bRes = pScriptProxy->GotoState(sStateName);
+		bRes = pScriptComponent->GotoState(sStateName);
 	}
 
 	/*
@@ -5450,10 +5385,9 @@ int CScriptBind_Entity::IsInState(IFunctionHandler* pH, const char* sStateName)
 	GET_ENTITY;
 
 	bool bRes = false;
-	IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
-	if (pScriptProxy)
+	if (auto *pScriptComponent = pEntity->QueryComponent<IEntityScriptComponent>())
 	{
-		bRes = pScriptProxy->IsInState(sStateName);
+		bRes = pScriptComponent->IsInState(sStateName);
 	}
 
 	return pH->EndFunction(bRes);
@@ -5465,10 +5399,9 @@ int CScriptBind_Entity::GetState(IFunctionHandler* pH)
 	GET_ENTITY;
 
 	const char* sState = "";
-	IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
-	if (pScriptProxy)
+	if (auto *pScriptComponent = pEntity->QueryComponent<IEntityScriptComponent>())
 	{
-		sState = pScriptProxy->GetState();
+		sState = pScriptComponent->GetState();
 	}
 	return pH->EndFunction(sState);
 }
@@ -5519,10 +5452,9 @@ int CScriptBind_Entity::SetScriptUpdateRate(IFunctionHandler* pH, int nMillis)
 {
 	GET_ENTITY;
 
-	IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
-	if (pScriptProxy)
+	if (auto *pScriptComponent = pEntity->QueryComponent<IEntityScriptComponent>())
 	{
-		pScriptProxy->SetScriptUpdateRate(((float)nMillis) / 1000.0f);
+		pScriptComponent->SetScriptUpdateRate(((float)nMillis) / 1000.0f);
 	}
 
 	return pH->EndFunction();
@@ -5791,10 +5723,9 @@ int CScriptBind_Entity::GetEntitiesInContact(IFunctionHandler* pH)
 
 	AABB bbox;
 
-	IEntityPhysicalProxy* pPhysicsProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
-	if (pPhysicsProxy)
+	if (auto *pPhysicsComponent = pEntity->QueryComponent<IEntityPhysicsComponent>())
 	{
-		pPhysicsProxy->GetWorldBounds(bbox);
+		pPhysicsComponent->GetWorldBounds(bbox);
 	}
 	else
 		pH->EndFunction();
@@ -5934,23 +5865,13 @@ int CScriptBind_Entity::GetMaterial(IFunctionHandler* pH)
 		int slot;
 		if (pH->GetParamCount() > 0 && pH->GetParam(1, slot))
 		{
-			IMaterial* pMat = nullptr;
-
-			CEntityObject* obj = pEntity->GetRenderProxy() ? pEntity->GetRenderProxy()->GetSlot(slot) : nullptr;
-			if (obj)
+			if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 			{
-				if (obj->pCharacter)
+				if (auto *pMaterial = pRenderComponent->GetSlotMaterial(slot))
 				{
-					pMat = obj->pCharacter->GetIMaterial();
-				}
-				else if (obj->pStatObj)
-				{
-					pMat = obj->pStatObj->GetMaterial();
+					return pH->EndFunction(pMaterial->GetName());
 				}
 			}
-
-			if (pMat)
-				return pH->EndFunction(pMat->GetName());
 		}
 		else
 		{
@@ -6101,17 +6022,16 @@ int CScriptBind_Entity::CloneMaterial(IFunctionHandler* pH, int slot)
 {
 	GET_ENTITY;
 
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		IMaterial* pMtl = pRenderProxy->GetRenderMaterial(slot);
+		IMaterial* pMtl = pRenderComponent->GetRenderMaterial(slot);
 		if (pMtl)
 		{
 			const char* sSubMtlName = nullptr;
 			if (pH->GetParamCount() > 1)
 				pH->GetParam(2, sSubMtlName);
 			IMaterial* pCloned = pMtl->GetMaterialManager()->CloneMultiMaterial(pMtl, sSubMtlName);
-			pRenderProxy->SetSlotMaterial(slot, pCloned);
+			pRenderComponent->SetSlotMaterial(slot, pCloned);
 		}
 	}
 	return pH->EndFunction();
@@ -6122,10 +6042,9 @@ int CScriptBind_Entity::SetMaterialFloat(IFunctionHandler* pH, int slot, int nSu
 {
 	GET_ENTITY;
 
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		IMaterial* pMtl = pRenderProxy->GetRenderMaterial(slot);
+		IMaterial* pMtl = pRenderComponent->GetRenderMaterial(slot);
 		if (pMtl)
 		{
 			pMtl = pMtl->GetSafeSubMtl(nSubMtlId);
@@ -6145,10 +6064,9 @@ int CScriptBind_Entity::GetMaterialFloat(IFunctionHandler* pH, int slot, int nSu
 
 	float fValue = 0;
 
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		IMaterial* pMtl = pRenderProxy->GetRenderMaterial(slot);
+		IMaterial* pMtl = pRenderComponent->GetRenderMaterial(slot);
 		if (pMtl)
 		{
 			pMtl = pMtl->GetSafeSubMtl(nSubMtlId);
@@ -6166,10 +6084,9 @@ int CScriptBind_Entity::SetMaterialVec3(IFunctionHandler* pH, int slot, int nSub
 {
 	GET_ENTITY;
 
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		IMaterial* pMtl = pRenderProxy->GetRenderMaterial(slot);
+		IMaterial* pMtl = pRenderComponent->GetRenderMaterial(slot);
 		if (pMtl)
 		{
 			pMtl = pMtl->GetSafeSubMtl(nSubMtlId);
@@ -6189,10 +6106,9 @@ int CScriptBind_Entity::GetMaterialVec3(IFunctionHandler* pH, int slot, int nSub
 
 	Vec3 vValue(0, 0, 0);
 
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		IMaterial* pMtl = pRenderProxy->GetRenderMaterial(slot);
+		IMaterial* pMtl = pRenderComponent->GetRenderMaterial(slot);
 		if (pMtl)
 		{
 			pMtl = pMtl->GetSafeSubMtl(nSubMtlId);
@@ -6270,11 +6186,10 @@ int CScriptBind_Entity::MaterialFlashInvoke(IFunctionHandler* pH)
 	//////////////////////////////////////////////////////////////////////////
 
 	GET_ENTITY;
-	IEntityRenderProxy* pRenderProxy((IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER));
 
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		IMaterial* pMtl(pRenderProxy->GetRenderMaterial(slot));
+		IMaterial* pMtl(pRenderComponent->GetRenderMaterial(slot));
 		if (pMtl)
 		{
 			pMtl = pMtl->GetSafeSubMtl(subMtlId);
@@ -6341,12 +6256,12 @@ int CScriptBind_Entity::MaterialFlashInvoke(IFunctionHandler* pH)
    CEntityObject *pAIObject = pEntity->GetRenderProxy()->GetSlot(slotId);
 
    //  test - only activate first layer
-   IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-   if( pRenderProxy )
+   IEntityRenderProxy *pRenderComponent = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
+   if( pRenderComponent )
    {
 
-    uint8 nMtlLayers = pRenderProxy->GetMaterialLayersMask();
-    pRenderProxy->SetMaterialLayersMask( nMtlLayers| (1<<0));
+    uint8 nMtlLayers = pRenderComponent->GetMaterialLayersMask();
+    pRenderComponent->SetMaterialLayersMask( nMtlLayers| (1<<0));
    }
 
    return pH->EndFunction(0);
@@ -6370,10 +6285,10 @@ int CScriptBind_Entity::MaterialFlashInvoke(IFunctionHandler* pH)
    GET_ENTITY;
 
    //  test
-   IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-   if( pRenderProxy )
+   IEntityRenderProxy *pRenderComponent = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
+   if( pRenderComponent )
    {
-    pRenderProxy->SetMaterialLayersMask( 0 );
+    pRenderComponent->SetMaterialLayersMask( 0 );
    }
 
    return pH->EndFunction();
@@ -6416,16 +6331,15 @@ int CScriptBind_Entity::EnableMaterialLayer(IFunctionHandler* pH, bool enable, i
 {
 	GET_ENTITY;
 
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		uint8 activeLayers = pRenderProxy->GetMaterialLayersMask();
+		uint8 activeLayers = pRenderComponent->GetMaterialLayersMask();
 		if (enable)
 			activeLayers |= layer;
 		else
 			activeLayers &= ~layer;
 
-		pRenderProxy->SetMaterialLayersMask(activeLayers);
+		pRenderComponent->SetMaterialLayersMask(activeLayers);
 	}
 
 	return pH->EndFunction();
@@ -6840,9 +6754,12 @@ int CScriptBind_Entity::GetTimeSinceLastSeen(IFunctionHandler* pH)
 {
 	GET_ENTITY
 
-	IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
+	{
+		return pH->EndFunction(gEnv->pTimer->GetCurrTime() - pRenderComponent->GetLastSeenTime());
+	}
 
-	return pH->EndFunction(pRenderProxy ? gEnv->pTimer->GetCurrTime() - pRenderProxy->GetLastSeenTime() : gEnv->pTimer->GetCurrTime());
+	return pH->EndFunction(gEnv->pTimer->GetCurrTime());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -6850,10 +6767,9 @@ int CScriptBind_Entity::GetViewDistRatio(IFunctionHandler* pH)
 {
 	GET_ENTITY
 	int value = 0;
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
+		IRenderNode* pRenderNode = pRenderComponent->GetRenderNode();
 		if (pRenderNode)
 		{
 			value = pRenderNode->GetViewDistRatio();
@@ -6871,14 +6787,9 @@ int CScriptBind_Entity::SetViewDistRatio(IFunctionHandler* pH)
 	int value;
 	pH->GetParam(1, value);
 
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
-		if (pRenderNode)
-		{
-			pRenderNode->SetViewDistRatio(value);
-		}
+		pRenderComponent->SetViewDistRatio(value);
 	}
 
 	return pH->EndFunction();
@@ -6889,10 +6800,9 @@ int CScriptBind_Entity::SetViewDistRatio(IFunctionHandler* pH)
 int CScriptBind_Entity::SetViewDistUnlimited(IFunctionHandler* pH)
 {
 	GET_ENTITY;
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
+		IRenderNode* pRenderNode = pRenderComponent->GetRenderNode();
 		if (pRenderNode)
 		{
 			pRenderNode->SetViewDistUnlimited();
@@ -6910,10 +6820,9 @@ int CScriptBind_Entity::SetLodRatio(IFunctionHandler* pH)
 	int value;
 	pH->GetParam(1, value);
 
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
+		IRenderNode* pRenderNode = pRenderComponent->GetRenderNode();
 		if (pRenderNode)
 		{
 			pRenderNode->SetLodRatio(value);
@@ -6928,10 +6837,9 @@ int CScriptBind_Entity::GetLodRatio(IFunctionHandler* pH)
 {
 	GET_ENTITY
 	int value = 0;
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
+		IRenderNode* pRenderNode = pRenderComponent->GetRenderNode();
 		if (pRenderNode)
 		{
 			value = pRenderNode->GetLodRatio();
@@ -6944,10 +6852,9 @@ int CScriptBind_Entity::GetLodRatio(IFunctionHandler* pH)
 int CScriptBind_Entity::RemoveDecals(IFunctionHandler* pH)
 {
 	GET_ENTITY;
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (pRenderProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
+		IRenderNode* pRenderNode = pRenderComponent->GetRenderNode();
 		if (pRenderNode)
 		{
 			gEnv->p3DEngine->DeleteEntityDecals(pRenderNode);
@@ -7027,13 +6934,12 @@ int CScriptBind_Entity::SetAnimateOffScreenShadow(IFunctionHandler* pH, bool bAn
 {
 	GET_ENTITY;
 
-	CRenderProxy* pRenderProxy = pEntity->GetRenderProxy();
-	if (pRenderProxy)
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(pEntity->QueryComponent<IEntityRenderComponent>()))
 	{
 		if (bAnimateOffScreenShadow)
-			pRenderProxy->SetFlags(pRenderProxy->GetFlags() | CRenderProxy::FLAG_ANIMATE_OFFSCREEN_SHADOW);
+			pRenderComponent->SetFlags(pRenderComponent->GetFlags() | CRenderComponent::FLAG_ANIMATE_OFFSCREEN_SHADOW);
 		else
-			pRenderProxy->SetFlags(pRenderProxy->GetFlags() & (~CRenderProxy::FLAG_ANIMATE_OFFSCREEN_SHADOW));
+			pRenderComponent->SetFlags(pRenderComponent->GetFlags() & (~CRenderComponent::FLAG_ANIMATE_OFFSCREEN_SHADOW));
 	}
 
 	return pH->EndFunction();
@@ -7176,10 +7082,9 @@ int CScriptBind_Entity::AwakeEnvironment(IFunctionHandler* pH)
 	int i, nEnts;
 
 	AABB bbox;
-	IEntityPhysicalProxy* pPhysicsProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
-	if (pPhysicsProxy)
+	if (auto *pPhysicsComponent = pEntity->QueryComponent<IEntityPhysicsComponent>())
 	{
-		pPhysicsProxy->GetWorldBounds(bbox);
+		pPhysicsComponent->GetWorldBounds(bbox);
 	}
 	else
 		pH->EndFunction();
@@ -8469,8 +8374,8 @@ int CScriptBind_Entity::ActivateOutput(IFunctionHandler* pH)
 	if (!pH->GetParams(sEventName))
 		return pH->EndFunction();
 
-	IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
-	if (!pScriptProxy)
+	auto *pScriptComponent = pEntity->QueryComponent<IEntityScriptComponent>();
+	if (pScriptComponent == nullptr)
 		return pH->EndFunction();
 
 	IEntityClass::SEventInfo eventInfo;
@@ -8555,7 +8460,7 @@ int CScriptBind_Entity::CreateCameraProxy(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 
-	pEntity->CreateProxy(ENTITY_PROXY_CAMERA);
+	pEntity->AcquireComponent<CCameraComponent>();
 	pEntity->SetFlags(pEntity->GetFlags() | ENTITY_FLAG_CAMERA_SOURCE);
 
 	return pH->EndFunction();
@@ -8700,12 +8605,13 @@ int CScriptBind_Entity::UnSeenFrames(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 
-	CRenderProxy* pProxy(pEntity->GetRenderProxy());
 	//	float fDiff(-1.f);
 	int frameDiff(0);
-	if (pProxy)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
+	{
 		//		fDiff=gEnv->pTimer->GetCurrTime() - pProxy->GetLastSeenTime();
-		frameDiff = gEnv->pRenderer->GetFrameID() - pProxy->GetDrawFrame();
+		frameDiff = gEnv->pRenderer->GetFrameID() - pRenderComponent->GetRenderNode()->GetDrawFrame();
+	}
 
 	return pH->EndFunction(frameDiff);
 }
@@ -8736,10 +8642,9 @@ int CScriptBind_Entity::RegisterForAreaEvents(IFunctionHandler* pH, int enable)
 {
 	GET_ENTITY;
 
-	CScriptProxy* pScriptProxy(pEntity->GetScriptProxy());
-	if (pScriptProxy)
+	if (auto *pScriptComponent = static_cast<CScriptComponent *>(pEntity->QueryComponent<IEntityScriptComponent>()))
 	{
-		pScriptProxy->RegisterForAreaEvents(enable != 0);
+		pScriptComponent->RegisterForAreaEvents(enable != 0);
 	}
 
 	return pH->EndFunction();
@@ -8750,11 +8655,9 @@ int CScriptBind_Entity::RenderAlways(IFunctionHandler* pH, int enable)
 {
 	GET_ENTITY;
 
-	IEntityRenderProxy* pRenderProxy(pEntity->GetRenderProxy());
-	IRenderNode* pRenderNode = (pRenderProxy != nullptr) ? pRenderProxy->GetRenderNode() : nullptr;
-	if (pRenderNode)
+	if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 	{
-		pRenderNode->SetRndFlags(ERF_RENDER_ALWAYS, (enable != 0) ? true : false);
+		pRenderComponent->GetRenderNode()->SetRndFlags(ERF_RENDER_ALWAYS, (enable != 0) ? true : false);
 	}
 
 	return pH->EndFunction();
@@ -8772,6 +8675,7 @@ int CScriptBind_Entity::CreateDRSProxy(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 
-	IEntityDynamicResponseProxyPtr pDRSProxy = crycomponent_cast<IEntityDynamicResponseProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_DYNAMICRESPONSE));
+	pEntity->AcquireComponent<CDynamicResponseComponent>();
+
 	return pH->EndFunction();
 }

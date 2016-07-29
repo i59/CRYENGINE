@@ -34,7 +34,7 @@ enum EERType
 	eERType_PrismObject,
 	eERType_TerrainSector,
 	eERType_Dummy_2, //!< Used to be eERType_LightPropagationVolume, preserve order for compatibility.
-	eERType_RenderProxy,
+	eERType_RenderComponent,
 	eERType_GameEffect,
 	eERType_BreakableGlass,
 	eERType_Dummy_3, //!< Used to be eERType_LightShape, preserve order for compatibility.
@@ -306,7 +306,7 @@ struct IRenderNode : public IShadowCaster
 	virtual float      GetMaxViewDist() = 0;
 
 	virtual EERType    GetRenderNodeType() = 0;
-	virtual bool       IsAllocatedOutsideOf3DEngineDLL()             { return GetRenderNodeType() == eERType_RenderProxy; }
+	virtual bool       IsAllocatedOutsideOf3DEngineDLL()             { return GetRenderNodeType() == eERType_RenderComponent; }
 	virtual void       Dephysicalize(bool bKeepIfReferenced = false) {}
 	virtual void       Dematerialize()                               {}
 	virtual void       GetMemoryUsage(ICrySizer* pSizer) const = 0;

@@ -5628,12 +5628,12 @@ int CD3D9Renderer::RayToUV(const Vec3& vOrigin, const Vec3& vDirection, float* p
 		if (type == PHYS_FOREIGN_ID_ENTITY)
 		{
 			IEntity* pEntity = (IEntity*)rayHit.pCollider->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
-			IEntityRenderProxy* pRenderProxy = pEntity ? (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER) : 0;
+			IEntityRenderComponent *pRenderComponent = pEntity ? pEntity->QueryComponent<IEntityRenderComponent>(): 0;
 
 			// Get the renderproxy, and use it to check if the material is a DynTex, and get the UIElement if so
-			if (pRenderProxy)
+			if (pRenderComponent)
 			{
-				IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();
+				IRenderNode* pRenderNode = pRenderComponent->GetRenderNode();
 				if (pRenderNode)
 				{
 					int m_dynTexGeomSlot = 0;

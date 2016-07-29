@@ -1079,7 +1079,7 @@ void CLocalMemoryUsage::CollectGeometryP1()
 
 	dwCount += p3DEngine->GetObjectsByType(eERType_Light);
 
-	dwCount += p3DEngine->GetObjectsByType(eERType_RenderProxy);
+	dwCount += p3DEngine->GetObjectsByType(eERType_RenderComponent);
 	dwCount += p3DEngine->GetObjectsByType(eERType_Brush);
 	dwCount += p3DEngine->GetObjectsByType(eERType_Vegetation);
 	dwCount += p3DEngine->GetObjectsByType(eERType_Decal);
@@ -1091,7 +1091,7 @@ void CLocalMemoryUsage::CollectGeometryP1()
 		dwCount = 0;
 
 		dwCount += p3DEngine->GetObjectsByType(eERType_Light, &renderNodes[dwCount]);
-		dwCount += p3DEngine->GetObjectsByType(eERType_RenderProxy, &renderNodes[dwCount]);
+		dwCount += p3DEngine->GetObjectsByType(eERType_RenderComponent, &renderNodes[dwCount]);
 		dwCount += p3DEngine->GetObjectsByType(eERType_Brush, &renderNodes[dwCount]);
 		dwCount += p3DEngine->GetObjectsByType(eERType_Vegetation, &renderNodes[dwCount]);
 		dwCount += p3DEngine->GetObjectsByType(eERType_Decal, &renderNodes[dwCount]);

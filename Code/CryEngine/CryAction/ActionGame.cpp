@@ -1258,8 +1258,7 @@ void CActionGame::UpdateFadeEntities(float dt)
 			SEntityFadeState* state = &m_fadeEntities[i];
 			if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(state->entId))
 			{
-				IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-				if (pRenderProxy)
+				if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 				{
 					const float newTime = state->time + dt;
 					const float t = newTime - g_breakageFadeDelay;
@@ -1272,7 +1271,7 @@ void CActionGame::UpdateFadeEntities(float dt)
 					if (t > 0.f)
 					{
 						float opacity = 1.f - t * inv;
-						pRenderProxy->SetOpacity(opacity);
+						pRenderComponent->SetOpacity(opacity);
 						if (pent && state->bCollisions)
 						{
 							// Turn off some collisions
@@ -1858,9 +1857,8 @@ int CActionGame::OnCollisionLogged(const EventPhys* pEvent)
 			IEntity* pTarget = (IEntity*)pCollision->pForeignData[1];
 			if (pTarget)
 			{
-				IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pTarget->GetProxy(ENTITY_PROXY_RENDER);
-				if (pRenderProxy)
-					pNode = pRenderProxy->GetRenderNode();
+				if (auto *pRenderComponent = pTarget->QueryComponent<IEntityRenderComponent>())
+					pNode = pRenderComponent->GetRenderNode();
 			}
 		}
 		else if (pCollision->iForeignData[1] == PHYS_FOREIGN_ID_STATIC)
@@ -2124,7 +2122,7 @@ void CActionGame::PerformPlaneBreak(const EventPhysCollision& epc, SBreakEvent* 
 		}
 		pStatObj = pEntityTrg->GetStatObj(epc.partid[1]);
 		mtx = pEntityTrg->GetSlotWorldTM(epc.partid[1]);
-		pRenderMat = ((IEntityRenderProxy*)pEntityTrg->GetProxy(ENTITY_PROXY_RENDER))->GetRenderMaterial(epc.partid[1]);
+		pRenderMat = pEntityTrg->QueryComponent<IEntityRenderComponent>()->GetRenderMaterial(epc.partid[1]);
 		// FIXME, workaround
 		if ((pRenderMat && !_stricmp(pRenderMat->GetName(), "default") || !pRenderMat) && pStatObj && pStatObj->GetMaterial())
 			pRenderMat = pStatObj->GetMaterial();
@@ -2614,7 +2612,7 @@ ForceObjUpdate:
 			assert(pEntityTrg || rec.itype != PHYS_FOREIGN_ID_ENTITY);
 			CryEngineDecalInfo dcl;
 			dcl.ownerInfo.pRenderNode = rec.itype == PHYS_FOREIGN_ID_ENTITY ?
-			                            ((IEntityRenderProxy*)pEntityTrg->GetProxy(ENTITY_PROXY_RENDER))->GetRenderNode() : pBrush;
+					pEntityTrg->QueryComponent<IEntityRenderComponent>()->GetRenderNode() : pBrush;
 			dcl.ownerInfo.nRenderNodeSlotId = 0;
 			dcl.ownerInfo.nRenderNodeSlotSubObjectId = GetSlotIdx(epc.partid[1], 1);
 			dcl.vPos = epc.pt;
@@ -2914,10 +2912,9 @@ void CActionGame::OnCollisionLogged_MaterialFX(const EventPhys* pEvent)
 			SVegCollisionStatus* test = s_this->m_treeStatus[params.src];
 			if (!test)
 			{
-				IEntityRenderProxy* rp = (IEntityRenderProxy*)pEntitySrc->GetProxy(ENTITY_PROXY_RENDER);
-				if (rp)
+				if (auto *pRenderComponent = pEntitySrc->QueryComponent<IEntityRenderComponent>())
 				{
-					IRenderNode* rn = rp->GetRenderNode();
+					IRenderNode* rn = pRenderComponent->GetRenderNode();
 					if (rn)
 					{
 						effectId = pMaterialEffects->GetEffectIdByName("vegetation", "tree_impact");
@@ -3467,12 +3464,12 @@ int CActionGame::OnCreatePhysicalEntityLogged(const EventPhys* pEvent)
 void CActionGame::RegisterEntsForBreakageReuse(IPhysicalEntity* pPhysEnt, int partid, IPhysicalEntity* pPhysEntNew, float h, float size)
 {
 	IEntity* pEntity;
-	IEntitySubstitutionProxy* pSubst;
+	IEntitySubstitutionComponent* pSubst;
 	IRenderNode* pVeg;
 	pe_params_part pp;
 	pp.partid = partid;
 	if ((pEntity = (IEntity*)pPhysEnt->GetForeignData(PHYS_FOREIGN_ID_ENTITY)) &&
-	    (pSubst = (IEntitySubstitutionProxy*)pEntity->GetProxy(ENTITY_PROXY_SUBSTITUTION)) &&
+	    (pSubst = pEntity->QueryComponent<IEntitySubstitutionComponent>()) &&
 	    (pVeg = pSubst->GetSubstitute()) && pVeg->GetRenderNodeType() == eERType_Vegetation &&
 	    pPhysEnt->GetParams(&pp) && pp.pPhysGeom->pGeom->GetSubtractionsCount() == 1)
 	{
@@ -3587,8 +3584,11 @@ int CActionGame::ReuseBrokenTrees(const EventPhysCollision* pCEvent, float size,
 				pentClone = gEnv->pEntitySystem->SpawnEntity(esp, true);
 				if (epp.type == PE_STATIC)
 				{
-					(crycomponent_cast<IEntityPhysicalProxyPtr>(pentClone->CreateProxy(ENTITY_PROXY_PHYSICS)))->AssignPhysicalEntity(pPhysEntClone = pVeg->GetPhysics());
-					(crycomponent_cast<IEntitySubstitutionProxyPtr>(pentClone->CreateProxy(ENTITY_PROXY_SUBSTITUTION)))->SetSubstitute(pVeg);
+					pentClone->CreatePhysicsComponent().AssignPhysicalEntity(pPhysEntClone = pVeg->GetPhysics());
+
+					auto &substitutionComponent = pentClone->CreatSubstitutionComponent();
+					substitutionComponent.SetSubstitute(pVeg);
+
 					pVeg->SetPhysics(0);
 					gEnv->p3DEngine->DeleteEntityDecals(pVeg);
 					gEnv->p3DEngine->UnRegisterEntityAsJob(pVeg);
@@ -3661,7 +3661,7 @@ int CActionGame::ReuseBrokenTrees(const EventPhysCollision* pCEvent, float size,
 							pPhysEntClone->Action(&ai);
 						}
 					}
-					((IEntityPhysicalProxy*)pentClone->GetProxy(ENTITY_PROXY_PHYSICS))->PhysicalizeFoliage(0);
+					((IEntityPhysicsComponent*)pentClone->QueryComponent<IEntityPhysicsComponent>())->PhysicalizeFoliage(0);
 					epp.type = PE_RIGID;
 					if (!thunk)
 						break;
@@ -3818,7 +3818,7 @@ int CActionGame::OnPhysEntityDeleted(const EventPhys* pEvent)
 
 static void FreeSlotsAndFoilage(IEntity* pEntity)
 {
-	IEntityPhysicalProxy* pPhysProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
+	IEntityPhysicsComponent* pPhysProxy = (IEntityPhysicsComponent*)pEntity->QueryComponent<IEntityPhysicsComponent>();
 	if (pPhysProxy)
 		pPhysProxy->DephysicalizeFoliage(0);
 	SEntityPhysicalizeParams epp;
@@ -3883,7 +3883,7 @@ int CActionGame::FreeBrokenMesh(IPhysicalEntity* pent, SBrokenMeshSize& bm)
 		pent->RemoveGeometry(bm.partid);
 		SEntitySlotInfo esli;
 
-		if (ifd == PHYS_FOREIGN_ID_ENTITY && pEntity->GetProxy(ENTITY_PROXY_SUBSTITUTION))
+		if (ifd == PHYS_FOREIGN_ID_ENTITY && pEntity->QueryComponent<IEntitySubstitutionComponent>() != nullptr)
 		{
 			// can't delete this entity - this will restore the vegetation object through the substitution proxy
 			FreeSlotsAndFoilage(pEntity);
@@ -4010,11 +4010,10 @@ void CActionGame::RegisterBrokenMesh(IPhysicalEntity* pPhysEnt, IGeometry* pPhys
 					pp.partid = iter->second.partid;
 					if (pent == pPhysEnt && iter->second.partid == partid || pent->GetParams(&pp) && pp.pPhysGeom->pGeom->GetForeignData(DATA_MESHUPDATE))
 						continue;
-					IEntityRenderProxy* pRndProxy;
 					if (ifd == PHYS_FOREIGN_ID_STATIC)
 						pRndNode = (IRenderNode*)pfd;
-					else if (pRndProxy = (IEntityRenderProxy*)((IEntity*)pfd)->GetProxy(ENTITY_PROXY_RENDER))
-						pRndNode = pRndProxy->GetRenderNode();
+					else if (auto *pRenderComponent = ((IEntity *)pfd)->QueryComponent<IEntityRenderComponent>())
+						pRndNode = pRenderComponent->GetRenderNode();
 					else
 						continue;
 					int lastDrawFrame = pRndNode->GetDrawFrame();

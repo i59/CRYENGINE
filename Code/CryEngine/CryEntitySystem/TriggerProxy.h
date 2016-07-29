@@ -24,35 +24,25 @@ struct SProximityElement;
 // Description:
 //    Handles sounds in the entity.
 //////////////////////////////////////////////////////////////////////////
-class CTriggerProxy : public IEntityTriggerProxy
+class CTriggerComponent : public IEntityTriggerComponent
 {
 public:
-	CTriggerProxy();
-	~CTriggerProxy();
+	CTriggerComponent();
+	~CTriggerComponent();
 
-	CEntity* GetEntity() const { return m_pEntity; };
+	// IEntityComponent
+	virtual void Initialize(IEntity &entity) override;
+	virtual void ProcessEvent(SEntityEvent& event) override;
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init);
-	virtual void ProcessEvent(SEntityEvent& event);
-	//////////////////////////////////////////////////////////////////////////
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
+	virtual void Update(SEntityUpdateContext& ctx) override;
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType()                                           { return ENTITY_PROXY_TRIGGER; }
-	virtual void         Release();
-	virtual void         Done()                                              {};
-	virtual void         Update(SEntityUpdateContext& ctx);
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params)  { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) {};
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         NeedSerialize();
-	virtual bool         GetSignature(TSerialize signature);
-	//////////////////////////////////////////////////////////////////////////
+	virtual void Serialize(TSerialize ser) override;
+
+	virtual bool NeedSerialize() override;
+
+	virtual bool GetSignature(TSerialize signature) override;
+	// ~IEntityComponent
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityTriggerProxy
@@ -63,10 +53,12 @@ public:
 	virtual void InvalidateTrigger();
 	//////////////////////////////////////////////////////////////////////////
 
+	CEntity *GetCEntity() const;
+
 	const AABB&              GetAABB() const { return m_aabb; }
 	void                     SetAABB(const AABB& aabb);
 
-	CProximityTriggerSystem* GetTriggerSystem() { return m_pEntity->GetCEntitySystem()->GetProximityTriggerSystem(); }
+	CProximityTriggerSystem* GetTriggerSystem() { return g_pIEntitySystem->GetProximityTriggerSystem(); }
 
 	virtual void             GetMemoryUsage(ICrySizer* pSizer) const
 	{
@@ -80,8 +72,6 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	// Private member variables.
 	//////////////////////////////////////////////////////////////////////////
-	// Host entity.
-	CEntity*           m_pEntity;
 	AABB               m_aabb;
 	SProximityElement* m_pProximityTrigger;
 	EntityId           m_forwardingEntity;

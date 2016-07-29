@@ -76,10 +76,10 @@ static bool IsPuppetOnScreen(CPuppet* pPuppet)
 	IEntity* pEntity = pPuppet->GetEntity();
 	if (!pEntity)
 		return false;
-	IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-	if (!pRenderProxy || !pRenderProxy->GetRenderNode())
+	auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>();
+	if (pRenderComponent == nullptr)
 		return false;
-	int frameDiff = gEnv->nMainFrameID - pRenderProxy->GetRenderNode()->GetDrawFrame();
+	int frameDiff = gEnv->nMainFrameID - pRenderComponent->GetRenderNode()->GetDrawFrame();
 	if (frameDiff > 2)
 		return false;
 	return true;

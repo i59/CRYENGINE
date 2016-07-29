@@ -41,9 +41,11 @@ struct SEntityAttributesSerializer
 // Description:
 //    Proxy for storage of entity attributes.
 //////////////////////////////////////////////////////////////////////////
-struct IEntityAttributesProxy : public IEntityProxy
+struct IEntityAttributesComponent : public IEntityComponent
 {
-	virtual ~IEntityAttributesProxy() {}
+	DECLARE_COMPONENT("EntityAttributesComponent", 0x2539971EE41244D4, 0xAB0A005F5A1EEA48)
+
+	virtual ~IEntityAttributesComponent() {}
 
 	virtual void                         SetAttributes(const TEntityAttributeArray& attributes) = 0;
 	virtual TEntityAttributeArray&       GetAttributes() = 0;

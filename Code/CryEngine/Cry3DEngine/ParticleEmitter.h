@@ -237,10 +237,9 @@ public:
 		{
 			if (IEntity* pEntity = GetEntity())
 			{
-				if (IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
+				if(auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 				{
-					if (IRenderNode* pRenderNode = pRenderProxy->GetRenderNode())
-						return (pRenderNode->GetRndFlags() & ERF_SELECTED) != 0;
+					return (pRenderComponent->GetRenderNode()->GetRndFlags() & ERF_SELECTED) != 0;
 				}
 			}
 		}

@@ -25,26 +25,9 @@
 
 #include <CryScriptSystem/IScriptSystem.h>
 
-IEntityProxyPtr CreateScriptProxy(CEntity* pEntity, IEntityScript* pScript, SEntitySpawnParams* pSpawnParams)
-{
-	// Load script now (Will be ignored if already loaded).
-	CEntityScript* pEntityScript = (CEntityScript*)pScript;
-	if (pEntityScript->LoadScript())
-	{
-		IEntityProxyPtr pScriptProxy = ComponentCreate_DeleteWithRelease<CScriptProxy>();
-		CScriptProxy::SComponentInitializerScriptProxy initializer(pEntity, pEntityScript, pSpawnParams);
-		pEntity->RegisterComponent(pScriptProxy, IComponent::EComponentFlags_Enable | IComponent::EComponentFlags_LazyRegistration);
-		pScriptProxy->Initialize(initializer);
-		return pScriptProxy;
-	}
-
-	return IEntityProxyPtr();
-}
-
 //////////////////////////////////////////////////////////////////////////
-CScriptProxy::CScriptProxy()
-	: m_pEntity(nullptr)
-	, m_pScript(nullptr)
+CScriptComponent::CScriptComponent()
+	: m_pScript(nullptr)
 	, m_pThis(nullptr)
 	, m_fScriptUpdateRate(0.0f)
 	, m_fScriptUpdateTimer(0.0f)
@@ -54,52 +37,42 @@ CScriptProxy::CScriptProxy()
 {}
 
 //////////////////////////////////////////////////////////////////////////
-CScriptProxy::~CScriptProxy()
+CScriptComponent::~CScriptComponent()
 {
+	m_pScript->Call_OnShutDown(m_pThis);
+
 	SAFE_RELEASE(m_pThis);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::Initialize(const SComponentInitializer& init)
+void CScriptComponent::InitializeScript(IEntityScript *pScript, IScriptTable *pPropertiesTable)
 {
-	assert(init.m_pEntity);
+	m_pScript = static_cast<CEntityScript *>(pScript);
 
-	if (m_pEntity == nullptr)
-	{
-		m_pEntity = (CEntity*)init.m_pEntity;
-		m_pScript = static_cast<const SComponentInitializerScriptProxy&>(init).m_pScript;
+	// New object must be created here.
+	CreateScriptTable(pPropertiesTable);
 
-		// New object must be created here.
-		CreateScriptTable(static_cast<const SComponentInitializerScriptProxy&>(init).m_pSpawnParams);
-
-		m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
-	}
+	m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::Init(IEntity* pEntity, SEntitySpawnParams& params)
+void CScriptComponent::PostInit()
 {
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-
 	// Call Init.
 	CallInitEvent(false);
-
-	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
+void CScriptComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 
-	IEntityClass* pClass = (pEntity ? pEntity->GetClass() : nullptr);
-	CEntityScript* pEntityScript = (pClass ? (CEntityScript*)pClass->GetIEntityScript() : nullptr);
+	CEntityScript* pEntityScript = (CEntityScript*)GetEntity()->GetClass()->GetIEntityScript();
 	if (pEntityScript && pEntityScript->LoadScript())
 	{
 		// Release current
 		SAFE_RELEASE(m_pThis);
 
-		m_pEntity = (CEntity*)pEntity;
 		m_pScript = pEntityScript;
 		m_nCurrStateId = 0;
 		m_fScriptUpdateRate = 0;
@@ -109,12 +82,17 @@ void CScriptProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
 		m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
 
 		// New object must be created here.
-		CreateScriptTable(&params);
+		CreateScriptTable(params.pPropertiesTable);
+	}
+
+	if (entityNode)
+	{
+		SerializeXML(entityNode, true, false);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::ChangeScript(IEntityScript* pScript, SEntitySpawnParams* params)
+void CScriptComponent::ChangeScript(IEntityScript* pScript, IScriptTable *pScriptTable)
 {
 	if (pScript)
 	{
@@ -130,24 +108,18 @@ void CScriptProxy::ChangeScript(IEntityScript* pScript, SEntitySpawnParams* para
 		m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
 
 		// New object must be created here.
-		CreateScriptTable(params);
+		CreateScriptTable(pScriptTable);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::Done()
-{
-	m_pScript->Call_OnShutDown(m_pThis);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CreateScriptTable(SEntitySpawnParams* pSpawnParams)
+void CScriptComponent::CreateScriptTable(IScriptTable *pPropertiesTable)
 {
 	m_pThis = m_pScript->GetScriptSystem()->CreateTable();
 	m_pThis->AddRef();
 	//m_pThis->Clone( m_pScript->GetScriptTable() );
 
-	CEntitySystem* pEntitySystem = (CEntitySystem*)m_pEntity->GetEntitySystem();
+	CEntitySystem* pEntitySystem = (CEntitySystem*)g_pIEntitySystem;
 	if (pEntitySystem)
 	{
 		//pEntitySystem->GetScriptBindEntity()->DelegateCalls( m_pThis );
@@ -162,9 +134,9 @@ void CScriptProxy::CreateScriptTable(SEntitySpawnParams* pSpawnParams)
 		if (!pArchetype)
 		{
 			// Custom properties table passed
-			if (pSpawnParams && pSpawnParams->pPropertiesTable)
+			if (pPropertiesTable != nullptr)
 			{
-				m_pThis->SetValue(SCRIPT_PROPERTIES_TABLE, pSpawnParams->pPropertiesTable);
+				m_pThis->SetValue(SCRIPT_PROPERTIES_TABLE, pPropertiesTable);
 			}
 			else
 			{
@@ -191,7 +163,7 @@ void CScriptProxy::CreateScriptTable(SEntitySpawnParams* pSpawnParams)
 		}
 	}
 
-	// Set self.__this to this pointer of CScriptProxy
+	// Set self.__this to this pointer of CScriptComponent
 	ScriptHandle handle;
 	handle.ptr = m_pEntity;
 	m_pThis->SetValue("__this", handle);
@@ -201,7 +173,7 @@ void CScriptProxy::CreateScriptTable(SEntitySpawnParams* pSpawnParams)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::Update(SEntityUpdateContext& ctx)
+void CScriptComponent::Update(SEntityUpdateContext& ctx)
 {
 	// Update`s script function if present.
 	if (m_bUpdateScript)
@@ -226,7 +198,7 @@ void CScriptProxy::Update(SEntityUpdateContext& ctx)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::ProcessEvent(SEntityEvent& event)
+void CScriptComponent::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -265,7 +237,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_ATTACH:
 		// OnBind( childEntity );
 		{
-			IEntity* pChildEntity = m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			IEntity* pChildEntity = g_pIEntitySystem->GetEntity((EntityId)event.nParam[0]);
 			if (pChildEntity)
 			{
 				IScriptTable* pChildEntityThis = pChildEntity->GetScriptTable();
@@ -277,7 +249,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_ATTACH_THIS:
 		// OnBindThis( ParentEntity );
 		{
-			IEntity* pParentEntity = m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			IEntity* pParentEntity = g_pIEntitySystem->GetEntity((EntityId)event.nParam[0]);
 			if (pParentEntity)
 			{
 				IScriptTable* pParentEntityThis = pParentEntity->GetScriptTable();
@@ -291,7 +263,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_DETACH:
 		// OnUnbind( childEntity );
 		{
-			IEntity* pChildEntity = m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			IEntity* pChildEntity = g_pIEntitySystem->GetEntity((EntityId)event.nParam[0]);
 			if (pChildEntity)
 			{
 				IScriptTable* pChildEntityThis = pChildEntity->GetScriptTable();
@@ -303,7 +275,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 	case ENTITY_EVENT_DETACH_THIS:
 		// OnUnbindThis( ParentEntity );
 		{
-			IEntity* pParentEntity = m_pEntity->GetEntitySystem()->GetEntity((EntityId)event.nParam[0]);
+			IEntity* pParentEntity = g_pIEntitySystem->GetEntity((EntityId)event.nParam[0]);
 			if (pParentEntity)
 			{
 				IScriptTable* pParentEntityThis = pParentEntity->GetScriptTable();
@@ -318,7 +290,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = g_pIEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -365,7 +337,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = g_pIEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -395,7 +367,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = g_pIEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -442,7 +414,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = g_pIEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -472,7 +444,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = g_pIEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -502,7 +474,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 		{
 			if (m_bEnableSoundAreaEvents)
 			{
-				IEntity const* const pIEntity = m_pEntity->GetEntitySystem()->GetEntity(static_cast<EntityId>(event.nParam[0]));
+				IEntity const* const pIEntity = g_pIEntitySystem->GetEntity(static_cast<EntityId>(event.nParam[0]));
 
 				if (pIEntity != nullptr)
 				{
@@ -595,7 +567,7 @@ void CScriptProxy::ProcessEvent(SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::GotoState(const char* sStateName)
+bool CScriptComponent::GotoState(const char* sStateName)
 {
 	int nStateId = m_pScript->GetStateId(sStateName);
 	if (nStateId >= 0)
@@ -611,7 +583,7 @@ bool CScriptProxy::GotoState(const char* sStateName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::GotoState(int nState)
+bool CScriptComponent::GotoState(int nState)
 {
 	if (nState == m_nCurrStateId)
 		return true; // Already in this state.
@@ -656,7 +628,7 @@ bool CScriptProxy::GotoState(int nState)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::IsInState(const char* sStateName)
+bool CScriptComponent::IsInState(const char* sStateName)
 {
 	int nStateId = m_pScript->GetStateId(sStateName);
 	if (nStateId >= 0)
@@ -667,25 +639,25 @@ bool CScriptProxy::IsInState(const char* sStateName)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::IsInState(int nState)
+bool CScriptComponent::IsInState(int nState)
 {
 	return nState == m_nCurrStateId;
 }
 
 //////////////////////////////////////////////////////////////////////////
-const char* CScriptProxy::GetState()
+const char* CScriptComponent::GetState()
 {
 	return m_pScript->GetStateName(m_nCurrStateId);
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CScriptProxy::GetStateId()
+int CScriptComponent::GetStateId()
 {
 	return m_nCurrStateId;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::NeedSerialize()
+bool CScriptComponent::NeedSerialize()
 {
 	if (!m_pThis)
 		return false;
@@ -703,7 +675,7 @@ bool CScriptProxy::NeedSerialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::SerializeProperties(TSerialize ser)
+void CScriptComponent::SerializeProperties(TSerialize ser)
 {
 	if (ser.GetSerializationTarget() == eST_Network)
 		return;
@@ -726,7 +698,7 @@ void CScriptProxy::SerializeProperties(TSerialize ser)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::GetSignature(TSerialize signature)
+bool CScriptComponent::GetSignature(TSerialize signature)
 {
 	signature.BeginGroup("ScriptProxy");
 	{
@@ -742,7 +714,7 @@ bool CScriptProxy::GetSignature(TSerialize signature)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::Serialize(TSerialize ser)
+void CScriptComponent::Serialize(TSerialize ser)
 {
 	CHECK_SCRIPT_STACK;
 
@@ -811,7 +783,7 @@ void CScriptProxy::Serialize(TSerialize ser)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CScriptProxy::HaveTable(const char* name)
+bool CScriptComponent::HaveTable(const char* name)
 {
 	SmartScriptTable table;
 	if (m_pThis && m_pThis->GetValue(name, table))
@@ -821,7 +793,7 @@ bool CScriptProxy::HaveTable(const char* name)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::SerializeTable(TSerialize ser, const char* name)
+void CScriptComponent::SerializeTable(TSerialize ser, const char* name)
 {
 	CHECK_SCRIPT_STACK;
 
@@ -848,10 +820,11 @@ void CScriptProxy::SerializeTable(TSerialize ser, const char* name)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
+void CScriptComponent::SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit)
 {
 	// Initialize script properties.
-	if (bLoading)
+	// This is never done from init for script tables
+	if (bLoading && !bFromInit)
 	{
 		CScriptProperties scriptProps;
 		// Initialize properties.
@@ -873,7 +846,7 @@ struct SEntityEventTarget
 
 //////////////////////////////////////////////////////////////////////////
 // Set event targets from the XmlNode exported by Editor.
-void CScriptProxy::SetEventTargets(XmlNodeRef& eventTargetsNode)
+void CScriptComponent::SetEventTargets(XmlNodeRef& eventTargetsNode)
 {
 	std::set<string> sourceEvents;
 	std::vector<SEntityEventTarget> eventTargets;
@@ -937,34 +910,34 @@ void CScriptProxy::SetEventTargets(XmlNodeRef& eventTargetsNode)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallEvent(const char* sEvent)
+void CScriptComponent::CallEvent(const char* sEvent)
 {
 	m_pScript->CallEvent(m_pThis, sEvent, (bool)true);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallEvent(const char* sEvent, float fValue)
+void CScriptComponent::CallEvent(const char* sEvent, float fValue)
 {
 	m_pScript->CallEvent(m_pThis, sEvent, fValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallEvent(const char* sEvent, bool bValue)
+void CScriptComponent::CallEvent(const char* sEvent, bool bValue)
 {
 	m_pScript->CallEvent(m_pThis, sEvent, bValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallEvent(const char* sEvent, const char* sValue)
+void CScriptComponent::CallEvent(const char* sEvent, const char* sValue)
 {
 	m_pScript->CallEvent(m_pThis, sEvent, sValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallEvent(const char* sEvent, EntityId nEntityId)
+void CScriptComponent::CallEvent(const char* sEvent, EntityId nEntityId)
 {
 	IScriptTable* pTable = nullptr;
-	IEntity* const pIEntity = m_pEntity->GetCEntitySystem()->GetEntity(nEntityId);
+	IEntity* const pIEntity = g_pIEntitySystem->GetEntity(nEntityId);
 	
 	if (pIEntity != nullptr)
 	{
@@ -975,25 +948,27 @@ void CScriptProxy::CallEvent(const char* sEvent, EntityId nEntityId)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallEvent(const char* sEvent, const Vec3& vValue)
+void CScriptComponent::CallEvent(const char* sEvent, const Vec3& vValue)
 {
 	m_pScript->CallEvent(m_pThis, sEvent, vValue);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::CallInitEvent(bool bFromReload)
+void CScriptComponent::CallInitEvent(bool bFromReload)
 {
+	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+
 	m_pScript->Call_OnInit(m_pThis, bFromReload);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::OnPreparedFromPool()
+void CScriptComponent::OnPreparedFromPool()
 {
 	m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnPreparedFromPool);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass)
+void CScriptComponent::OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass)
 {
 	if (!CurrentState()->IsStateFunctionImplemented(ScriptState_OnCollision))
 		return;
@@ -1054,7 +1029,7 @@ void CScriptProxy::OnCollision(CEntity* pTarget, int matId, const Vec3& pt, cons
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::SendScriptEvent(int Event, IScriptTable* pParamters, bool* pRet)
+void CScriptComponent::SendScriptEvent(int Event, IScriptTable* pParamters, bool* pRet)
 {
 	SScriptState* pState = CurrentState();
 	for (int i = 0; i < NUM_STATES; i++)
@@ -1071,7 +1046,7 @@ void CScriptProxy::SendScriptEvent(int Event, IScriptTable* pParamters, bool* pR
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::SendScriptEvent(int Event, const char* str, bool* pRet)
+void CScriptComponent::SendScriptEvent(int Event, const char* str, bool* pRet)
 {
 	SScriptState* pState = CurrentState();
 	for (int i = 0; i < NUM_STATES; i++)
@@ -1088,7 +1063,7 @@ void CScriptProxy::SendScriptEvent(int Event, const char* str, bool* pRet)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptProxy::SendScriptEvent(int Event, int nParam, bool* pRet)
+void CScriptComponent::SendScriptEvent(int Event, int nParam, bool* pRet)
 {
 	SScriptState* pState = CurrentState();
 	for (int i = 0; i < NUM_STATES; i++)
@@ -1104,17 +1079,17 @@ void CScriptProxy::SendScriptEvent(int Event, int nParam, bool* pRet)
 	}
 }
 
-void CScriptProxy::RegisterForAreaEvents(bool bEnable)
+void CScriptComponent::RegisterForAreaEvents(bool bEnable)
 {
 	m_bEnableSoundAreaEvents = bEnable;
 }
 
-bool CScriptProxy::IsRegisteredForAreaEvents() const
+bool CScriptComponent::IsRegisteredForAreaEvents() const
 {
 	return m_bEnableSoundAreaEvents;
 }
 
-void CScriptProxy::GetMemoryUsage(ICrySizer* pSizer) const
+void CScriptComponent::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
 }

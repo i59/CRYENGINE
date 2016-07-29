@@ -29,21 +29,21 @@
 #include <CryThreading/IJobManager_JobDelegator.h>
 
 #if CRY_PLATFORM_64BIT // the parameters for the particle geometry render job are too large for the infoblock on 32 bit systems, there only use it on 64 bit
-//#	define SUPPORT_RENDERPROXY_RENDER_JOB
+//#	define SUPPORT_RENDERCOMPONENT_RENDER_JOB
 #endif
 
-#if defined(SUPPORT_RENDERPROXY_RENDER_JOB)
-	DECLARE_JOB("CRenderProxy_Render", TRenderProxyRender, CRenderProxy::Render_JobEntry );
-#endif // SUPPORT_RENDERPROXY_RENDER_JOB
+#if defined(SUPPORT_RENDERCOMPONENT_RENDER_JOB)
+DECLARE_JOB("CRenderComponent_Render", TRenderComponentRender, CRenderComponent::Render_JobEntry);
+#endif // SUPPORT_RENDERCOMPONENT_RENDER_JOB
 
-float CRenderProxy::gsWaterLevel;
-float CRenderProxy::s_fViewDistMin					= 0.0f;
-float CRenderProxy::s_fViewDistRatio				= 60.0f;
-float CRenderProxy::s_fViewDistRatioCustom	= 60.0f;
-float CRenderProxy::s_fViewDistRatioDetail  = 30.0f;
-std::vector<CRenderProxy*> CRenderProxy::s_arrCharactersToRegisterForRendering;
+float CRenderComponent::gsWaterLevel;
+float CRenderComponent::s_fViewDistMin = 0.0f;
+float CRenderComponent::s_fViewDistRatio = 60.0f;
+float CRenderComponent::s_fViewDistRatioCustom = 60.0f;
+float CRenderComponent::s_fViewDistRatioDetail = 30.0f;
+std::vector<CRenderComponent*> CRenderComponent::s_arrCharactersToRegisterForRendering;
 
-CEntityTimeoutList* CRenderProxy::s_pTimeoutList = 0;
+CEntityTimeoutList* CRenderComponent::s_pTimeoutList = 0;
 
 inline void CheckIfBBoxValid( const AABB &box,CEntity *pEntity )
 {
@@ -57,7 +57,7 @@ inline void CheckIfBBoxValid( const AABB &box,CEntity *pEntity )
 }
 
 //////////////////////////////////////////////////////////////////////////
-CRenderProxy::CRenderProxy()
+CRenderComponent::CRenderComponent()
 {
 	m_pEntity = 0;
 	m_entityId = -1;
@@ -87,7 +87,7 @@ CRenderProxy::CRenderProxy()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CRenderProxy::~CRenderProxy()
+CRenderComponent::~CRenderComponent()
 {
   GetI3DEngine()->FreeRenderNodeState(this); // internally calls UnRegisterEntity(this)
 
@@ -105,26 +105,26 @@ CRenderProxy::~CRenderProxy()
 	// call register for rendering multiple times
 	while(1)
 	{
-		std::vector<CRenderProxy*>::iterator it = std::find(s_arrCharactersToRegisterForRendering.begin(), s_arrCharactersToRegisterForRendering.end(), this );
-		if( it == s_arrCharactersToRegisterForRendering.end() )
+		std::vector<CRenderComponent*>::iterator it = std::find(s_arrCharactersToRegisterForRendering.begin(), s_arrCharactersToRegisterForRendering.end(), this);
+		if (it == s_arrCharactersToRegisterForRendering.end())
 			break;
 		s_arrCharactersToRegisterForRendering.erase(it);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::Initialize( const SComponentInitializer& init )
+void CRenderComponent::Initialize(IEntity &entity)
 {
-	m_pEntity = (CEntity*)init.m_pEntity;
+	m_pEntity = &entity;
 	m_entityId = m_pEntity->GetId(); // Store so we can use it during Render() (when we shouldn't touch the entity itself).
 
-	m_pMaterial = m_pEntity->m_pMaterial;
+	m_pMaterial = m_pEntity->GetMaterial();
 
 	SetCloakBlendTimeScale(1.0f);
 
 	UpdateEntityFlags();
 
-	if (m_pEntity->m_bInitialized)
+	if (m_pEntity->IsInitialized())
 	{
 		AddFlags(FLAG_POST_INIT);
 		RegisterForRendering(true);
@@ -132,7 +132,13 @@ void CRenderProxy::Initialize( const SComponentInitializer& init )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::PostInit()
+CEntity *CRenderComponent::GetCEntity() const
+{ 
+	return static_cast<CEntity *>(m_pEntity); 
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CRenderComponent::PostInit()
 {
 	AddFlags(FLAG_POST_INIT);
 
@@ -147,14 +153,9 @@ void CRenderProxy::PostInit()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::Reload( IEntity *pEntity,SEntitySpawnParams &params )
+void CRenderComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
-	assert(pEntity == m_pEntity);
-
-	CEntity *pCEntity = static_cast<CEntity*>(pEntity);
-	assert(pCEntity);
-
-	m_entityId = pEntity->GetId(); // Store so we can use it during Render() (when we shouldn't touch the entity itself).
+	m_entityId = m_pEntity->GetId(); // Store so we can use it during Render() (when we shouldn't touch the entity itself).
 
 	m_nFlags = 0;
 
@@ -163,7 +164,7 @@ void CRenderProxy::Reload( IEntity *pEntity,SEntitySpawnParams &params )
 	m_WSBBox.min=Vec3(ZERO);
 	m_WSBBox.max=Vec3(ZERO);
 
-	m_pMaterial = pCEntity->m_pMaterial;
+	m_pMaterial = GetCEntity()->m_pMaterial;
 
 	m_nVisionParams = 0; 
 	m_nHUDSilhouettesParams = 0;
@@ -181,7 +182,7 @@ void CRenderProxy::Reload( IEntity *pEntity,SEntitySpawnParams &params )
 
 	ClearSlots();
 
-	if (pCEntity->m_bInitialized)
+	if (GetCEntity()->m_bInitialized)
 	{
 		AddFlags(FLAG_POST_INIT);
 		RegisterForRendering(true);
@@ -190,16 +191,12 @@ void CRenderProxy::Reload( IEntity *pEntity,SEntitySpawnParams &params )
 	//set water level to avoid accessing it all the time
 	gsWaterLevel = GetI3DEngine()->GetWaterLevel();
 	m_fLastSeenTime = gEnv->pTimer->GetCurrTime();
+
+	PostInit();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::Release()
-{
-	delete this;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CRenderProxy::UpdateEntityFlags()
+void CRenderComponent::UpdateEntityFlags()
 {
 	int nEntityFlags = m_pEntity->GetFlags();
 	int nExtendedFlags = m_pEntity->GetFlagsExtended();
@@ -241,22 +238,22 @@ void CRenderProxy::UpdateEntityFlags()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderProxy::CheckCharacterForMorphs(ICharacterInstance* pCharacter)
+bool CRenderComponent::CheckCharacterForMorphs(ICharacterInstance* pCharacter)
 {
 	return 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::AnimEventCallback(ICharacterInstance *pCharacter, void *userdata)
+int CRenderComponent::AnimEventCallback(ICharacterInstance* pCharacter, void* userdata)
 {
-	CRenderProxy* pInstance = static_cast< CRenderProxy* >(userdata);
-	if (pInstance)
+	if (CRenderComponent* pInstance = static_cast<CRenderComponent*>(userdata))
 		pInstance->AnimationEvent(pCharacter, pCharacter->GetISkeletonAnim()->GetLastAnimEvent());
+
 	return 1;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::AnimationEvent(ICharacterInstance *pCharacter, const AnimEventInstance &animEvent)
+void CRenderComponent::AnimationEvent(ICharacterInstance* pCharacter, const AnimEventInstance& animEvent)
 {
 	// Send an entity event.
 	SEntityEvent event(ENTITY_EVENT_ANIM_EVENT);
@@ -266,7 +263,7 @@ void CRenderProxy::AnimationEvent(ICharacterInstance *pCharacter, const AnimEven
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::ExpandCompoundSlot0()
+void CRenderComponent::ExpandCompoundSlot0()
 {
 	AddFlags(FLAG_RECOMPUTE_EXECUTE_AS_JOB_FLAG);
 
@@ -305,7 +302,7 @@ void CRenderProxy::ExpandCompoundSlot0()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CEntityObject* CRenderProxy::AllocSlot( int nIndex )
+CEntityObject* CRenderComponent::AllocSlot(int nIndex)
 {	
 	AddFlags(FLAG_RECOMPUTE_EXECUTE_AS_JOB_FLAG);
 
@@ -326,7 +323,7 @@ CEntityObject* CRenderProxy::AllocSlot( int nIndex )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::FreeSlot( int nIndex )
+void CRenderComponent::FreeSlot(int nIndex)
 {
 	AddFlags(FLAG_RECOMPUTE_EXECUTE_AS_JOB_FLAG);
 //	assert(nIndex>=0 && nIndex < (int)m_slots.size());
@@ -366,7 +363,7 @@ void CRenderProxy::FreeSlot( int nIndex )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::FreeAllSlots()
+void CRenderComponent::FreeAllSlots()
 {
 	AddFlags(FLAG_RECOMPUTE_EXECUTE_AS_JOB_FLAG);
 
@@ -381,7 +378,7 @@ void CRenderProxy::FreeAllSlots()
 }
 
 //////////////////////////////////////////////////////////////////////////
-CEntityObject* CRenderProxy::GetOrMakeSlot( int &nSlot )
+CEntityObject* CRenderComponent::GetOrMakeSlot(int& nSlot)
 {
 	if (nSlot < 0)
 	{
@@ -391,7 +388,7 @@ CEntityObject* CRenderProxy::GetOrMakeSlot( int &nSlot )
 }
 
 //////////////////////////////////////////////////////////////////////////
-CEntityObject* CRenderProxy::GetParentSlot( int nIndex ) const
+CEntityObject* CRenderComponent::GetParentSlot(int nIndex) const
 {
 	if (IsSlotValid(nIndex))
 	{
@@ -401,7 +398,7 @@ CEntityObject* CRenderProxy::GetParentSlot( int nIndex ) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderProxy::SetParentSlot( int nParentIndex,int nChildIndex )
+bool CRenderComponent::SetParentSlot(int nParentIndex, int nChildIndex)
 {
 	if (Slot(nParentIndex) && Slot(nChildIndex))
 	{
@@ -413,13 +410,13 @@ bool CRenderProxy::SetParentSlot( int nParentIndex,int nChildIndex )
 }
 
 //////////////////////////////////////////////////////////////////////////
-IStatObj *CRenderProxy::GetCompoundObj() const
-{ 
-	return m_slots.size()==1 && Slot(0)->pStatObj && Slot(0)->pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND ? Slot(0)->pStatObj : 0;
+IStatObj* CRenderComponent::GetCompoundObj() const
+{
+	return m_slots.size() == 1 && Slot(0)->pStatObj && Slot(0)->pStatObj->GetFlags() & STATIC_OBJECT_COMPOUND ? Slot(0)->pStatObj : 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::SetSlotLocalTM( int nIndex,const Matrix34 &localTM,int nWhyFlags )
+void CRenderComponent::SetSlotLocalTM(int nIndex, const Matrix34& localTM, int nWhyFlags)
 {
 	if (IsSlotValid(nIndex))
 	{
@@ -428,8 +425,8 @@ void CRenderProxy::SetSlotLocalTM( int nIndex,const Matrix34 &localTM,int nWhyFl
 		identTM.SetIdentity();    
 		if (pSlot->m_pXForm || !Matrix34::IsEquivalent(localTM,identTM, 0.001f) || pSlot->flags&ENTITY_SLOT_RENDER_NEAREST)
 		{
-			Slot(nIndex)->SetLocalTM( localTM );
-			Slot(nIndex)->OnXForm( m_pEntity );
+			Slot(nIndex)->SetLocalTM(localTM);
+			Slot(nIndex)->OnXForm(GetCEntity());
 
 			if (!(nWhyFlags & ENTITY_XFORM_NOT_REREGISTER)) // A special optimization for characters
 			{
@@ -441,7 +438,7 @@ void CRenderProxy::SetSlotLocalTM( int nIndex,const Matrix34 &localTM,int nWhyFl
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::SetSlotCameraSpacePos( int nIndex, const Vec3 &cameraSpacePos )
+void CRenderComponent::SetSlotCameraSpacePos(int nIndex, const Vec3& cameraSpacePos)
 {
 	if (IsSlotValid(nIndex))
 	{
@@ -454,7 +451,7 @@ void CRenderProxy::SetSlotCameraSpacePos( int nIndex, const Vec3 &cameraSpacePos
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::GetSlotCameraSpacePos( int nIndex, Vec3 &cameraSpacePos ) const
+void CRenderComponent::GetSlotCameraSpacePos(int nIndex, Vec3& cameraSpacePos) const
 {
 	if (IsSlotValid(nIndex))
 	{
@@ -469,23 +466,23 @@ void CRenderProxy::GetSlotCameraSpacePos( int nIndex, Vec3 &cameraSpacePos ) con
 }
 
 //////////////////////////////////////////////////////////////////////////
-const Matrix34& CRenderProxy::GetSlotWorldTM( int nIndex ) const
+const Matrix34& CRenderComponent::GetSlotWorldTM(int nIndex) const
 {
 	static Matrix34 temp;
 	IStatObj *pCompObj;
 	IStatObj::SSubObject *pSubObj;
 	if (!(nIndex & ENTITY_SLOT_ACTUAL) && (pCompObj = GetCompoundObj()))
-		return (pSubObj=pCompObj->GetSubObject(nIndex)) ? 
-			(temp=Slot(0)->GetWorldTM(m_pEntity)*pSubObj->tm) : Slot(0)->GetWorldTM(m_pEntity);
+		return (pSubObj = pCompObj->GetSubObject(nIndex)) ?
+		       (temp = Slot(0)->GetWorldTM(GetCEntity()) * pSubObj->tm) : Slot(0)->GetWorldTM(GetCEntity());
 	nIndex &= ~ENTITY_SLOT_ACTUAL;
 	if (IsSlotValid(nIndex))
-		return Slot(nIndex)->GetWorldTM(m_pEntity);
+		return Slot(nIndex)->GetWorldTM(GetCEntity());
 	temp.SetIdentity();
 	return temp;
 }
 
 //////////////////////////////////////////////////////////////////////////
-const Matrix34& CRenderProxy::GetSlotLocalTM( int nIndex, bool bRelativeToParent ) const
+const Matrix34& CRenderComponent::GetSlotLocalTM(int nIndex, bool bRelativeToParent) const
 {
 	static Matrix34 temp;
 	IStatObj *pCompObj;
@@ -514,7 +511,7 @@ const Matrix34& CRenderProxy::GetSlotLocalTM( int nIndex, bool bRelativeToParent
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::SetLocalBounds( const AABB &bounds,bool bDoNotRecalculate )
+void CRenderComponent::SetLocalBounds(const AABB& bounds, bool bDoNotRecalculate)
 {
 	m_localBBox = bounds;
 	if (bDoNotRecalculate)
@@ -529,13 +526,13 @@ void CRenderProxy::SetLocalBounds( const AABB &bounds,bool bDoNotRecalculate )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::InvalidateLocalBounds()
+void CRenderComponent::InvalidateLocalBounds()
 {
 	InvalidateBounds( true,true );
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::CalcLocalBounds()
+void CRenderComponent::CalcLocalBounds()
 {
 	// If local bounding box is forced from outside, do not calculate it automatically.
 	if (CheckFlags(FLAG_BBOX_FORCED))
@@ -553,7 +550,7 @@ void CRenderProxy::CalcLocalBounds()
 			box.Reset();
 			if (pSlot->GetLocalBounds( box ))
 			{
-				CheckIfBBoxValid( box,m_pEntity );
+				CheckIfBBoxValid(box, GetCEntity());
 
 				// Check if slot have transformation.
 				if (pSlot->HaveLocalMatrix())
@@ -562,7 +559,7 @@ void CRenderProxy::CalcLocalBounds()
 					box.SetTransformedAABB( GetSlotLocalTM(i, false),box );
 				}
 
-				CheckIfBBoxValid( box,m_pEntity );
+				CheckIfBBoxValid(box, GetCEntity());
 
 				// Add local slot bounds to local rendering bounds.
 				m_localBBox.Add(box.min);
@@ -588,7 +585,7 @@ void CRenderProxy::CalcLocalBounds()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::GetLocalBounds( AABB &bbox )
+void CRenderComponent::GetLocalBounds(AABB& bbox)
 {
 	if (!CheckFlags(FLAG_BBOX_VALID_LOCAL))
 	{
@@ -598,7 +595,7 @@ void CRenderProxy::GetLocalBounds( AABB &bbox )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::GetWorldBounds( AABB &bbox )
+void CRenderComponent::GetWorldBounds(AABB& bbox)
 {
 	if (!CheckFlags(FLAG_BBOX_VALID_LOCAL))
 	{
@@ -607,17 +604,17 @@ void CRenderProxy::GetWorldBounds( AABB &bbox )
 	bbox = m_localBBox;
 	bbox.SetTransformedAABB( m_pEntity->GetWorldTM(),bbox );
 
-	CheckIfBBoxValid( bbox,m_pEntity );
+	CheckIfBBoxValid(bbox, GetCEntity());
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::ProcessEvent( SEntityEvent &event )
+void CRenderComponent::ProcessEvent(SEntityEvent& event)
 {
 	// Pass events to slots.
 	for (uint32 i = 0,num = m_slots.size(); i < num; i++)
 	{
 		if (m_slots[i])
-			m_slots[i]->OnEntityEvent(m_pEntity, event);
+			m_slots[i]->OnEntityEvent(GetCEntity(), event);
 	}
 
 	switch (event.event)
@@ -636,7 +633,7 @@ void CRenderProxy::ProcessEvent( SEntityEvent &event )
 	case ENTITY_EVENT_NOT_SEEN_TIMEOUT:
 		{
 			if (CVar::pDebugNotSeenTimeout->GetIVal())
-				CryLogAlways("RenderProxy not seen: id = \"0x%X\" entity = \"%s\" class = \"%s\"", m_pEntity->GetId(), m_pEntity->GetName(), m_pEntity->GetClass()->GetName());
+				CryLogAlways("Render Component not seen: id = \"0x%X\" entity = \"%s\" class = \"%s\"", m_pEntity->GetId(), m_pEntity->GetName(), m_pEntity->GetClass()->GetName());
 
 			for (Slots::iterator it = m_slots.begin(),endit = m_slots.end(); it != endit; ++it) 
 			{
@@ -691,7 +688,7 @@ void CRenderProxy::ProcessEvent( SEntityEvent &event )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::OnEntityXForm( int nWhyFlags )
+void CRenderComponent::OnEntityXForm(int nWhyFlags)
 {
 	if (!(nWhyFlags & ENTITY_XFORM_NOT_REREGISTER)) // A special optimization for characters
 	{
@@ -702,12 +699,12 @@ void CRenderProxy::OnEntityXForm( int nWhyFlags )
 	for (uint32 i = 0,num = m_slots.size(); i < num; i++)
 	{
 		if (m_slots[i])
-			m_slots[i]->OnXForm(m_pEntity);
+			m_slots[i]->OnXForm(GetCEntity());
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::OnHide( bool bHide )
+void CRenderComponent::OnHide(bool bHide)
 {
 	if (CheckFlags(FLAG_HIDDEN) != bHide)
 	{
@@ -748,7 +745,7 @@ void CRenderProxy::OnHide( bool bHide )
 	}
 }
 
-void CRenderProxy::SetLayerId(uint16 nLayerId)
+void CRenderComponent::SetLayerId(uint16 nLayerId)
 {
 	for (uint32 i = 0; i < m_slots.size(); i++)
 	{
@@ -768,9 +765,9 @@ void CRenderProxy::SetLayerId(uint16 nLayerId)
 
 	gEnv->p3DEngine->UpdateObjectsLayerAABB(this);
 }
-//////////////////////////////////////////////////////////////////
 
-void CRenderProxy::OnReset( )
+//////////////////////////////////////////////////////////////////
+void CRenderComponent::OnReset()
 {
   m_nVisionParams = 0;
 	m_nHUDSilhouettesParams = 0;
@@ -778,8 +775,7 @@ void CRenderProxy::OnReset( )
 }
 
 //////////////////////////////////////////////////////////////////
-
-void CRenderProxy::UpdateMaterialLayersRendParams( SRendParams &pRenderParams, const SRenderingPassInfo &passInfo )
+void CRenderComponent::UpdateMaterialLayersRendParams(SRendParams& pRenderParams, const SRenderingPassInfo& passInfo)
 {
 	if(passInfo.IsShadowPass() && !(m_nFlags & FLAG_SHADOW_DISSOLVE) )
   {
@@ -896,42 +892,42 @@ void CRenderProxy::UpdateMaterialLayersRendParams( SRendParams &pRenderParams, c
   }
 }
 
-void CRenderProxy::UpdateEffectLayersParams( SRendParams &pRenderParams )
+void CRenderComponent::UpdateEffectLayersParams(SRendParams& pRenderParams)
 {
 	if( m_pLayerEffectParams )
 		pRenderParams.pLayerEffectParams = m_pLayerEffectParams;
 }
 
-void CRenderProxy::Render( const SRendParams& inRenderParams, const SRenderingPassInfo &passInfo )
+void CRenderComponent::Render(const SRendParams& inRenderParams, const SRenderingPassInfo& passInfo)
 {
 	Render_JobEntry(inRenderParams, passInfo);
 	/*
-	if(passInfo.WriteMutex() && CanExecuteRenderAsJob())
-	{
-#if defined(SUPPORT_RENDERPROXY_RENDER_JOB)
-		TRenderProxyRender job(inRenderParams, passInfo);
-		job.SetClassInstance(this);
-		job.RegisterJobState((CryJobState*)passInfo.WriteMutex());
-		job.SetPriorityLevel(passInfo.IsGeneralPass() ? JobManager::eRegularPriority : JobManager::eLowPriority);
-		job.Run();
-#else
-		__debugbreak(); // unsupported code path
-#endif // SUPPORT_RENDERPROXY_RENDER_JOB
-	}
-	else
-	{
-		Render_JobEntry(inRenderParams,passInfo);
-	}
-	*/
+	   if(passInfo.WriteMutex() && CanExecuteRenderAsJob())
+	   {
+	   #if defined(SUPPORT_RENDERCOMPONENT_RENDER_JOB)
+	   TRenderComponentRender job(inRenderParams, passInfo);
+	   job.SetClassInstance(this);
+	   job.RegisterJobState((CryJobState*)passInfo.WriteMutex());
+	   job.SetPriorityLevel(passInfo.IsGeneralPass() ? JobManager::eRegularPriority : JobManager::eLowPriority);
+	   job.Run();
+	   #else
+	   __debugbreak(); // unsupported code path
+	   #endif // SUPPORT_RENDERCOMPONENT_RENDER_JOB
+	   }
+	   else
+	   {
+	   Render_JobEntry(inRenderParams,passInfo);
+	   }
+	 */
 }
 
-void CRenderProxy::OnRenderNodeBecomeVisible(const SRenderingPassInfo &passInfo)
+void CRenderComponent::OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
 // cppcheck-suppress passedByValue
-void CRenderProxy::Render_JobEntry( const SRendParams inRenderParams, const SRenderingPassInfo passInfo )
+void CRenderComponent::Render_JobEntry(const SRendParams inRenderParams, const SRenderingPassInfo passInfo)
 {
 	FUNCTION_PROFILER( GetISystem(),PROFILE_ENTITY );
 
@@ -1041,12 +1037,12 @@ void CRenderProxy::Render_JobEntry( const SRendParams inRenderParams, const SRen
 		{          
 			if(pSlot->pCharacter)
 			rParams.lodValue = pSlot->ComputeLod(inRenderParams.lodValue.LodA(), passInfo);
-			pSlot->Render( m_pEntity, rParams, m_dwRndFlags,this, passInfo );
+			pSlot->Render(GetCEntity(), rParams, m_dwRndFlags, this, passInfo);
 		}
 	}
 }
 
-IStatObj *CRenderProxy::GetEntityStatObj( unsigned int nPartId, unsigned int nSubPartId, Matrix34A * pMatrix /* = NULL */, bool bReturnOnlyVisible /* = false */)
+IStatObj* CRenderComponent::GetEntityStatObj(unsigned int nPartId, unsigned int nSubPartId, Matrix34A* pMatrix /* = NULL */, bool bReturnOnlyVisible /* = false */)
 {
 	if (!IsSlotValid(nPartId))
 		return NULL;
@@ -1062,7 +1058,7 @@ IStatObj *CRenderProxy::GetEntityStatObj( unsigned int nPartId, unsigned int nSu
   return NULL;
 }
 
-ICharacterInstance *CRenderProxy::GetEntityCharacter( unsigned int nSlot, Matrix34A * pMatrix /* = NULL */, bool bReturnOnlyVisible /* = false */)
+ICharacterInstance* CRenderComponent::GetEntityCharacter(unsigned int nSlot, Matrix34A* pMatrix /* = NULL */, bool bReturnOnlyVisible /* = false */)
 {
 	if (!IsSlotValid(nSlot))
 		return NULL;
@@ -1078,7 +1074,7 @@ ICharacterInstance *CRenderProxy::GetEntityCharacter( unsigned int nSlot, Matrix
 }
 
 #if defined(USE_GEOM_CACHES)
-IGeomCacheRenderNode* CRenderProxy::GetGeomCacheRenderNode( unsigned int nSlot, Matrix34A * pMatrix, bool bReturnOnlyVisible )
+IGeomCacheRenderNode* CRenderComponent::GetGeomCacheRenderNode(unsigned int nSlot, Matrix34A* pMatrix, bool bReturnOnlyVisible)
 {
 #if defined(USE_GEOM_CACHES)
 	if (!IsSlotValid(nSlot))
@@ -1095,7 +1091,7 @@ IGeomCacheRenderNode* CRenderProxy::GetGeomCacheRenderNode( unsigned int nSlot, 
 }
 #endif
 
-IMaterial * CRenderProxy::GetEntitySlotMaterial( unsigned int nPartId, bool bReturnOnlyVisible, bool * pbDrawNear )
+IMaterial* CRenderComponent::GetEntitySlotMaterial(unsigned int nPartId, bool bReturnOnlyVisible, bool* pbDrawNear)
 {
 	if (!IsSlotValid(nPartId))
 		return NULL;
@@ -1110,7 +1106,7 @@ IMaterial * CRenderProxy::GetEntitySlotMaterial( unsigned int nPartId, bool bRet
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::Update( SEntityUpdateContext &ctx )
+void CRenderComponent::Update(SEntityUpdateContext& ctx)
 {
 	if (!CheckFlags(FLAG_UPDATE))
 		return;
@@ -1125,8 +1121,8 @@ void CRenderProxy::Update( SEntityUpdateContext &ctx )
 		if (m_slots[i] && m_slots[i]->bUpdate)
 		{
 			bool bSlotBoundsChanged = false;
-			
-			m_slots[i]->Update( m_pEntity,CheckFlags(FLAG_NOW_VISIBLE),bSlotBoundsChanged );
+
+			m_slots[i]->Update(GetCEntity(), CheckFlags(FLAG_NOW_VISIBLE), bSlotBoundsChanged);
 			
 			if (bSlotBoundsChanged)
 				bBoundsChanged = true;
@@ -1143,7 +1139,7 @@ void CRenderProxy::Update( SEntityUpdateContext &ctx )
 //
 // If the material should be changed on the entity object, then
 // SetMaterial() needs to be called instead.
-void CRenderProxy::SetCustomMaterial( IMaterial *pMaterial )
+void CRenderComponent::SetCustomMaterial(IMaterial* pMaterial)
 {
 	m_pMaterial = pMaterial;
 
@@ -1174,7 +1170,7 @@ void CRenderProxy::SetCustomMaterial( IMaterial *pMaterial )
 };
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::InvalidateBounds( bool bLocal,bool bWorld )
+void CRenderComponent::InvalidateBounds(bool bLocal, bool bWorld)
 {
 	if (bLocal)
 		ClearFlags(FLAG_BBOX_VALID_LOCAL);
@@ -1188,17 +1184,18 @@ void CRenderProxy::InvalidateBounds( bool bLocal,bool bWorld )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::RegisterCharactersForRendering()
+void CRenderComponent::RegisterCharactersForRendering()
 {
 	// remove potential duplicates
-	std::sort( s_arrCharactersToRegisterForRendering.begin(), s_arrCharactersToRegisterForRendering.end() );
-	std::vector<CRenderProxy*>::iterator itEnd = std::unique( s_arrCharactersToRegisterForRendering.begin(), s_arrCharactersToRegisterForRendering.end() );
+	std::sort(s_arrCharactersToRegisterForRendering.begin(), s_arrCharactersToRegisterForRendering.end());
+	std::vector<CRenderComponent*>::iterator itEnd = std::unique(s_arrCharactersToRegisterForRendering.begin(), s_arrCharactersToRegisterForRendering.end());
 
-	for( std::vector<CRenderProxy*>::iterator it = s_arrCharactersToRegisterForRendering.begin() ; it != itEnd ; ++it )
+	for (std::vector<CRenderComponent*>::iterator it = s_arrCharactersToRegisterForRendering.begin(); it != itEnd; ++it)
 	{
-		CRenderProxy *pProxy = *it;
-		
-		pProxy->CalcLocalBounds();		
+		CRenderComponent* pProxy = *it;
+
+		pProxy->CalcLocalBounds();
+
 		bool bBoxEmpty = pProxy->m_localBBox.IsEmpty();
 
 		if (!pProxy->CheckFlags(FLAG_BBOX_INVALID) && !bBoxEmpty)
@@ -1206,20 +1203,20 @@ void CRenderProxy::RegisterCharactersForRendering()
 			pProxy->m_WSBBox.SetTransformedAABB( pProxy->m_pEntity->GetWorldTM(),pProxy->m_localBBox );
 
 			pProxy->AddFlags(FLAG_REGISTERED_IN_3DENGINE);
-			
-      // register this entity for rendering
-      float fObjRadiusSqr = pProxy->m_WSBBox.GetRadiusSqr();
-      if(fObjRadiusSqr < 100000000.f && _finite(fObjRadiusSqr))
-        pProxy->GetI3DEngine()->RegisterEntity(pProxy);
-      else
-				EntityWarning("CRenderProxy::RegisterForRendering: Object has invalid bbox: name: %s, class name: %s, GetRadius() = %.2f", pProxy->GetName(), pProxy->GetEntityClassName(), fObjRadiusSqr);
+
+			// register this entity for rendering
+			float fObjRadiusSqr = pProxy->m_WSBBox.GetRadiusSqr();
+			if (fObjRadiusSqr < 100000000.f && _finite(fObjRadiusSqr))
+				pProxy->GetI3DEngine()->RegisterEntity(pProxy);
+			else
+				EntityWarning("CRenderComponent::RegisterForRendering: Object has invalid bbox: name: %s, class name: %s, GetRadius() = %.2f", pProxy->GetName(), pProxy->GetEntityClassName(), fObjRadiusSqr);
 		}
 	}
 	s_arrCharactersToRegisterForRendering.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::RegisterForRendering(  bool bEnable )
+void CRenderComponent::RegisterForRendering(bool bEnable)
 {
 	if (bEnable)
 	{
@@ -1253,16 +1250,16 @@ void CRenderProxy::RegisterForRendering(  bool bEnable )
 
 		if (!CheckFlags(FLAG_BBOX_INVALID) && !bBoxEmpty)
 		{
-			m_WSBBox.SetTransformedAABB( m_pEntity->GetWorldTM(),m_localBBox );
+			m_WSBBox.SetTransformedAABB(m_pEntity->GetWorldTM(), m_localBBox);
 
 			AddFlags(FLAG_REGISTERED_IN_3DENGINE);
-			
-      // register this entity for rendering
-      float fObjRadiusSqr = m_WSBBox.GetRadiusSqr();
-      if(fObjRadiusSqr < 100000000.f && _finite(fObjRadiusSqr))
-        GetI3DEngine()->RegisterEntity(this);
-      else
-        EntityWarning("CRenderProxy::RegisterForRendering: Object has invalid bbox: name: %s, class name: %s, GetRadius() = %.2f", GetName(), GetEntityClassName(), fObjRadiusSqr);
+
+			// register this entity for rendering
+			float fObjRadiusSqr = m_WSBBox.GetRadiusSqr();
+			if (fObjRadiusSqr < 100000000.f && _finite(fObjRadiusSqr))
+				GetI3DEngine()->RegisterEntity(this);
+			else
+				EntityWarning("CRenderComponent::RegisterForRendering: Object has invalid bbox: name: %s, class name: %s, GetRadius() = %.2f", GetName(), GetEntityClassName(), fObjRadiusSqr);
 		}
 	}
 	else if (CheckFlags(FLAG_REGISTERED_IN_3DENGINE))
@@ -1274,7 +1271,7 @@ void CRenderProxy::RegisterForRendering(  bool bEnable )
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::GetSlotId( CEntityObject *pSlot ) const
+int CRenderComponent::GetSlotId(CEntityObject* pSlot) const
 {
 	for (uint32 i = 0; i < m_slots.size(); i++)
 	{
@@ -1285,7 +1282,7 @@ int CRenderProxy::GetSlotId( CEntityObject *pSlot ) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderProxy::GetSlotInfo( int nIndex,SEntitySlotInfo &slotInfo ) const
+bool CRenderComponent::GetSlotInfo(int nIndex, SEntitySlotInfo& slotInfo) const
 {
 	if (!IsSlotValid(nIndex))
 		return false;
@@ -1301,7 +1298,7 @@ bool CRenderProxy::GetSlotInfo( int nIndex,SEntitySlotInfo &slotInfo ) const
 	slotInfo.pLight = pSlot->pLight;
 	slotInfo.pMaterial = pSlot->pMaterial;
 	slotInfo.pLocalTM = &pSlot->GetLocalTM();
-	slotInfo.pWorldTM = &pSlot->GetWorldTM(m_pEntity);
+	slotInfo.pWorldTM = &pSlot->GetWorldTM(GetCEntity());
 	slotInfo.pChildRenderNode = pSlot->pChildRenderNode;
   slotInfo.pParticleEmitter = pSlot->GetParticleEmitter();
 #if defined(USE_GEOM_CACHES)
@@ -1314,7 +1311,7 @@ bool CRenderProxy::GetSlotInfo( int nIndex,SEntitySlotInfo &slotInfo ) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::SetSlotFlags( int nSlot,uint32 nFlags )
+void CRenderComponent::SetSlotFlags(int nSlot, uint32 nFlags)
 {
 	if (nSlot < 0)
 	{
@@ -1355,7 +1352,7 @@ void CRenderProxy::SetSlotFlags( int nSlot,uint32 nFlags )
 }
 
 //////////////////////////////////////////////////////////////////////////
-uint32 CRenderProxy::GetSlotFlags( int nSlot )
+uint32 CRenderComponent::GetSlotFlags(int nSlot)
 {
 	if (IsSlotValid(nSlot))
 	{
@@ -1365,7 +1362,7 @@ uint32 CRenderProxy::GetSlotFlags( int nSlot )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::SetSlotMaterial( int nSlot,IMaterial *pMaterial )
+void CRenderComponent::SetSlotMaterial(int nSlot, IMaterial* pMaterial)
 {
 	if (IsSlotValid(nSlot))
 	{
@@ -1378,7 +1375,7 @@ void CRenderProxy::SetSlotMaterial( int nSlot,IMaterial *pMaterial )
 }
 
 //////////////////////////////////////////////////////////////////////////
-IMaterial* CRenderProxy::GetSlotMaterial( int nSlot )
+IMaterial* CRenderComponent::GetSlotMaterial(int nSlot)
 {
 	if (IsSlotValid(nSlot))
 	{
@@ -1388,7 +1385,7 @@ IMaterial* CRenderProxy::GetSlotMaterial( int nSlot )
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::SetSlotGeometry( int nSlot,IStatObj *pStatObj )
+int CRenderComponent::SetSlotGeometry(int nSlot, IStatObj* pStatObj)
 {
 	if (m_nInternalFlags & DECAL_OWNER)
 		m_nInternalFlags |= UPDATE_DECALS;
@@ -1460,7 +1457,7 @@ int CRenderProxy::SetSlotGeometry( int nSlot,IStatObj *pStatObj )
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::SetSlotCharacter( int nSlot, ICharacterInstance* pCharacter )
+int CRenderComponent::SetSlotCharacter(int nSlot, ICharacterInstance* pCharacter)
 {
 	CEntityObject *pSlot = GetOrMakeSlot(nSlot);
 
@@ -1497,7 +1494,7 @@ int CRenderProxy::SetSlotCharacter( int nSlot, ICharacterInstance* pCharacter )
 		{
 			m_pEntity->SetFlags(m_pEntity->GetFlags() | ENTITY_FLAG_SEND_NOT_SEEN_TIMEOUT);
 			if (CVar::pDebugNotSeenTimeout->GetIVal())
-				CryLogAlways("CRenderProxy::SetSlotCharacter(): Setting ENTITY_FLAG_SEND_NOT_SEEN_TIMEOUT. id = \"0x%X\" entity = \"%s\" class = \"%s\"", m_pEntity->GetId(), m_pEntity->GetName(), m_pEntity->GetClass()->GetName());
+				CryLogAlways("CRenderComponent::SetSlotCharacter(): Setting ENTITY_FLAG_SEND_NOT_SEEN_TIMEOUT. id = \"0x%X\" entity = \"%s\" class = \"%s\"", m_pEntity->GetId(), m_pEntity->GetName(), m_pEntity->GetClass()->GetName());
 		}
 
 		InvalidateBounds( true,true );
@@ -1518,13 +1515,13 @@ int CRenderProxy::SetSlotCharacter( int nSlot, ICharacterInstance* pCharacter )
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::LoadGeometry( int nSlot,const char *sFilename,const char *sGeomName,int nLoadFlags )
+int CRenderComponent::LoadGeometry(int nSlot, const char* sFilename, const char* sGeomName, int nLoadFlags)
 {
 	CEntityObject *pSlot = GetOrMakeSlot(nSlot);
 
 	if (!sFilename || (sFilename[0]==0))
 	{
-		EntityWarning("[RenderProxy::LoadGeometry] Called with empty filename, Entity: %s", m_pEntity->GetEntityTextDescription().c_str());
+		EntityWarning("[CRenderComponent::LoadGeometry] Called with empty filename, Entity: %s", m_pEntity->GetEntityTextDescription().c_str());
 		return -1;
 	}
 
@@ -1576,11 +1573,11 @@ int CRenderProxy::LoadGeometry( int nSlot,const char *sFilename,const char *sGeo
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::LoadCharacter( int nSlot,const char *sFilename,int nLoadFlags )
+int CRenderComponent::LoadCharacter(int nSlot, const char* sFilename, int nLoadFlags)
 {
 	if (!sFilename || (sFilename[0]==0))
 	{
-		EntityWarning("[RenderProxy::LoadCharacter] Called with empty filename, Entity: %s", m_pEntity->GetEntityTextDescription().c_str());
+		EntityWarning("[CRenderComponent::LoadCharacter] Called with empty filename, Entity: %s", m_pEntity->GetEntityTextDescription().c_str());
 		return -1;
 	}
 
@@ -1591,7 +1588,7 @@ int CRenderProxy::LoadCharacter( int nSlot,const char *sFilename,int nLoadFlags 
 }
 
 //////////////////////////////////////////////////////////////////////////
-int	CRenderProxy::SetParticleEmitter(int nSlot, IParticleEmitter* pEmitter, bool bSerialize)
+int CRenderComponent::SetParticleEmitter(int nSlot, IParticleEmitter* pEmitter, bool bSerialize)
 {
 	assert(pEmitter);
 
@@ -1623,7 +1620,7 @@ int	CRenderProxy::SetParticleEmitter(int nSlot, IParticleEmitter* pEmitter, bool
 	return nSlot;
 }
 
-int	CRenderProxy::LoadParticleEmitter( int nSlot, IParticleEffect *pEffect, SpawnParams const* pParams, bool bPrime, bool bSerialize )
+int CRenderComponent::LoadParticleEmitter(int nSlot, IParticleEffect* pEffect, SpawnParams const* pParams, bool bPrime, bool bSerialize)
 {
 	assert(pEffect);
 
@@ -1641,7 +1638,7 @@ int	CRenderProxy::LoadParticleEmitter( int nSlot, IParticleEffect *pEffect, Spaw
 	if (bPrime)
 		params.bPrime = bPrime;
 
-	Matrix34 const& TM = nSlot < 0 ? m_pEntity->GetWorldTM() : GetOrMakeSlot(nSlot)->GetWorldTM(m_pEntity);
+	Matrix34 const& TM = nSlot < 0 ? m_pEntity->GetWorldTM() : GetOrMakeSlot(nSlot)->GetWorldTM(GetCEntity());
 
 	// Create emitter, or update existing.
 	IParticleEmitter* pEmitter = GetParticleEmitter(nSlot);
@@ -1664,7 +1661,7 @@ int	CRenderProxy::LoadParticleEmitter( int nSlot, IParticleEffect *pEffect, Spaw
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::LoadLight( int nSlot,CDLight *pLight,uint16 layerId )
+int CRenderComponent::LoadLight(int nSlot, CDLight* pLight, uint16 layerId)
 {
 	assert(pLight);
 	CEntityObject *pSlot = GetOrMakeSlot(nSlot);
@@ -1698,8 +1695,8 @@ int CRenderProxy::LoadLight( int nSlot,CDLight *pLight,uint16 layerId )
 	m_nFlags |= FLAG_HAS_LIGHTS;
 
 	// Update light positions.
-	pSlot->OnXForm( m_pEntity );
-	
+	pSlot->OnXForm(GetCEntity());
+
 	pSlot->flags &= (~ENTITY_SLOT_RENDER);
 	pSlot->bUpdate = false;
 	InvalidateBounds( true,true );
@@ -1708,7 +1705,7 @@ int CRenderProxy::LoadLight( int nSlot,CDLight *pLight,uint16 layerId )
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::LoadCloud( int nSlot,const char *sFilename )
+int CRenderComponent::LoadCloud(int nSlot, const char* sFilename)
 {
 	CEntityObject *pSlot = GetOrMakeSlot(nSlot);
 
@@ -1721,7 +1718,7 @@ int CRenderProxy::LoadCloud( int nSlot,const char *sFilename )
 	pCloud->SetMaterial( pCloud->GetMaterial() );
 
 	// Update slot position.
-	pSlot->OnXForm( m_pEntity );
+	pSlot->OnXForm(GetCEntity());
 
 	m_nFlags |= FLAG_HAS_CHILDRENDERNODES;
 
@@ -1733,7 +1730,7 @@ int CRenderProxy::LoadCloud( int nSlot,const char *sFilename )
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::SetCloudMovementProperties(int nSlot, const SCloudMovementProperties& properties)
+int CRenderComponent::SetCloudMovementProperties(int nSlot, const SCloudMovementProperties& properties)
 {
 	CEntityObject *pSlot = GetOrMakeSlot(nSlot);
 	IRenderNode* pRenderNode(pSlot->pChildRenderNode);
@@ -1746,7 +1743,7 @@ int CRenderProxy::SetCloudMovementProperties(int nSlot, const SCloudMovementProp
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::LoadFogVolume( int nSlot, const SFogVolumeProperties& properties )
+int CRenderComponent::LoadFogVolume(int nSlot, const SFogVolumeProperties& properties)
 {
 	CEntityObject *pSlot = GetOrMakeSlot( nSlot );
 
@@ -1763,7 +1760,7 @@ int CRenderProxy::LoadFogVolume( int nSlot, const SFogVolumeProperties& properti
 	pFogVolume->SetFogVolumeProperties( properties );
 
 	// Update slot position.
-	pSlot->OnXForm( m_pEntity );
+	pSlot->OnXForm(GetCEntity());
 
 	//pSlot->flags |= ENTITY_SLOT_RENDER;
 	pSlot->bUpdate = false;
@@ -1774,7 +1771,7 @@ int CRenderProxy::LoadFogVolume( int nSlot, const SFogVolumeProperties& properti
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::FadeGlobalDensity( int nSlot, float fadeTime, float newGlobalDensity )
+int CRenderComponent::FadeGlobalDensity(int nSlot, float fadeTime, float newGlobalDensity)
 {
 	CEntityObject *pSlot = GetOrMakeSlot(nSlot);
 	IRenderNode* pRenderNode(pSlot->pChildRenderNode);
@@ -1788,7 +1785,7 @@ int CRenderProxy::FadeGlobalDensity( int nSlot, float fadeTime, float newGlobalD
 
 #if defined(USE_GEOM_CACHES)
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::LoadGeomCache( int nSlot, const char *sFilename )
+int CRenderComponent::LoadGeomCache(int nSlot, const char* sFilename)
 {
 	CEntityObject *pSlot = GetOrMakeSlot(nSlot);
 
@@ -1800,7 +1797,8 @@ int CRenderProxy::LoadGeomCache( int nSlot, const char *sFilename )
 	pSlot->pChildRenderNode = pGeomCacheRenderNode;	
 
 	// Update slot position.
-	pSlot->OnXForm( m_pEntity );
+	pSlot->OnXForm(GetCEntity());
+
 	m_nFlags |= FLAG_HAS_CHILDRENDERNODES;
 	m_nFlags |= FLAG_UPDATE; // For geom caches we need render proxy to be updated.
 	pSlot->flags = ENTITY_SLOT_RENDER;
@@ -1811,7 +1809,7 @@ int CRenderProxy::LoadGeomCache( int nSlot, const char *sFilename )
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::LoadVolumeObject(int nSlot, const char* sFilename)
+int CRenderComponent::LoadVolumeObject(int nSlot, const char* sFilename)
 {
 	CEntityObject *pSlot = GetOrMakeSlot(nSlot);
 
@@ -1825,7 +1823,7 @@ int CRenderProxy::LoadVolumeObject(int nSlot, const char* sFilename)
 		pVolObj->SetMaterial(m_pMaterial);
 
 	// Update slot position
-	pSlot->OnXForm(m_pEntity);
+	pSlot->OnXForm(GetCEntity());
 
 	m_nFlags |= FLAG_HAS_CHILDRENDERNODES;
 
@@ -1837,7 +1835,7 @@ int CRenderProxy::LoadVolumeObject(int nSlot, const char* sFilename)
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CRenderProxy::SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMovementProperties& properties)
+int CRenderComponent::SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMovementProperties& properties)
 {
 	CEntityObject *pSlot = GetOrMakeSlot(nSlot);
 	IRenderNode* pRenderNode(pSlot->pChildRenderNode);
@@ -1850,7 +1848,7 @@ int CRenderProxy::SetVolumeObjectMovementProperties(int nSlot, const SVolumeObje
 }
 
 #if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
-int CRenderProxy::LoadPrismObject(int nSlot)
+int CRenderComponent::LoadPrismObject(int nSlot)
 {
 	CEntityObject *pSlot = GetOrMakeSlot(nSlot);
 
@@ -1864,7 +1862,7 @@ int CRenderProxy::LoadPrismObject(int nSlot)
 		pVolObj->SetMaterial(m_pMaterial);
 
 	// Update slot position
-	pSlot->OnXForm(m_pEntity);
+	pSlot->OnXForm(GetCEntity());
 
 	m_nFlags |= FLAG_HAS_CHILDRENDERNODES;
 
@@ -1877,7 +1875,7 @@ int CRenderProxy::LoadPrismObject(int nSlot)
 #endif // EXCLUDE_DOCUMENTATION_PURPOSE
 
 //////////////////////////////////////////////////////////////////////////
-ICharacterInstance* CRenderProxy::GetCharacter( int nSlot )
+ICharacterInstance* CRenderComponent::GetCharacter(int nSlot)
 {
 	nSlot = nSlot & (~ENTITY_SLOT_ACTUAL);
 	if (!IsSlotValid(nSlot))
@@ -1886,7 +1884,7 @@ ICharacterInstance* CRenderProxy::GetCharacter( int nSlot )
 }
 
 //////////////////////////////////////////////////////////////////////////
-IStatObj* CRenderProxy::GetStatObj( int nSlot )
+IStatObj* CRenderComponent::GetStatObj(int nSlot)
 {
 	IStatObj *pCompObj;
 	if (!(nSlot & ENTITY_SLOT_ACTUAL) && (pCompObj = GetCompoundObj()))
@@ -1899,7 +1897,7 @@ IStatObj* CRenderProxy::GetStatObj( int nSlot )
 }
 
 //////////////////////////////////////////////////////////////////////////
-IParticleEmitter* CRenderProxy::GetParticleEmitter( int nSlot )
+IParticleEmitter* CRenderComponent::GetParticleEmitter(int nSlot)
 {
 	if (!IsSlotValid(nSlot))
 		return NULL;
@@ -1909,7 +1907,7 @@ IParticleEmitter* CRenderProxy::GetParticleEmitter( int nSlot )
 
 #if defined(USE_GEOM_CACHES)
 //////////////////////////////////////////////////////////////////////////
-IGeomCacheRenderNode* CRenderProxy::GetGeomCacheRenderNode( int nSlot )
+IGeomCacheRenderNode* CRenderComponent::GetGeomCacheRenderNode(int nSlot)
 {
 	if (!IsSlotValid(nSlot))
 		return NULL;
@@ -1919,7 +1917,7 @@ IGeomCacheRenderNode* CRenderProxy::GetGeomCacheRenderNode( int nSlot )
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-IMaterial* CRenderProxy::GetRenderMaterial( int nSlot )
+IMaterial* CRenderComponent::GetRenderMaterial(int nSlot)
 {
 	CEntityObject *pSlot = NULL;
 	nSlot = GetSlotIdx(nSlot);
@@ -1959,7 +1957,7 @@ IMaterial* CRenderProxy::GetRenderMaterial( int nSlot )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::SerializeXML( XmlNodeRef &entityNode,bool bLoading )
+void CRenderComponent::SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit)
 {
 	if (bLoading)
 	{
@@ -1986,26 +1984,26 @@ void CRenderProxy::SerializeXML( XmlNodeRef &entityNode,bool bLoading )
 #define DEBUG_PARTICLES	0
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderProxy::NeedSerialize()
+bool CRenderComponent::NeedSerialize()
 {
 	return (m_nFlags&FLAG_HAS_PARTICLES) != 0 && GetMaterialLayers() != 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderProxy::GetSignature( TSerialize signature )
+bool CRenderComponent::GetSignature(TSerialize signature)
 {
-	signature.BeginGroup("RenderProxy");
+	signature.BeginGroup("RenderComponent");
 	signature.EndGroup();
 	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::Serialize( TSerialize ser )
+void CRenderComponent::Serialize(TSerialize ser)
 {
 	// Particles.
 	if (ser.GetSerializationTarget() != eST_Network)
 	{
-		if (ser.BeginOptionalGroup("RenderProxy",true))
+		if (ser.BeginOptionalGroup("RenderComponent", true))
 		{
 			if (ser.IsWriting())
 			{
@@ -2084,8 +2082,8 @@ void CRenderProxy::Serialize( TSerialize ser )
 					ser.EndGroup();//Particles
 				}
 			}
-			
-			ser.EndGroup(); // RenderProxy
+
+			ser.EndGroup(); // CRenderComponent
 		}
 	}
 	
@@ -2102,8 +2100,7 @@ void CRenderProxy::Serialize( TSerialize ser )
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-IShaderPublicParams* CRenderProxy::GetShaderPublicParams( bool bCreate )
+IShaderPublicParams* CRenderComponent::GetShaderPublicParams(bool bCreate)
 {
 	if (m_pShaderPublicParams == NULL && bCreate)
 		m_pShaderPublicParams = gEnv->pRenderer->CreateShaderPublicParams();
@@ -2111,7 +2108,7 @@ IShaderPublicParams* CRenderProxy::GetShaderPublicParams( bool bCreate )
 	return m_pShaderPublicParams;
 }
 
-void CRenderProxy::AddShaderParamCallback(IShaderParamCallbackPtr pCallback)
+void CRenderComponent::AddShaderParamCallback(IShaderParamCallbackPtr pCallback)
 {
 	TCallbackVector::iterator itEnd = m_Callbacks.end();
 	for (TCallbackVector::iterator it = m_Callbacks.begin(); it != itEnd; ++it)
@@ -2122,7 +2119,7 @@ void CRenderProxy::AddShaderParamCallback(IShaderParamCallbackPtr pCallback)
 	m_Callbacks.push_back(pCallback);
 }
 
-bool CRenderProxy::RemoveShaderParamCallback(IShaderParamCallbackPtr pCallback)
+bool CRenderComponent::RemoveShaderParamCallback(IShaderParamCallbackPtr pCallback)
 {
 	TCallbackVector::iterator itEnd = m_Callbacks.end();
 	for (TCallbackVector::iterator it = m_Callbacks.begin(); it != itEnd; ++it)
@@ -2137,21 +2134,21 @@ bool CRenderProxy::RemoveShaderParamCallback(IShaderParamCallbackPtr pCallback)
 	return false;
 }
 
-void CRenderProxy::SetMaterialLayersMask( uint8 nMtlLayers ) 
-{ 
-  uint8 old = GetMaterialLayersMask();
-  SetMaterialLayers(nMtlLayers);
+void CRenderComponent::SetMaterialLayersMask(uint8 nMtlLayers)
+{
+	uint8 old = GetMaterialLayersMask();
+	SetMaterialLayers(nMtlLayers);
 
-  if (nMtlLayers != old)
-  {
-    SEntityEvent event(ENTITY_EVENT_MATERIAL_LAYER);
-    event.nParam[0] = nMtlLayers;
-    event.nParam[1] = old;
-    m_pEntity->SendEvent(event);
-  }
+	if (nMtlLayers != old)
+	{
+		SEntityEvent event(ENTITY_EVENT_MATERIAL_LAYER);
+		event.nParam[0] = nMtlLayers;
+		event.nParam[1] = old;
+		m_pEntity->SendEvent(event);
+	}
 }
 
-void CRenderProxy::ClearShaderParamCallbacks()
+void CRenderComponent::ClearShaderParamCallbacks()
 {
 	IShaderPublicParams* pParams = GetShaderPublicParams( false );
 	if ( pParams != NULL )
@@ -2166,7 +2163,7 @@ void CRenderProxy::ClearShaderParamCallbacks()
 	m_Callbacks.clear();
 }
 
-void CRenderProxy::CheckShaderParamCallbacks()
+void CRenderComponent::CheckShaderParamCallbacks()
 {
 	if(IScriptTable *pScriptTable = m_pEntity->GetScriptTable())
 	{
@@ -2207,38 +2204,38 @@ void CRenderProxy::CheckShaderParamCallbacks()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::SetMaterial( IMaterial *pMat )
+void CRenderComponent::SetMaterial(IMaterial* pMat)
 {
 	m_pEntity->SetMaterial(pMat);
 }
 
 //////////////////////////////////////////////////////////////////////////
-IMaterial* CRenderProxy::GetMaterial(Vec3 * pHitPos) const
+IMaterial* CRenderComponent::GetMaterial(Vec3* pHitPos) const
 {
 	return m_pMaterial;
 };
 
 //////////////////////////////////////////////////////////////////////////
-int  CRenderProxy::GetSlotCount() const 
-{ 
-	return m_slots.size(); 
+int CRenderComponent::GetSlotCount() const
+{
+	return m_slots.size();
 }
 
 //////////////////////////////////////////////////////////////////////////
-Vec3 CRenderProxy::GetPos(bool bWorldOnly) const 
-{ 
-	return bWorldOnly ? m_pEntity->GetWorldPos() : m_pEntity->GetPos(); 
+Vec3 CRenderComponent::GetPos(bool bWorldOnly) const
+{
+	return bWorldOnly ? m_pEntity->GetWorldPos() : m_pEntity->GetPos();
 }
 
 //////////////////////////////////////////////////////////////////////////
-const char* CRenderProxy::GetEntityClassName() const { return m_pEntity->GetClass()->GetName(); };
-const Ang3& CRenderProxy::GetAngles(int realA) const { static Ang3 angles(m_pEntity->GetWorldAngles()); return angles; };
-float CRenderProxy::GetScale() const { return m_pEntity->GetScale().x; };
-const char* CRenderProxy::GetName() const { return m_pEntity->GetName(); };
-void CRenderProxy::GetRenderBBox( Vec3 &mins,Vec3 &maxs ) { mins = m_WSBBox.min; maxs = m_WSBBox.max; }
-void CRenderProxy::GetBBox( Vec3 &mins,Vec3 &maxs ) { mins = m_WSBBox.min; maxs = m_WSBBox.max; }
+const char* CRenderComponent::GetEntityClassName() const            { return m_pEntity->GetClass()->GetName(); };
+const Ang3& CRenderComponent::GetAngles(int realA) const            { static Ang3 angles(m_pEntity->GetWorldAngles()); return angles; };
+float       CRenderComponent::GetScale() const                      { return m_pEntity->GetScale().x; };
+const char* CRenderComponent::GetName() const                       { return m_pEntity->GetName(); };
+void        CRenderComponent::GetRenderBBox(Vec3& mins, Vec3& maxs) { mins = m_WSBBox.min; maxs = m_WSBBox.max; }
+void        CRenderComponent::GetBBox(Vec3& mins, Vec3& maxs)       { mins = m_WSBBox.min; maxs = m_WSBBox.max; }
 
-float CRenderProxy::GetMaxViewDist()
+float       CRenderComponent::GetMaxViewDist()
 {
 	if(CheckFlags(FLAG_POST_3D_RENDER))
 	{
@@ -2260,7 +2257,7 @@ float CRenderProxy::GetMaxViewDist()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::SetCustomPostEffect( const char* pPostEffectName )
+void CRenderComponent::SetCustomPostEffect(const char* pPostEffectName)
 {
 	int32 postEffectID = gEnv->p3DEngine->GetPostEffectID(pPostEffectName);
 	if(postEffectID >= 0 && postEffectID <= 255)
@@ -2275,7 +2272,7 @@ void CRenderProxy::SetCustomPostEffect( const char* pPostEffectName )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::SetAsPost3dRenderObject( bool bPost3dRenderObject, uint8 groupId, float groupScreenRect[4] )
+void CRenderComponent::SetAsPost3dRenderObject(bool bPost3dRenderObject, uint8 groupId, float groupScreenRect[4])
 {
 	if(bPost3dRenderObject)
 	{
@@ -2290,9 +2287,8 @@ void CRenderProxy::SetAsPost3dRenderObject( bool bPost3dRenderObject, uint8 grou
 }
 
 //////////////////////////////////////////////////////////////////////////
-
-void CRenderProxy::SetViewDistRatio(int nViewDistRatio) 
-{ 
+void CRenderComponent::SetViewDistRatio(int nViewDistRatio)
+{
 	IRenderNode::SetViewDistRatio(nViewDistRatio);
 
 	for (uint32 i = 0; i < m_slots.size(); i++) 
@@ -2310,9 +2306,9 @@ void CRenderProxy::SetViewDistRatio(int nViewDistRatio)
 	}
 }
 
-void CRenderProxy::SetMinSpec(int nMinSpec) 
-{ 
-  IRenderNode::SetMinSpec(nMinSpec);
+void CRenderComponent::SetMinSpec(int nMinSpec)
+{
+	IRenderNode::SetMinSpec(nMinSpec);
 
   for (uint32 i = 0; i < m_slots.size(); i++) 
   {
@@ -2328,8 +2324,8 @@ void CRenderProxy::SetMinSpec(int nMinSpec)
   }
 }
 
-void CRenderProxy::SetLodRatio(int nLodRatio) 
-{ 
+void CRenderComponent::SetLodRatio(int nLodRatio)
+{
 	IRenderNode::SetLodRatio(nLodRatio);
 
 	for (uint32 i = 0; i < m_slots.size(); i++) 
@@ -2345,7 +2341,7 @@ void CRenderProxy::SetLodRatio(int nLodRatio)
 	}
 }
 
-bool CRenderProxy::GetLodDistances(const SFrameLodInfo& frameLodInfo, float *distances) const
+bool CRenderComponent::GetLodDistances(const SFrameLodInfo& frameLodInfo, float* distances) const
 {
 	const float fLodRatio = GetLodRatioNormalized();
 	if (fLodRatio > 0.0f)
@@ -2374,7 +2370,7 @@ bool CRenderProxy::GetLodDistances(const SFrameLodInfo& frameLodInfo, float *dis
 	return true;
 }
 
-void CRenderProxy::UpdateLodDistance(const SFrameLodInfo& frameLodInfo)
+void CRenderComponent::UpdateLodDistance(const SFrameLodInfo& frameLodInfo)
 {
 	SMeshLodInfo lodInfo;
 
@@ -2402,7 +2398,7 @@ void CRenderProxy::UpdateLodDistance(const SFrameLodInfo& frameLodInfo)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderProxy::IsRenderProxyVisAreaVisible() const
+bool CRenderComponent::IsRenderProxyVisAreaVisible() const
 {
 	// test last render frame id
 	if(GetEntityVisArea())
@@ -2413,17 +2409,17 @@ bool CRenderProxy::IsRenderProxyVisAreaVisible() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::GetMemoryUsage( ICrySizer *pSizer ) const
+void CRenderComponent::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	{
-		SIZER_COMPONENT_NAME(pSizer,"RenderProxy Allocator");
-		pSizer->AddObject(g_Alloc_RenderProxy);
+		SIZER_COMPONENT_NAME(pSizer, "RenderComponent Allocator");
+		pSizer->AddObject(g_Alloc_RenderComponent);
 	}
 		
 	pSizer->AddContainer(m_slots);	
 }
 
-bool CRenderProxy::IsMovableByGame() const
+bool CRenderComponent::IsMovableByGame() const
 {
   if(IPhysicalEntity * pPhysEnt = m_pEntity->GetPhysics())
   {
@@ -2437,7 +2433,7 @@ bool CRenderProxy::IsMovableByGame() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::DebugDraw( const SGeometryDebugDrawInfo &info )
+void CRenderComponent::DebugDraw(const SGeometryDebugDrawInfo& info)
 {
 	for (uint32 i = 0; i < m_slots.size(); i++)
 	{
@@ -2462,7 +2458,7 @@ void CRenderProxy::DebugDraw( const SGeometryDebugDrawInfo &info )
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderProxy::PhysicalizeFoliage( bool bPhysicalize, int iSource, int nSlot)
+bool CRenderComponent::PhysicalizeFoliage(bool bPhysicalize, int iSource, int nSlot)
 {
 	CEntityObject *pSlot = GetSlot(0);
 	IStatObj::SSubObject *pSubObj;
@@ -2497,7 +2493,7 @@ bool CRenderProxy::PhysicalizeFoliage( bool bPhysicalize, int iSource, int nSlot
 	return false;
 }
 
-IFoliage *CRenderProxy::GetFoliage(int nSlot)
+IFoliage* CRenderComponent::GetFoliage(int nSlot)
 {
 	CEntityObject *pSlot = GetSlot(0);
 	IStatObj::SSubObject *pSubObj;
@@ -2510,13 +2506,13 @@ IFoliage *CRenderProxy::GetFoliage(int nSlot)
 	return 0;
 }
 
-IPhysicalEntity* CRenderProxy::GetPhysics() const 
-{ 
-	return m_pEntity->GetPhysics(); 
+IPhysicalEntity* CRenderComponent::GetPhysics() const
+{
+	return m_pEntity->GetPhysics();
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::SetSubObjHideMask( int nSlot,hidemask nSubObjHideMask )
+void CRenderComponent::SetSubObjHideMask(int nSlot, hidemask nSubObjHideMask)
 {
 	if (IsSlotValid(nSlot))
 	{
@@ -2526,7 +2522,7 @@ void CRenderProxy::SetSubObjHideMask( int nSlot,hidemask nSubObjHideMask )
 }
 
 //////////////////////////////////////////////////////////////////////////
-hidemask CRenderProxy::GetSubObjHideMask( int nSlot ) const
+hidemask CRenderComponent::GetSubObjHideMask(int nSlot) const
 {
 	if (IsSlotValid(nSlot))
 	{
@@ -2537,22 +2533,21 @@ hidemask CRenderProxy::GetSubObjHideMask( int nSlot ) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::FillBBox(AABB & aabb) 
-{ 
-	aabb = CRenderProxy::GetBBox(); 
+void CRenderComponent::FillBBox(AABB& aabb)
+{
+	aabb = CRenderComponent::GetBBox();
 }
 
 //////////////////////////////////////////////////////////////////////////
-EERType CRenderProxy::GetRenderNodeType() 
-{ 
-	return eERType_RenderProxy; 
+EERType CRenderComponent::GetRenderNodeType()
+{
+	return eERType_RenderComponent;
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRenderProxy::CanExecuteRenderAsJob()
-{ 
-#if defined(SUPPORT_RENDERPROXY_RENDER_JOB)
-	if(CheckFlags(FLAG_RECOMPUTE_EXECUTE_AS_JOB_FLAG))
+bool CRenderComponent::CanExecuteRenderAsJob()
+{
+#if defined(SUPPORT_RENDERCOMPONENT_RENDER_JOB)
 	{
 		AddFlags(FLAG_EXECUTE_AS_JOB_FLAG);
 		int nSlotCount = GetSlotCount();
@@ -2574,13 +2569,12 @@ bool CRenderProxy::CanExecuteRenderAsJob()
 	return CheckFlags(FLAG_EXECUTE_AS_JOB_FLAG);
 #else
 	return false;
-#endif // SUPPORT_RENDERPROXY_RENDER_JOB
+#endif // SUPPORT_RENDERCOMPONENT_RENDER_JOB
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderProxy::QueueSlotGeometryChange( int nSlot,IStatObj *pStatObj )
+void CRenderComponent::QueueSlotGeometryChange(int nSlot, IStatObj* pStatObj)
 {
-  m_queuedGeometryChanges.push_back(std::make_pair(nSlot, pStatObj)); 
-	RegisterEvent( ENTITY_EVENT_PREPHYSICSUPDATE, IComponent::EComponentFlags_Enable );
+	m_queuedGeometryChanges.push_back(std::make_pair(nSlot, pStatObj));
 	m_pEntity->PrePhysicsActivate(true);
 }

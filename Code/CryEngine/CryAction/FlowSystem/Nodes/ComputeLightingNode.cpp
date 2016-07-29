@@ -192,10 +192,9 @@ public:
 				if (pActInfo->pEntity->GetId() != INVALID_ENTITYID)
 				{
 					IEntity* pEntity = gEnv->pEntitySystem->GetEntity(pActInfo->pEntity->GetId());
-					if (pEntity && pEntity->GetProxy(ENTITY_PROXY_RENDER))
+					if (pEntity)
 					{
-						IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
-						if (IRenderNode* pRenderNode = pRenderProxy->GetRenderNode())
+						if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 						{
 							const bool bActivate = GetPortBool(pActInfo, eI_Enable);
 							if (bActivate)
@@ -206,11 +205,11 @@ public:
 								Vec3 vBBoxScale = GetPortVec3(pActInfo, eI_BBoxScale);
 								uint nShadowMapSize = GetPortInt(pActInfo, eI_ShadowMapSize);
 
-								gEnv->p3DEngine->AddPerObjectShadow(pRenderNode, fConstBias, fSlopeBias, fJittering, vBBoxScale, nShadowMapSize);
+								gEnv->p3DEngine->AddPerObjectShadow(pRenderComponent->GetRenderNode(), fConstBias, fSlopeBias, fJittering, vBBoxScale, nShadowMapSize);
 							}
 							else
 							{
-								gEnv->p3DEngine->RemovePerObjectShadow(pRenderNode);
+								gEnv->p3DEngine->RemovePerObjectShadow(pRenderComponent->GetRenderNode());
 							}
 						}
 					}

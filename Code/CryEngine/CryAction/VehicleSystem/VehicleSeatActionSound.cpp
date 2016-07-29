@@ -109,10 +109,9 @@ void CVehicleSeatActionSound::ExecuteTrigger(const AudioControlId& controlID)
 	if (m_pSeat)
 		m_pSeat->ChangedNetworkState(CVehicle::ASPECT_SEAT_ACTION);
 
-	IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(m_pVehicle->GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO));
-	assert(pIEntityAudioProxy.get());
+	auto &audioComponent = m_pVehicle->GetEntity()->CreateAudioComponent();
 
-	pIEntityAudioProxy->ExecuteTrigger(controlID);
+	audioComponent.ExecuteTrigger(controlID);
 
 	// Report the AI system about the vehicle movement sound.
 	if (!gEnv->bMultiplayer && gEnv->pAISystem)
@@ -136,9 +135,9 @@ void CVehicleSeatActionSound::StopTrigger()
 	}
 	else if (m_audioTriggerStartId != INVALID_AUDIO_CONTROL_ID)
 	{
-		IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(m_pVehicle->GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO));
-		assert(pIEntityAudioProxy.get());
-		pIEntityAudioProxy->StopTrigger(m_audioTriggerStartId);
+		auto &audioComponent = m_pVehicle->GetEntity()->CreateAudioComponent();
+
+		audioComponent.StopTrigger(m_audioTriggerStartId);
 	}
 
 	m_enabled = false;

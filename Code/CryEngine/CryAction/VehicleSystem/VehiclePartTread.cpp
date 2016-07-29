@@ -81,11 +81,12 @@ bool CVehiclePartTread::Init(IVehicle* pVehicle, const CVehicleParams& table, IV
 		const char* subMtlName = 0;
 		int subMtlSlot = -1;
 
+		auto *pRenderComponent = GetEntity()->QueryComponent<IEntityRenderComponent>();
+
 		// find tread material
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)GetEntity()->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy)
+		if (pRenderComponent != nullptr)
 		{
-			pMaterial = pRenderProxy->GetRenderMaterial(m_slot);
+			pMaterial = pRenderComponent->GetRenderMaterial(m_slot);
 			if (pMaterial)
 			{
 				// if matname doesn't fit, look in submaterials
@@ -110,7 +111,11 @@ bool CVehiclePartTread::Init(IVehicle* pVehicle, const CVehicleParams& table, IV
 			IMaterial* pCloned = pMaterial->GetMaterialManager()->CloneMultiMaterial(pMaterial, subMtlName);
 			if (pCloned)
 			{
-				pRenderProxy->SetSlotMaterial(m_slot, pCloned);
+				if (pRenderComponent != nullptr)
+				{
+					pRenderComponent->SetSlotMaterial(m_slot, pCloned);
+				}
+
 				pMaterial = pCloned;
 				m_pMaterial = pMaterial;
 			}

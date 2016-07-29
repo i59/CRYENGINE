@@ -625,7 +625,7 @@ bool CDecalManager::Spawn(CryEngineDecalInfo DecalInfo, CDecal* pCallerManagedDe
 		assert(newDecal.m_pRenderMesh->GetChunks().size() == 1);
 	}
 	else if (DecalInfo.ownerInfo.pRenderNode &&
-	         DecalInfo.ownerInfo.pRenderNode->GetRenderNodeType() == eERType_RenderProxy &&
+	         DecalInfo.ownerInfo.pRenderNode->GetRenderNodeType() == eERType_RenderComponent &&
 	         DecalInfo.ownerInfo.nRenderNodeSlotId >= 0)
 	{
 		newDecal.m_eDecalType = eDecalType_OS_SimpleQuad;

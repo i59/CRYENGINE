@@ -56,11 +56,15 @@ void CPhysCallbacks::Done()
 
 IRenderNode* GetRenderNodeFromPhys(void* pForeignData, int iForeignData)
 {
-	IEntityRenderProxy* pRndProxy;
 	if (iForeignData == PHYS_FOREIGN_ID_STATIC)
 		return (IRenderNode*)pForeignData;
-	else if (iForeignData == PHYS_FOREIGN_ID_ENTITY && (pRndProxy = (IEntityRenderProxy*)((IEntity*)pForeignData)->GetProxy(ENTITY_PROXY_RENDER)))
-		return pRndProxy->GetRenderNode();
+	else if (iForeignData == PHYS_FOREIGN_ID_ENTITY)
+	{
+		if (auto *pRenderComponent = ((IEntity*)pForeignData)->QueryComponent<IEntityRenderComponent>())
+		{
+			return pRenderComponent->GetRenderNode();
+		}
+	}
 	return 0;
 }
 IStatObj* GetIStatObjFromPhysicalEntity(IPhysicalEntity* pent, int nPartId, Matrix34* pTM, int& nMats, int*& pMatMapping);

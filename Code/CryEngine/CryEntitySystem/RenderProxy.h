@@ -18,6 +18,7 @@
 #include "EntitySystem.h"
 #include <CryRenderer/IRenderer.h>
 #include <CryEntitySystem/IEntityRenderState.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 // forward declarations.
 class CEntityObject;
@@ -25,18 +26,17 @@ class CEntity;
 struct SRendParams;
 struct IShaderPublicParams;
 class CEntityTimeoutList;
-class CRenderProxy;
 struct AnimEventInstance;
 
 //////////////////////////////////////////////////////////////////////////
 // Description:
-//    CRenderProxy provides default implementation of IEntityRenderProxy interface.
+//    CRenderComponent provides default implementation of IEntityRenderComponent interface.
 //    This is a renderable object that is registered in 3D engine sector.
 //    It can contain multiple sub object slots that can have their own relative transformation, and
 //    each slot can represent specific renderable interface (IStatObj,ICharacterInstance,etc..)
 //    Slots can also form hierarchical transformation tree, every slot can reference parent slot for transformation.
 ///////////////////////////////////////////////////////////// /////////////
-class CRenderProxy : public IRenderNode, public IEntityRenderProxy
+class CRenderComponent : public IRenderNode, public IEntityRenderComponent
 {
 public:
 
@@ -68,41 +68,42 @@ public:
 		FLAG_HUD_DISABLEBLOOM               = BIT(22), // Allows 3d hud object to disable bloom (Required to avoid overglow and cutoff with alien hud ghosted planes)
 		FLAG_ANIMATE_OFFSCREEN_SHADOW       = BIT(23), // Update the animation if object drawn in the shadow pass
 		FLAG_DISABLE_MOTIONBLUR             = BIT(24), // Disable motion blur
-		FLAG_EXECUTE_AS_JOB_FLAG            = BIT(25), // set if this CRenderProxy can be executed as a Job from the 3DEngine
+		FLAG_EXECUTE_AS_JOB_FLAG            = BIT(25), // set if this CRenderComponent can be executed as a Job from the 3DEngine
 		FLAG_RECOMPUTE_EXECUTE_AS_JOB_FLAG  = BIT(26), // set if the slots changed, to recheck if this renderproxy can execute as a job
 	};
 
-	CRenderProxy();
-	~CRenderProxy();
+	CRenderComponent();
+	~CRenderComponent();
+
+	// IEntityComponent
+	virtual void Initialize(IEntity &entity) override;
+	virtual void PostInit() override;
+
+	virtual void ProcessEvent(SEntityEvent& event) override;
+
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
+	virtual void Update(SEntityUpdateContext& ctx) override;
+
+	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) override;
+	virtual void Serialize(TSerialize ser) override;
+
+	virtual bool NeedSerialize() override;
+
+	virtual bool GetSignature(TSerialize signature) override;
+	// ~IEntityComponent
+
+	CEntity *GetCEntity() const;
 
 	EERType      GetRenderNodeType() override;
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;
 	virtual bool CanExecuteRenderAsJob() override;
 
-	// Must be called after constructor.
-	void PostInit();
-
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityEvent implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init) override;
-	virtual void ProcessEvent(SEntityEvent& event) override;
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityProxy implementation.
 	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType() override                                          { return ENTITY_PROXY_RENDER; }
-	virtual void         Release() override;
-	virtual void         Done() override                                             {}
 	// Called when the subsystem initialize.
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params) override { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params) override;
-	virtual void         Update(SEntityUpdateContext& ctx) override;
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) override;
-	virtual void         Serialize(TSerialize ser) override;
-	virtual bool         NeedSerialize() override;
-	virtual bool         GetSignature(TSerialize signature) override;
 	virtual void         SetViewDistRatio(int nViewDistRatio) override;
 	virtual void         SetLodRatio(int nLodRatio) override;
 	//////////////////////////////////////////////////////////////////////////
@@ -118,7 +119,7 @@ public:
 	virtual void             OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo) override;
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityRenderProxy interface.
+	// IEntityRenderComponent interface.
 	//////////////////////////////////////////////////////////////////////////
 	// Description:
 	//    Force local bounds.
@@ -146,7 +147,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityRenderProxy implementation.
+	// IEntityRenderComponent implementation.
 	//////////////////////////////////////////////////////////////////////////
 	bool                  IsSlotValid(int nIndex) const { return nIndex >= 0 && nIndex < (int)m_slots.size() && m_slots[nIndex] != NULL; };
 	int                   GetSlotCount() const override;
@@ -549,14 +550,11 @@ private:
 	static float                      s_fViewDistRatio;
 	static float                      s_fViewDistRatioCustom;
 	static float                      s_fViewDistRatioDetail;
-	static std::vector<CRenderProxy*> s_arrCharactersToRegisterForRendering;
+	static std::vector<CRenderComponent*> s_arrCharactersToRegisterForRendering;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Variables.
 	//////////////////////////////////////////////////////////////////////////
-	// Host entity.
-	CEntity* m_pEntity;
-
 	// Object Slots.
 	typedef std::vector<CEntityObject*> Slots;
 	Slots m_slots;
@@ -610,23 +608,20 @@ private:
 	AABB   m_WSBBox;
 };
 
-extern stl::PoolAllocatorNoMT<sizeof(CRenderProxy)>* g_Alloc_RenderProxy;
+extern stl::PoolAllocatorNoMT<sizeof(CRenderComponent)>* g_Alloc_RenderComponent;
 
 //////////////////////////////////////////////////////////////////////////
-DECLARE_COMPONENT_POINTERS(CRenderProxy);
-
-//////////////////////////////////////////////////////////////////////////
-inline void* CRenderProxy::operator new(size_t nSize)
+inline void* CRenderComponent::operator new(size_t nSize)
 {
-	void* ptr = g_Alloc_RenderProxy->Allocate();
+	void* ptr = g_Alloc_RenderComponent->Allocate();
 	return ptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
-inline void CRenderProxy::operator delete(void* ptr)
+inline void CRenderComponent::operator delete(void* ptr)
 {
 	if (ptr)
-		g_Alloc_RenderProxy->Deallocate(ptr);
+		g_Alloc_RenderComponent->Deallocate(ptr);
 }
 
 #endif // __RenderProxy_h__

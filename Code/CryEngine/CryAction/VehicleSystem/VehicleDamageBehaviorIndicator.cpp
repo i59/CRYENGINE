@@ -174,7 +174,7 @@ void CVehicleDamageBehaviorIndicator::Update(const float deltaTime)
 			REINST("report damage ratio?");
 			//      if (!m_sound.empty() && m_currentDamageRatio >= m_soundRatioMin)
 			//      {
-			//        IEntityAudioProxy* pIEntityAudioProxy = (IEntityAudioProxy*)m_pVehicle->GetEntity()->GetProxy(ENTITY_PROXY_AUDIO);
+			//        IEntityAudioComponent* pIEntityAudioProxy = (IEntityAudioComponent*)m_pVehicle->GetEntity()->GetProxy(ENTITY_PROXY_AUDIO);
 			//        if (pIEntityAudioProxy)
 			//        {
 			//          if (m_lastDamageRatio != m_currentDamageRatio)
@@ -220,11 +220,10 @@ void CVehicleDamageBehaviorIndicator::GetMaterial()
 {
 	if (!m_material.empty())
 	{
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)m_pVehicle->GetEntity()->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy)
+		if (auto *pRenderComponent = m_pVehicle->GetEntity()->QueryComponent<IEntityRenderComponent>())
 		{
 			// use slot 0 here. if necessary, part can be added as attribute
-			IMaterial* pMtl = pRenderProxy->GetRenderMaterial(0);
+			IMaterial* pMtl = pRenderComponent->GetRenderMaterial(0);
 			if (pMtl)
 			{
 				for (int i = 0; i < pMtl->GetSubMtlCount(); ++i)

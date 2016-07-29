@@ -75,13 +75,16 @@ int CPhysicsEventListener::OnPostStep(const EventPhys* pEvent)
 {
 	EventPhysPostStep* pPostStep = (EventPhysPostStep*)pEvent;
 	CEntity* pCEntity = GetEntity(pPostStep->pForeignData, pPostStep->iForeignData);
-	IRenderNode* pRndNode = 0;
+	IRenderNode* pRndNode = nullptr;
 	if (pCEntity)
 	{
-		CPhysicalProxy* pPhysProxy = pCEntity->GetPhysicalProxy();
-		if (pPhysProxy)// && pPhysProxy->GetPhysicalEntity())
-			pPhysProxy->OnPhysicsPostStep(pPostStep);
-		pRndNode = pCEntity->GetRenderProxy();
+		if (auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(pCEntity->QueryComponent<IEntityPhysicsComponent>()))
+			pPhysicsComponent->OnPhysicsPostStep(pPostStep);
+
+		if (auto *pRenderComponent = pCEntity->QueryComponent<IEntityRenderComponent>())
+		{
+			pRndNode = pRenderComponent->GetRenderNode();
+		}
 	}
 	else if (pPostStep->iForeignData == PHYS_FOREIGN_ID_ROPE)
 	{
@@ -165,13 +168,11 @@ int CPhysicsEventListener::OnBBoxOverlap(const EventPhys* pEvent)
 	CEntity* pCEntityTrg = GetEntity(pOverlap->pForeignData[1], pOverlap->iForeignData[1]);
 	if (pCEntity && pCEntityTrg)
 	{
-		CPhysicalProxy* pPhysProxySrc = pCEntity->GetPhysicalProxy();
-		if (pPhysProxySrc)
-			pPhysProxySrc->OnContactWithEntity(pCEntityTrg);
+		if (auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(pCEntity->QueryComponent<IEntityPhysicsComponent>()))
+			pPhysicsComponent->OnContactWithEntity(pCEntityTrg);
 
-		CPhysicalProxy* pPhysProxyTrg = pCEntityTrg->GetPhysicalProxy();
-		if (pPhysProxyTrg)
-			pPhysProxyTrg->OnContactWithEntity(pCEntity);
+		if (auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(pCEntityTrg->QueryComponent<IEntityPhysicsComponent>()))
+			pPhysicsComponent->OnContactWithEntity(pCEntity);
 
 	}
 	return 1;
@@ -215,7 +216,11 @@ int CPhysicsEventListener::OnStateChange(const EventPhys* pEvent)
 				if (pStateChange->pEntity->GetStatus(&sd) && sd.submergedFraction > 0)
 				{
 					pCEntity->SetFlags(pCEntity->GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
-					pCEntity->GetPhysicalProxy()->SetFlags(pCEntity->GetPhysicalProxy()->GetFlags() | CPhysicalProxy::FLAG_PHYS_AWAKE_WHEN_VISIBLE);
+
+					if (auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(pCEntity->QueryComponent<IEntityPhysicsComponent>()))
+					{
+						pPhysicsComponent->SetFlags(pPhysicsComponent->GetFlags() | CPhysicsComponent::FLAG_PHYS_AWAKE_WHEN_VISIBLE);
+					}
 				}
 			}
 		}
@@ -517,8 +522,10 @@ int CPhysicsEventListener::OnRevealPhysEntityPart(const EventPhys* pEvent)
 //////////////////////////////////////////////////////////////////////////
 CEntity* FindAttachId(CEntity* pent, int attachId)
 {
-	if (pent->GetPhysicalProxy() && pent->GetPhysicalProxy()->GetPhysAttachId() == attachId)
+	auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(pent->QueryComponent<IEntityPhysicsComponent>());
+	if (pPhysicsComponent != nullptr && pPhysicsComponent->GetPhysAttachId() == attachId)
 		return pent;
+
 	CEntity* pMatch;
 	for (int i = pent->GetChildCount() - 1; i >= 0; i--)
 		if (pMatch = FindAttachId((CEntity*)pent->GetChild(i), attachId))
@@ -567,15 +574,13 @@ int CPhysicsEventListener::OnCollision(const EventPhys* pEvent)
 			pCollision->partid[1] &= (1 << nBits) - 1;
 		}
 
-		CPhysicalProxy* pPhysProxySrc = pEntitySrc->GetPhysicalProxy();
-		if (pPhysProxySrc)
-			pPhysProxySrc->OnCollision(pEntityTrg, pCollision->idmat[1], pCollision->pt, pCollision->n, pCollision->vloc[0], pCollision->vloc[1], pCollision->partid[1], pCollision->mass[1]);
+		if (auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(pEntitySrc->QueryComponent<IEntityPhysicsComponent>()))
+			pPhysicsComponent->OnCollision(pEntityTrg, pCollision->idmat[1], pCollision->pt, pCollision->n, pCollision->vloc[0], pCollision->vloc[1], pCollision->partid[1], pCollision->mass[1]);
 
 		if (pEntityTrg)
 		{
-			CPhysicalProxy* pPhysProxyTrg = pEntityTrg->GetPhysicalProxy();
-			if (pPhysProxyTrg)
-				pPhysProxyTrg->OnCollision(pEntitySrc, pCollision->idmat[0], pCollision->pt, -pCollision->n, pCollision->vloc[1], pCollision->vloc[0], pCollision->partid[0], pCollision->mass[0]);
+			if (auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(pEntityTrg->QueryComponent<IEntityPhysicsComponent>()))
+				pPhysicsComponent->OnCollision(pEntitySrc, pCollision->idmat[0], pCollision->pt, -pCollision->n, pCollision->vloc[1], pCollision->vloc[0], pCollision->partid[0], pCollision->mass[0]);
 		}
 	}
 
@@ -636,9 +641,9 @@ int CPhysicsEventListener::OnJointBreak(const EventPhys* pEvent)
 		pCEntity->SendEvent(event);
 		pStatObj = pCEntity->GetStatObj(ENTITY_SLOT_ACTUAL);
 
-		if (pCEntity->GetRenderProxy())
+		if (auto *pRenderComponent = pCEntity->QueryComponent<IEntityRenderComponent>())
 		{
-			bShatter = pCEntity->GetRenderProxy()->GetMaterialLayersMask() & MTL_LAYER_FROZEN;
+			bShatter = pRenderComponent->GetMaterialLayersMask() & MTL_LAYER_FROZEN;
 		}
 	}
 

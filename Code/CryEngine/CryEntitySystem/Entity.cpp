@@ -62,13 +62,13 @@ Matrix34 sIdentityMatrix = Matrix34::CreateIdentity();
 
 namespace
 {
-struct FEntityProxyReload_ExceptScript
+struct FEntityProxyReload
 {
-	FEntityProxyReload_ExceptScript(CEntity* pEntity, SEntitySpawnParams& params) : m_pEntity(pEntity), m_params(params) {}
+	FEntityProxyReload(CEntity* pEntity, SEntitySpawnParams& params) : m_pEntity(pEntity), m_params(params) {}
 	void operator()(const CEntity::TProxyPair& it) const
 	{
 		IEntityProxyPtr pProxy = it.second;
-		if (pProxy && it.first != ENTITY_PROXY_SCRIPT)
+		if (pProxy)
 		{
 			pProxy->Reload(m_pEntity, m_params);
 		}
@@ -107,19 +107,16 @@ struct FEntityProxySendEvent
 private:
 	SEntityEvent& m_entityEvent;
 };
-struct FEntityProxyUpdate_ExceptRenderProxy
+struct FEntityProxyUpdate
 {
-	FEntityProxyUpdate_ExceptRenderProxy(SEntityUpdateContext& ctx)
+	FEntityProxyUpdate(SEntityUpdateContext& ctx)
 		: m_ctx(ctx)
 	{
 	}
 
 	void operator()(const CEntity::TProxyPair& proxyPair) const
 	{
-		if (proxyPair.first != ENTITY_PROXY_RENDER)
-		{
-			proxyPair.second->Update(m_ctx);
-		}
+		proxyPair.second->Update(m_ctx);
 	}
 
 private:
@@ -144,36 +141,16 @@ private:
 	bool        m_bLoading;
 };
 
-struct FEntityProxy_SerializeXML_ExceptScriptProxy
+struct FEntityProxy_PrePhysicsUpdate
 {
-	FEntityProxy_SerializeXML_ExceptScriptProxy(XmlNodeRef& node, bool bLoading)
-		: m_node(node)
-		, m_bLoading(bLoading)
-	{
-	}
-
-	void operator()(const CEntity::TProxyPair& it) const
-	{
-		if (it.first != ENTITY_PROXY_SCRIPT)
-			it.second->SerializeXML(m_node, m_bLoading);
-	}
-
-private:
-	XmlNodeRef& m_node;
-	bool        m_bLoading;
-};
-
-struct FEntityProxy_PrePhysicsUpdate_NoRenderProxy_Legacy
-{
-	FEntityProxy_PrePhysicsUpdate_NoRenderProxy_Legacy(const SEntityEvent& event)
+	FEntityProxy_PrePhysicsUpdate(const SEntityEvent& event)
 		: m_event(event)
 	{
 	}
 
 	void operator()(const CEntity::TProxyPair& it) const
 	{
-		if (it.first != ENTITY_EVENT_RENDER)
-			it.second->ProcessEvent(const_cast<SEntityEvent&>(m_event));
+		it.second->ProcessEvent(const_cast<SEntityEvent&>(m_event));
 	}
 private:
 	SEntityEvent m_event;
@@ -293,10 +270,9 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	IEntityScript* pEntityScript = m_pClass->GetIEntityScript();
 	if (pEntityScript)
 	{
-		// Creates a script proxy.
-		IEntityProxyPtr pScriptProxy = CreateScriptProxy(this, pEntityScript, &params);
-		if (pScriptProxy)
-			SetProxy(ENTITY_PROXY_SCRIPT, pScriptProxy);
+		auto &scriptComponent = AcquireComponent<CScriptComponent>();
+
+		scriptComponent.InitializeScript(pEntityScript, params.pPropertiesTable);
 	}
 
 	m_nKeepAliveCounter = 0;
@@ -312,6 +288,7 @@ CEntity::~CEntity()
 	// Proxy and components could still be referring to m_szName, so clear them before it gets destroyed
 	m_proxy.clear();
 	m_components.clear();
+	m_entityComponentMap.clear();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -329,9 +306,9 @@ bool CEntity::ReloadEntity(SEntityLoadParams& loadParams)
 	ShutDown(!bKeepAI, false);
 
 	// Notify script so it can clean up anything in Lua
+	if(auto *pScriptComponent = QueryComponent<IEntityScriptComponent>())
 	{
-		CScriptProxy* pScriptProxy = GetScriptProxy();
-		IScriptTable* pScriptTable = pScriptProxy ? pScriptProxy->GetScriptTable() : NULL;
+		IScriptTable* pScriptTable = pScriptComponent->GetScriptTable();
 		if (pScriptTable && pScriptTable->HaveValue("OnBeingReused"))
 		{
 			Script::CallMethod(pScriptTable, "OnBeingReused");
@@ -421,22 +398,12 @@ bool CEntity::ReloadEntity(SEntityLoadParams& loadParams)
 		//////////////////////////////////////////////////////////////////////////
 		// Reload all proxies
 		//////////////////////////////////////////////////////////////////////////
+		for_each(m_proxy.begin(), m_proxy.end(), FEntityProxyReload(this, params));
 
-		// Serialize and init the script proxy first
-		CScriptProxy* pScriptProxy = GetScriptProxy();
-		if (pScriptProxy)
+		for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 		{
-			pScriptProxy->Reload(this, params);
-
-			if (entityNode)
-				pScriptProxy->SerializeXML(entityNode, true);
+			it->second->Reload(params, entityNode);
 		}
-
-		for_each(m_proxy.begin(), m_proxy.end(), FEntityProxyReload_ExceptScript(this, params));
-
-		CRenderProxy* pRenderProxy = GetRenderProxy();
-		if (pRenderProxy)
-			pRenderProxy->PostInit();
 
 		// Make sure position is registered.
 		if (!m_bWasRelocated)
@@ -465,10 +432,9 @@ void CEntity::SetFlags(uint32 flags)
 	if (flags != m_flags)
 	{
 		m_flags = flags;
-		CRenderProxy* pRenderProxy = GetRenderProxy();
-		if (pRenderProxy)
+		if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
 		{
-			pRenderProxy->UpdateEntityFlags();
+			pRenderComponent->UpdateEntityFlags();
 		}
 		if (m_pGridLocation)
 			m_pGridLocation->nEntityFlags = flags;
@@ -533,11 +499,9 @@ bool CEntity::SendEvent(SEntityEvent& event)
 			if (!m_bGarbage)
 			{
 				// Notify audio proxies before script proxies!
-				IEntityAudioProxy* const pIEntityAudioProxy = (IEntityAudioProxy*)GetProxy(ENTITY_PROXY_AUDIO);
-
-				if (pIEntityAudioProxy != NULL)
+				if (auto *pAudioComponent = QueryComponent<IEntityAudioComponent>())
 				{
-					pIEntityAudioProxy->ProcessEvent(event);
+					pAudioComponent->ProcessEvent(event);
 				}
 			}
 
@@ -557,11 +521,10 @@ bool CEntity::SendEvent(SEntityEvent& event)
 
 			//CryLogAlways( "%s became visible",GetEntityTextDescription() );
 			// [marco] needed when going in and out of game mode in the editor
-			CRenderProxy* pRenderProxy = GetRenderProxy();
-			if (pRenderProxy)
+			if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
 			{
-				pRenderProxy->SetLastSeenTime(gEnv->pTimer->GetCurrTime());
-				ICharacterInstance* pCharacterInstance = pRenderProxy->GetCharacter(0);
+				pRenderComponent->SetLastSeenTime(gEnv->pTimer->GetCurrTime());
+				ICharacterInstance* pCharacterInstance = pRenderComponent->GetCharacter(0);
 				if (pCharacterInstance)
 					pCharacterInstance->SetPlaybackScale(1.0f);
 			}
@@ -578,8 +541,7 @@ bool CEntity::SendEvent(SEntityEvent& event)
 			const char* eventName = (pAnimEvent ? pAnimEvent->m_EventName : 0);
 			if (eventName && stricmp(eventName, "sound") == 0)
 			{
-				if (!GetProxy(ENTITY_PROXY_AUDIO))
-					CreateProxy(ENTITY_PROXY_AUDIO);
+				AcquireComponent<CEntityAudioComponent>();
 			}
 		}
 		break;
@@ -612,34 +574,11 @@ bool CEntity::SendEvent(SEntityEvent& event)
 		// Broadcast event to proxies.
 		uint32 nWhyFlags = (uint32)event.nParam[0];
 
-		if (event.event != ENTITY_EVENT_INIT)
+		std::for_each(m_proxy.begin(), m_proxy.end(), FEntityProxySendEvent(event));
+
+		for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 		{
-			std::for_each(m_proxy.begin(), m_proxy.end(), FEntityProxySendEvent(event));
-		}
-		else
-		{
-			//[AlexMcC|12.07.10] Follow the same proxy order as CEntity::Init
-
-			TProxyContainer::iterator itProxy = m_proxy.begin();
-			const TProxyContainer::const_iterator iEnd = m_proxy.end();
-
-			for (; itProxy != iEnd; ++itProxy)
-			{
-				if (itProxy->first == ENTITY_PROXY_RENDER || itProxy->first == ENTITY_PROXY_SCRIPT)
-				{
-					continue;
-				}
-
-				itProxy->second->ProcessEvent(event);
-			}
-
-			IEntityProxy* pScriptProxy = GetScriptProxy(); // send to scriptproxy later, since it might depend on the state of the other proxies (for init events)
-			if (pScriptProxy)
-				pScriptProxy->ProcessEvent(event);
-
-			IEntityProxy* pRenderProxy = GetRenderProxy(); // send to renderproxy last to match CEntity::Init()
-			if (pRenderProxy)
-				pRenderProxy->ProcessEvent(event);
+			it->second->ProcessEvent(event);
 		}
 
 		// Give entity system a chance to check the event, and notify other listeners.
@@ -670,11 +609,6 @@ bool CEntity::Init(SEntitySpawnParams& params)
 	const TProxyContainer::const_iterator iEnd = m_proxy.end();
 	for (; it != iEnd; ++it)
 	{
-		if (it->first == ENTITY_PROXY_SCRIPT)
-		{
-			continue;
-		}
-
 		if (!it->second->Init(this, params))
 		{
 			gEnv->pLog->LogError("Couldn't create entity %s: proxy %i couldn't be initialized", params.sName, it->first);
@@ -682,19 +616,15 @@ bool CEntity::Init(SEntitySpawnParams& params)
 		}
 	}
 
-	//Script Proxy is initialized last.
-	CScriptProxy* pScriptProxy = GetScriptProxy();
-	if (pScriptProxy)
-		pScriptProxy->Init(this, params);
-
 	// Make sure position is registered.
 	if (!m_bWasRelocated)
 		OnRellocate(ENTITY_XFORM_POS);
 
-	//Render Proxy is initialized last.
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		pRenderProxy->PostInit();
+	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+	{
+		it->second->PostInit();
+	}
+
 	m_bInitialized = true;
 
 	return true;
@@ -710,13 +640,14 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 
 	// Broadcast event to proxies.
 	// Start after render proxy.
-	for_each(m_proxy.begin(), m_proxy.end(), FEntityProxyUpdate_ExceptRenderProxy(ctx));
+	for_each(m_proxy.begin(), m_proxy.end(), FEntityProxyUpdate(ctx));
 
-	IEntityProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		pRenderProxy->Update(ctx);
+	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+	{
+		it->second->Update(ctx);
+	}
+
 	//	UpdateAIObject();
-	// Update render proxy last.
 
 	if (m_nUpdateCounter != 0)
 	{
@@ -734,11 +665,10 @@ void CEntity::PrePhysicsUpdate(float fFrameTime)
 	SEntityEvent evt(ENTITY_EVENT_PREPHYSICSUPDATE);
 	evt.fParam[0] = fFrameTime;
 
-	for_each(m_proxy.begin(), m_proxy.end(), FEntityProxy_PrePhysicsUpdate_NoRenderProxy_Legacy(evt));
+	for_each(m_proxy.begin(), m_proxy.end(), FEntityProxy_PrePhysicsUpdate(evt));
 
-	IEntityProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		pRenderProxy->ProcessEvent(evt);
+	if (auto *pRenderComponent = QueryComponent<IEntityRenderComponent>())
+		pRenderComponent->ProcessEvent(evt);
 }
 
 bool CEntity::IsPrePhysicsActive()
@@ -821,6 +751,10 @@ void CEntity::ShutDown(bool bRemoveAI /*= true*/, bool bRemoveProxies /*= true*/
 		swap(proxies, m_proxy);
 		stl::free_container(m_proxy);
 		proxies.clear();
+
+		// We remove components here instead of in the destructor
+		// This is done since entity deletion may be delayed
+		m_entityComponentMap.clear();
 	}
 	//////////////////////////////////////////////////////////////////////////
 
@@ -1306,23 +1240,17 @@ void CEntity::GetLocalBounds(AABB& bbox) const
 	bbox.min.Set(0, 0, 0);
 	bbox.max.Set(0, 0, 0);
 
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-
-	if (pRenderProxy)
+	if (auto *pRenderComponent = QueryComponent<IEntityRenderComponent>())
 	{
-		pRenderProxy->GetLocalBounds(bbox);
+		pRenderComponent->GetLocalBounds(bbox);
 	}
-	else if (GetPhysicalProxy())
+	else if (auto *pPhysicsComponent = QueryComponent<IEntityPhysicsComponent>())
 	{
-		GetPhysicalProxy()->GetLocalBounds(bbox);
+		pPhysicsComponent->GetLocalBounds(bbox);
 	}
-	else
+	else if (auto *pTriggerComponent = QueryComponent<IEntityTriggerComponent>())
 	{
-		IEntityTriggerProxy* pTriggerProxy = (IEntityTriggerProxy*)GetProxy(ENTITY_PROXY_TRIGGER);
-		if (pTriggerProxy)
-		{
-			pTriggerProxy->GetTriggerBounds(bbox);
-		}
+		pTriggerComponent->GetTriggerBounds(bbox);
 	}
 }
 
@@ -1451,15 +1379,14 @@ string CEntity::GetEntityTextDescription() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading)
+void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bFromInit)
 {
 	std::for_each(m_proxy.begin(), m_proxy.end(), FEntityProxy_SerializeXML(node, bLoading));
-}
 
-//////////////////////////////////////////////////////////////////////////
-void CEntity::SerializeXML_ExceptScriptProxy(XmlNodeRef& node, bool bLoading)
-{
-	std::for_each(m_proxy.begin(), m_proxy.end(), FEntityProxy_SerializeXML_ExceptScriptProxy(node, bLoading));
+	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+	{
+		it->second->SerializeXML(node, bLoading, bFromInit);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1467,7 +1394,33 @@ bool CEntity::GetSignature(TSerialize& signature)
 {
 	bool bSignature = true;
 	std::for_each(m_proxy.begin(), m_proxy.end(), FEntityProxy_GetSignature(signature, bSignature));
+
+	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+	{
+		bSignature &= it->second->GetSignature(signature);
+	}
+
 	return bSignature;
+}
+
+//////////////////////////////////////////////////////////////////////////
+IEntityComponent *CEntity::GetComponentByTypeId(const CryInterfaceID &interfaceID) const
+{
+	auto it = m_entityComponentMap.find(interfaceID);
+	if (it != m_entityComponentMap.end())
+	{
+		return it->second.get();
+	}
+
+	return nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::RegisterEntityComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent)
+{
+	pComponent->Initialize(*this);
+
+	m_entityComponentMap.insert(TEntityComponentMap::value_type(interfaceID, std::shared_ptr<IEntityComponent>(pComponent)));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1499,71 +1452,8 @@ IEntityProxyPtr CEntity::CreateProxy(EEntityProxy proxy)
 	{
 		return it->second;
 	}
-	else
-	{
-		IEntityProxyPtr pProxy;
-		switch (proxy)
-		{
-		case ENTITY_PROXY_RENDER:
-			pProxy = ComponentCreateAndRegister_DeleteWithRelease<CRenderProxy>(IComponent::SComponentInitializer(this), IComponent::EComponentFlags_LazyRegistration);
-			SetProxy(ENTITY_PROXY_RENDER, pProxy);
-			CheckMaterialFlags();
-			break;
-		case ENTITY_PROXY_PHYSICS:
-			pProxy = ComponentCreateAndRegister_DeleteWithRelease<CPhysicalProxy>(IComponent::SComponentInitializer(this), IComponent::EComponentFlags_LazyRegistration);
-			SetProxy(ENTITY_PROXY_PHYSICS, pProxy);
-			break;
-		case ENTITY_PROXY_AUDIO:
-			pProxy = ComponentCreateAndRegister_DeleteWithRelease<CEntityAudioProxy>(IComponent::SComponentInitializer(this), IComponent::EComponentFlags_LazyRegistration);
-			SetProxy(ENTITY_PROXY_AUDIO, pProxy);
-			break;
-		case ENTITY_PROXY_AI:
-			//m_pProxy[proxy] = new CPhysicalProxy(this);
-			//return true;
-			break;
-		case ENTITY_PROXY_AREA:
-			pProxy = ComponentCreateAndRegister_DeleteWithRelease<CAreaProxy>(IComponent::SComponentInitializer(this), IComponent::EComponentFlags_LazyRegistration);
-			SetProxy(ENTITY_PROXY_AREA, pProxy);
-			break;
-		case ENTITY_PROXY_FLOWGRAPH:
-			pProxy = ComponentCreateAndRegister_DeleteWithRelease<CFlowGraphProxy>(IComponent::SComponentInitializer(this), IComponent::EComponentFlags_LazyRegistration);
-			SetProxy(ENTITY_PROXY_FLOWGRAPH, pProxy);
-			break;
-		case ENTITY_PROXY_SUBSTITUTION:
-			pProxy = ComponentCreateAndRegister_DeleteWithRelease<CSubstitutionProxy>(IComponent::SComponentInitializer(this), IComponent::EComponentFlags_LazyRegistration);
-			SetProxy(ENTITY_PROXY_SUBSTITUTION, pProxy);
-			break;
-		case ENTITY_PROXY_TRIGGER:
-			pProxy = ComponentCreateAndRegister_DeleteWithRelease<CTriggerProxy>(IComponent::SComponentInitializer(this), IComponent::EComponentFlags_LazyRegistration);
-			SetProxy(ENTITY_PROXY_TRIGGER, pProxy);
-			break;
-		case ENTITY_PROXY_CAMERA:
-			pProxy = ComponentCreateAndRegister_DeleteWithRelease<CCameraProxy>(IComponent::SComponentInitializer(this), IComponent::EComponentFlags_LazyRegistration);
-			SetProxy(ENTITY_PROXY_CAMERA, pProxy);
-			break;
-		case ENTITY_PROXY_ROPE:
-			pProxy = ComponentCreateAndRegister_DeleteWithRelease<CRopeProxy>(IComponent::SComponentInitializer(this), IComponent::EComponentFlags_LazyRegistration);
-			SetProxy(ENTITY_PROXY_ROPE, pProxy);
-			break;
-		case ENTITY_PROXY_ENTITYNODE:
-			pProxy = ComponentCreateAndRegister_DeleteWithRelease<CEntityNodeProxy>(IComponent::SComponentInitializer(this), IComponent::EComponentFlags_LazyRegistration);
-			SetProxy(ENTITY_PROXY_ENTITYNODE, pProxy);
-			break;
-		case ENTITY_PROXY_ATTRIBUTES:
-			pProxy = ComponentCreateAndRegister_DeleteWithRelease<CEntityAttributesProxy>(IComponent::SComponentInitializer(this), IComponent::EComponentFlags_Enable | IComponent::EComponentFlags_LazyRegistration);
-			SetProxy(ENTITY_PROXY_ATTRIBUTES, pProxy);
-			break;
-		case ENTITY_PROXY_CLIPVOLUME:
-			pProxy = ComponentCreateAndRegister_DeleteWithRelease<CClipVolumeProxy>(IComponent::SComponentInitializer(this), IComponent::EComponentFlags_Enable | IComponent::EComponentFlags_LazyRegistration);
-			SetProxy(ENTITY_PROXY_CLIPVOLUME, pProxy);
-			break;
-		case ENTITY_PROXY_DYNAMICRESPONSE:
-			pProxy = ComponentCreateAndRegister_DeleteWithRelease<CDynamicResponseProxy>(IComponent::SComponentInitializer(this), IComponent::EComponentFlags_Enable | IComponent::EComponentFlags_LazyRegistration);
-			SetProxy(ENTITY_PROXY_DYNAMICRESPONSE, pProxy);
-			break;
-		}
-		return pProxy;
-	}
+
+	return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1716,9 +1606,10 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 				{
 					ser.Value("id", nSlotId);
 
-					if (!GetRenderProxy())
-						CreateProxy(ENTITY_PROXY_RENDER);
-					CEntityObject* pSlot = GetRenderProxy()->AllocSlot(nSlotId);
+					// Make sure we have a render component
+					auto &renderComponent = AcquireComponent<CRenderComponent>();
+
+					CEntityObject* pSlot = renderComponent.AllocSlot(nSlotId);
 
 					ser.Value("hasXform", bHasIt);
 					if (bHasIt)
@@ -1773,57 +1664,59 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 		bool bSaveProxies = ser.GetSerializationTarget() == eST_Network; // always save for network stream
 		if (!bSaveProxies && !ser.IsReading())
 		{
-			int proxyNrSerialized = 0;
-			while (true)
+			for (auto it = m_proxy.begin(); it != m_proxy.end(); ++it)
 			{
-				EEntityProxy proxy = ProxySerializationOrder[proxyNrSerialized];
-				if (proxy == ENTITY_PROXY_LAST)
-					break;
-				IEntityProxy* pProxy = GetProxy(proxy);
-				if (pProxy)
+				if (it->second->NeedSerialize())
 				{
-					if (pProxy->NeedSerialize())
-					{
-						bSaveProxies = true;
-						break;
-					}
+					bSaveProxies = true;
+					break;
 				}
-				proxyNrSerialized++;
 			}
 		}
 
 		if (ser.BeginOptionalGroup("EntityProxies", bSaveProxies))
 		{
+			for (auto it = m_proxy.begin(); it != m_proxy.end(); ++it)
+			{
+				it->second->Serialize(ser);
+			}
+
+			ser.EndGroup(); //EntityProxies
+		}
+
+		bool bSaveComponents = ser.GetSerializationTarget() == eST_Network; // always save for network stream
+		if (!bSaveComponents && !ser.IsReading())
+		{
+			for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+			{
+				if (it->second->NeedSerialize())
+				{
+					bSaveComponents = true;
+					break;
+				}
+			}
+		}
+		
+		if (ser.BeginOptionalGroup("EntityComponents", bSaveComponents))
+		{
 			bool bHasSubst;
 			if (!ser.IsReading())
-				ser.Value("bHasSubst", bHasSubst = GetProxy(ENTITY_PROXY_SUBSTITUTION) != 0);
+				ser.Value("bHasSubst", bHasSubst = QueryComponent<CSubstitutionComponent>() != nullptr);
 			else
 			{
 				ser.Value("bHasSubst", bHasSubst);
-				if (bHasSubst && !GetProxy(ENTITY_PROXY_SUBSTITUTION))
-					CreateProxy(ENTITY_PROXY_SUBSTITUTION);
-			}
-
-			//serializing the available proxies in the specified order (physics after script and user ..) [JAN]
-			int proxyNrSerialized = 0;
-			while (true)
-			{
-				EEntityProxy proxy = ProxySerializationOrder[proxyNrSerialized];
-
-				if (proxy == ENTITY_PROXY_LAST)
-					break;
-
-				IEntityProxy* pProxy = GetProxy(proxy);
-				if (pProxy)
+				if (bHasSubst)
 				{
-					pProxy->Serialize(ser);
+					AcquireComponent<CSubstitutionComponent>();
 				}
-
-				proxyNrSerialized++;
 			}
-			assert(proxyNrSerialized == ENTITY_PROXY_LAST); //this checks whether every proxy is in the order list
 
-			ser.EndGroup(); //EntityProxies
+			for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+			{
+				it->second->Serialize(ser);
+			}
+
+			ser.EndGroup();
 		}
 
 		//////////////////////////////////////////////////////////////////////////
@@ -1860,9 +1753,8 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 
 	if (nFlags & ENTITY_SERIALIZE_PROPERTIES)
 	{
-		CScriptProxy* pScriptProxy = (CScriptProxy*)GetProxy(ENTITY_PROXY_SCRIPT);
-		if (pScriptProxy)
-			pScriptProxy->SerializeProperties(ser);
+		if (auto *pScriptComponent = static_cast<CScriptComponent *>(QueryComponent<IEntityScriptComponent>()))
+			pScriptComponent->SerializeProperties(ser);
 	}
 
 	m_bDirtyForwardDir = true;
@@ -1872,38 +1764,77 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 //////////////////////////////////////////////////////////////////////////
 void CEntity::Physicalize(SEntityPhysicalizeParams& params)
 {
-	if (!GetPhysicalProxy())
-		CreateProxy(ENTITY_PROXY_PHYSICS);
-	GetPhysicalProxy()->Physicalize(params);
+	auto &physicsComponent = AcquireComponent<CPhysicsComponent>();
+
+	physicsComponent.Physicalize(params);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntity::EnablePhysics(bool enable)
 {
-	CPhysicalProxy* pPhysProxy = (CPhysicalProxy*)GetProxy(ENTITY_PROXY_PHYSICS);
-	if (pPhysProxy)
+	if (auto *pPhysicsComponent = QueryComponent<IEntityPhysicsComponent>())
 	{
-		pPhysProxy->EnablePhysics(enable);
+		pPhysicsComponent->EnablePhysics(enable);
 	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+IEntityPhysicsComponent &CEntity::CreatePhysicsComponent()
+{
+	return AcquireComponent<CPhysicsComponent>();
+}
+
+//////////////////////////////////////////////////////////////////////////
+IEntityTriggerComponent &CEntity::CreateTriggerComponent()
+{
+	return AcquireComponent<CTriggerComponent>();
+}
+
+//////////////////////////////////////////////////////////////////////////
+IEntityAudioComponent &CEntity::CreateAudioComponent()
+{
+	return AcquireComponent<CEntityAudioComponent>();
+}
+
+//////////////////////////////////////////////////////////////////////////
+IEntitySubstitutionComponent &CEntity::CreatSubstitutionComponent()
+{
+	return AcquireComponent<CSubstitutionComponent>();
+}
+
+//////////////////////////////////////////////////////////////////////////
+IEntityAreaComponent &CEntity::CreateAreaComponent()
+{
+	return AcquireComponent<CAreaComponent>();
+}
+
+//////////////////////////////////////////////////////////////////////////
+IEntityDynamicResponseComponent &CEntity::CreateDynamicResponseComponent()
+{
+	return AcquireComponent<CDynamicResponseComponent>();
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::CreateEntityNodeComponent()
+{
+	AcquireComponent<CEntityNodeComponent>();
 }
 
 //////////////////////////////////////////////////////////////////////////
 IPhysicalEntity* CEntity::GetPhysics() const
 {
-	CPhysicalProxy* pPhysicalProxy = GetPhysicalProxy();
-	if (pPhysicalProxy)
+	if (auto *pPhysicsComponent = QueryComponent<IEntityPhysicsComponent>())
 	{
-		IPhysicalEntity* pPhysicalEntity = pPhysicalProxy->GetPhysicalEntity();
+		IPhysicalEntity* pPhysicalEntity = pPhysicsComponent->GetPhysicalEntity();
 		if (pPhysicalEntity)
 		{
 			return pPhysicalEntity;
 		}
 	}
 
-	IEntityRopeProxy* pRopeProxy = (IEntityRopeProxy*)GetProxy(ENTITY_PROXY_ROPE);
-	if (pRopeProxy)
+	if (auto *pRopeComponent = QueryComponent<IEntityRopeComponent>())
 	{
-		IRopeRenderNode* pRopeRenderNode = pRopeProxy->GetRopeRenderNode();
+		IRopeRenderNode* pRopeRenderNode = pRopeComponent->GetRopeRenderNode();
 		if (pRopeRenderNode)
 		{
 			return pRopeRenderNode->GetPhysics();
@@ -1931,11 +1862,11 @@ void CEntity::SetMaterial(IMaterial* pMaterial)
 //////////////////////////////////////////////////////////////////////////
 void CEntity::CheckMaterialFlags()
 {
-	if (CRenderProxy* pRenderProxy = GetRenderProxy())
+	if (auto *pRenderComponent = QueryComponent<IEntityRenderComponent>())
 	{
 		bool bCollisionProxy = false;
 		bool bRaycastProxy = false;
-		bool bWasProxy = (pRenderProxy->GetRndFlags() & (ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY)) != 0;
+		bool bWasProxy = (pRenderComponent->GetRenderNode()->GetRndFlags() & (ERF_COLLISION_PROXY | ERF_RAYCAST_PROXY)) != 0;
 
 		if (m_pMaterial)
 		{
@@ -1955,8 +1886,8 @@ void CEntity::CheckMaterialFlags()
 					}
 		}
 
-		pRenderProxy->SetRndFlags(ERF_COLLISION_PROXY, bCollisionProxy);
-		pRenderProxy->SetRndFlags(ERF_RAYCAST_PROXY, bRaycastProxy);
+		pRenderComponent->GetRenderNode()->SetRndFlags(ERF_COLLISION_PROXY, bCollisionProxy);
+		pRenderComponent->GetRenderNode()->SetRndFlags(ERF_RAYCAST_PROXY, bRaycastProxy);
 
 		if (bWasProxy || bRaycastProxy || bCollisionProxy)
 			if (IPhysicalEntity* pPhysics = GetPhysics())
@@ -1979,9 +1910,9 @@ IMaterial* CEntity::GetMaterial()
 //////////////////////////////////////////////////////////////////////////
 int CEntity::PhysicalizeSlot(int slot, SEntityPhysicalizeParams& params)
 {
-	if (CPhysicalProxy* proxy = GetPhysicalProxy())
+	if (auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(QueryComponent<IEntityPhysicsComponent>()))
 	{
-		return proxy->AddSlotGeometry(slot, params);
+		return pPhysicsComponent->AddSlotGeometry(slot, params);
 	}
 	return -1;
 }
@@ -1989,80 +1920,73 @@ int CEntity::PhysicalizeSlot(int slot, SEntityPhysicalizeParams& params)
 //////////////////////////////////////////////////////////////////////////
 void CEntity::UnphysicalizeSlot(int slot)
 {
-	if (CPhysicalProxy* proxy = GetPhysicalProxy())
+	if (auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(QueryComponent<IEntityPhysicsComponent>()))
 	{
-		proxy->RemoveSlotGeometry(slot);
+		pPhysicsComponent->RemoveSlotGeometry(slot);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntity::UpdateSlotPhysics(int slot)
 {
-	if (CPhysicalProxy* proxy = GetPhysicalProxy())
+	if (auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(QueryComponent<IEntityPhysicsComponent>()))
 	{
-		proxy->UpdateSlotGeometry(slot, GetStatObj(slot));
+		pPhysicsComponent->UpdateSlotGeometry(slot, GetStatObj(slot));
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CEntity::IsSlotValid(int nSlot) const
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		return pRenderProxy->IsSlotValid(nSlot);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		return pRenderComponent->IsSlotValid(nSlot);
 	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntity::FreeSlot(int nSlot)
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		pRenderProxy->FreeSlot(nSlot);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		pRenderComponent->FreeSlot(nSlot);
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CEntity::GetSlotCount() const
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		return pRenderProxy->GetSlotCount();
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		return pRenderComponent->GetSlotCount();
 	return 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
 CEntityObject* CEntity::GetSlot(int nSlot) const
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		return pRenderProxy->GetSlot(nSlot);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		return pRenderComponent->GetSlot(nSlot);
 	return NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////
 bool CEntity::GetSlotInfo(int nSlot, SEntitySlotInfo& slotInfo) const
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		return pRenderProxy->GetSlotInfo(nSlot, slotInfo);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		return pRenderComponent->GetSlotInfo(nSlot, slotInfo);
 	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
 const Matrix34& CEntity::GetSlotWorldTM(int nSlot) const
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		return pRenderProxy->GetSlotWorldTM(nSlot);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		return pRenderComponent->GetSlotWorldTM(nSlot);
 	return sIdentityMatrix;
 }
 
 //////////////////////////////////////////////////////////////////////////
 const Matrix34& CEntity::GetSlotLocalTM(int nSlot, bool bRelativeToParent) const
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		return pRenderProxy->GetSlotLocalTM(nSlot, bRelativeToParent);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		return pRenderComponent->GetSlotLocalTM(nSlot, bRelativeToParent);
 	return sIdentityMatrix;
 }
 
@@ -2079,28 +2003,25 @@ void CEntity::SetSlotLocalTM(int nSlot, const Matrix34& localTM, int nWhyFlags)
 	CHECKQNAN_VEC(col2);
 	CHECKQNAN_VEC(col3);
 
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		pRenderProxy->SetSlotLocalTM(nSlot, localTM);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		pRenderComponent->SetSlotLocalTM(nSlot, localTM);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntity::SetSlotCameraSpacePos(int nSlot, const Vec3& cameraSpacePos)
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
 	{
-		pRenderProxy->SetSlotCameraSpacePos(nSlot, cameraSpacePos);
+		pRenderComponent->SetSlotCameraSpacePos(nSlot, cameraSpacePos);
 	}
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntity::GetSlotCameraSpacePos(int nSlot, Vec3& cameraSpacePos) const
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
 	{
-		pRenderProxy->GetSlotCameraSpacePos(nSlot, cameraSpacePos);
+		pRenderComponent->GetSlotCameraSpacePos(nSlot, cameraSpacePos);
 	}
 	else
 	{
@@ -2111,34 +2032,30 @@ void CEntity::GetSlotCameraSpacePos(int nSlot, Vec3& cameraSpacePos) const
 //////////////////////////////////////////////////////////////////////////
 bool CEntity::SetParentSlot(int nParentSlot, int nChildSlot)
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		return pRenderProxy->SetParentSlot(nParentSlot, nChildSlot);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		return pRenderComponent->SetParentSlot(nParentSlot, nChildSlot);
 	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntity::SetSlotMaterial(int nSlot, IMaterial* pMaterial)
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		pRenderProxy->SetSlotMaterial(nSlot, pMaterial);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		pRenderComponent->SetSlotMaterial(nSlot, pMaterial);
 }
 
 //////////////////////////////////////////////////////////////////////////
 void CEntity::SetSlotFlags(int nSlot, uint32 nFlags)
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		pRenderProxy->SetSlotFlags(nSlot, nFlags);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		pRenderComponent->SetSlotFlags(nSlot, nFlags);
 }
 
 //////////////////////////////////////////////////////////////////////////
 uint32 CEntity::GetSlotFlags(int nSlot) const
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		return pRenderProxy->GetSlotFlags(nSlot);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		return pRenderComponent->GetSlotFlags(nSlot);
 	return 0;
 }
 
@@ -2151,10 +2068,9 @@ bool CEntity::ShouldUpdateCharacter(int nSlot) const
 //////////////////////////////////////////////////////////////////////////
 ICharacterInstance* CEntity::GetCharacter(int nSlot)
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
 	{
-		return pRenderProxy->GetCharacter(nSlot);
+		return pRenderComponent->GetCharacter(nSlot);
 	}
 	else
 	{
@@ -2167,12 +2083,11 @@ int CEntity::SetCharacter(ICharacterInstance* pCharacter, int nSlot)
 {
 	int nUsedSlot = -1;
 
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
 
-	nUsedSlot = GetRenderProxy()->SetSlotCharacter(nSlot, pCharacter);
-	if (GetPhysicalProxy())
-		GetPhysicalProxy()->UpdateSlotGeometry(nUsedSlot);
+	nUsedSlot = renderComponent.SetSlotCharacter(nSlot, pCharacter);
+	if (auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(QueryComponent<IEntityPhysicsComponent>()))
+		pPhysicsComponent->UpdateSlotGeometry(nUsedSlot);
 
 	return nUsedSlot;
 }
@@ -2180,22 +2095,25 @@ int CEntity::SetCharacter(ICharacterInstance* pCharacter, int nSlot)
 //////////////////////////////////////////////////////////////////////////
 IStatObj* CEntity::GetStatObj(int nSlot)
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		return pRenderProxy->GetStatObj(nSlot);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		return pRenderComponent->GetStatObj(nSlot);
 	return NULL;
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CEntity::SetStatObj(IStatObj* pStatObj, int nSlot, bool bUpdatePhysics, float mass)
 {
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
 
 	int bNoSubslots = nSlot >= 0 || nSlot & ENTITY_SLOT_ACTUAL; // only use statobj's subslot when appending a new subslot
-	nSlot = GetRenderProxy()->SetSlotGeometry(nSlot, pStatObj);
-	if (bUpdatePhysics && GetPhysicalProxy())
-		GetPhysicalProxy()->UpdateSlotGeometry(nSlot, pStatObj, mass, bNoSubslots);
+	nSlot = renderComponent.SetSlotGeometry(nSlot, pStatObj);
+	if (bUpdatePhysics)
+	{
+		if (auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(QueryComponent<IEntityPhysicsComponent>()))
+		{
+			pPhysicsComponent->UpdateSlotGeometry(nSlot, pStatObj, mass, bNoSubslots);
+		}
+	}
 
 	return nSlot;
 }
@@ -2203,9 +2121,8 @@ int CEntity::SetStatObj(IStatObj* pStatObj, int nSlot, bool bUpdatePhysics, floa
 //////////////////////////////////////////////////////////////////////////
 IParticleEmitter* CEntity::GetParticleEmitter(int nSlot)
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		return pRenderProxy->GetParticleEmitter(nSlot);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		return pRenderComponent->GetParticleEmitter(nSlot);
 	return NULL;
 }
 
@@ -2213,9 +2130,8 @@ IParticleEmitter* CEntity::GetParticleEmitter(int nSlot)
 IGeomCacheRenderNode* CEntity::GetGeomCacheRenderNode(int nSlot)
 {
 #if defined(USE_GEOM_CACHES)
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
-		return pRenderProxy->GetGeomCacheRenderNode(nSlot);
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
+		return pRenderComponent->GetGeomCacheRenderNode(nSlot);
 #endif
 
 	return NULL;
@@ -2226,10 +2142,10 @@ void CEntity::MoveSlot(IEntity* targetIEnt, int nSlot)
 {
 	CEntity* targetEnt = (CEntity*)targetIEnt;
 
-	CRenderProxyPtr dstRenderProxy = crycomponent_cast<CRenderProxyPtr>(targetEnt->CreateProxy(ENTITY_PROXY_RENDER));
+	auto &targetRenderComponent = targetEnt->AcquireComponent<CRenderComponent>();
 
 	CEntityObject* scrSlot = GetSlot(nSlot);
-	CEntityObject* dstSlot = dstRenderProxy->AllocSlot(nSlot);
+	CEntityObject* dstSlot = targetRenderComponent.AllocSlot(nSlot);
 
 	ICharacterInstance* pCharacterInstance = scrSlot->pCharacter;
 
@@ -2246,12 +2162,12 @@ void CEntity::MoveSlot(IEntity* targetIEnt, int nSlot)
 	dstSlot->bUpdate = scrSlot->bUpdate;
 	dstSlot->flags = scrSlot->flags;
 
-	dstRenderProxy->AddFlags(CRenderProxy::FLAG_UPDATE);
-	dstRenderProxy->InvalidateBounds(true, true);
-	dstRenderProxy->UpdateLodDistance(gEnv->p3DEngine->GetFrameLodInfo());
+	targetRenderComponent.AddFlags(CRenderComponent::FLAG_UPDATE);
+	targetRenderComponent.InvalidateBounds(true, true);
+	targetRenderComponent.UpdateLodDistance(gEnv->p3DEngine->GetFrameLodInfo());
 
 	//--- Ensure that any associated physics is copied over too
-	CPhysicalProxy* srcPhysicsProxy = GetPhysicalProxy();
+	auto *srcPhysicsProxy = static_cast<CPhysicsComponent *>(QueryComponent<IEntityPhysicsComponent>());
 	if (pCharacterInstance)
 	{
 		ISkeletonPose* pSkeletonPose = pCharacterInstance->GetISkeletonPose();
@@ -2259,8 +2175,8 @@ void CEntity::MoveSlot(IEntity* targetIEnt, int nSlot)
 		pCharacterInstance->GetISkeletonPose()->SetPostProcessCallback(NULL, NULL);
 		if (srcPhysicsProxy && (pCharacterPhysics == srcPhysicsProxy->GetPhysicalEntity()))
 		{
-			CPhysicalProxyPtr dstPhysicsProxy = crycomponent_cast<CPhysicalProxyPtr>(targetEnt->CreateProxy(ENTITY_PROXY_PHYSICS));
-			srcPhysicsProxy->MovePhysics(dstPhysicsProxy.get());
+			auto &dstPhysicsProxy = targetEnt->AcquireComponent<CPhysicsComponent>();
+			srcPhysicsProxy->MovePhysics(static_cast<CPhysicsComponent *>(&dstPhysicsProxy));
 
 			//Make sure auxiliar physics like ropes and attachments are also updated
 			pe_params_foreign_data pfd;
@@ -2301,7 +2217,7 @@ void CEntity::MoveSlot(IEntity* targetIEnt, int nSlot)
 		}
 		// Register ourselves to listen for animation events coming from the character.
 		if (ISkeletonAnim* pSkeletonAnim = pCharacterInstance->GetISkeletonAnim())
-			pSkeletonAnim->SetEventCallback(CRenderProxy::AnimEventCallback, dstRenderProxy.get());
+			pSkeletonAnim->SetEventCallback(CRenderComponent::AnimEventCallback, &targetRenderComponent);
 	}
 
 	//--- Clear src slot
@@ -2318,9 +2234,9 @@ void CEntity::MoveSlot(IEntity* targetIEnt, int nSlot)
 //////////////////////////////////////////////////////////////////////////
 int CEntity::LoadGeometry(int nSlot, const char* sFilename, const char* sGeomName, int nLoadFlags)
 {
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
-	nSlot = GetRenderProxy()->LoadGeometry(nSlot, sFilename, sGeomName, nLoadFlags);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
+
+	nSlot = renderComponent.LoadGeometry(nSlot, sFilename, sGeomName, nLoadFlags);
 
 	if (nLoadFlags & EF_AUTO_PHYSICALIZE)
 	{
@@ -2358,15 +2274,19 @@ int CEntity::LoadGeometry(int nSlot, const char* sFilename, const char* sGeomNam
 //////////////////////////////////////////////////////////////////////////
 int CEntity::LoadCharacter(int nSlot, const char* sFilename, int nLoadFlags)
 {
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
 	ICharacterInstance* pChar;
 
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if ((pChar = pRenderProxy->GetCharacter(nSlot)) && GetPhysicalProxy() && pChar->GetISkeletonPose()->GetCharacterPhysics() == GetPhysics())
-		GetPhysicalProxy()->AttachToPhysicalEntity(0);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
 
-	nSlot = pRenderProxy->LoadCharacter(nSlot, sFilename, nLoadFlags);
+	if ((pChar = renderComponent.GetCharacter(nSlot)) && pChar->GetISkeletonPose()->GetCharacterPhysics() == GetPhysics())
+	{
+		if (auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(QueryComponent<IEntityPhysicsComponent>()))
+		{
+			pPhysicsComponent->AttachToPhysicalEntity(0);
+		}
+	}
+
+	nSlot = renderComponent.LoadCharacter(nSlot, sFilename, nLoadFlags);
 	if (nLoadFlags & EF_AUTO_PHYSICALIZE)
 	{
 		ICharacterInstance* pCharacter = GetCharacter(nSlot);
@@ -2396,13 +2316,9 @@ int CEntity::LoadCharacter(int nSlot, const char* sFilename, int nLoadFlags)
 #if defined(USE_GEOM_CACHES)
 int CEntity::LoadGeomCache(int nSlot, const char* sFilename)
 {
-	if (!GetRenderProxy())
-	{
-		CreateProxy(ENTITY_PROXY_RENDER);
-	}
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
 
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	int ret = pRenderProxy->LoadGeomCache(nSlot, sFilename);
+	int ret = renderComponent.LoadGeomCache(nSlot, sFilename);
 
 	SetMaterial(m_pMaterial);
 
@@ -2413,18 +2329,17 @@ int CEntity::LoadGeomCache(int nSlot, const char* sFilename)
 //////////////////////////////////////////////////////////////////////////
 int CEntity::SetParticleEmitter(int nSlot, IParticleEmitter* pEmitter, bool bSerialize)
 {
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
 
-	return GetRenderProxy()->SetParticleEmitter(nSlot, pEmitter, bSerialize);
+	return renderComponent.SetParticleEmitter(nSlot, pEmitter, bSerialize);
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CEntity::LoadParticleEmitter(int nSlot, IParticleEffect* pEffect, SpawnParams const* params, bool bPrime, bool bSerialize)
 {
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
-	return GetRenderProxy()->LoadParticleEmitter(nSlot, pEffect, params, bPrime, bSerialize);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
+
+	return renderComponent.LoadParticleEmitter(nSlot, pEffect, params, bPrime, bSerialize);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2435,11 +2350,10 @@ int CEntity::LoadLight(int nSlot, CDLight* pLight)
 
 int CEntity::LoadLightImpl(int nSlot, CDLight* pLight)
 {
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
 
 	uint16 layerId = ~0;
-	return GetRenderProxy()->LoadLight(nSlot, pLight, layerId);
+	return renderComponent.LoadLight(nSlot, pLight, layerId);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2454,13 +2368,13 @@ bool CEntity::UpdateLightClipBounds(CDLight& light)
 
 			if (clipVolume)
 			{
-				if (IClipVolumeProxy* pVolume = static_cast<IClipVolumeProxy*>(pLinkedEntity->GetProxy(ENTITY_PROXY_CLIPVOLUME)))
+				if(auto *pClipVolumeComponent = pLinkedEntity->QueryComponent<IClipVolumeComponent>())
 				{
 					for (int i = 0; i < 2; ++i)
 					{
 						if (light.m_pClipVolumes[i] == NULL)
 						{
-							light.m_pClipVolumes[i] = pVolume->GetClipVolume();
+							light.m_pClipVolumes[i] = pClipVolumeComponent->GetClipVolume();
 							light.m_Flags |= DLF_HAS_CLIP_VOLUME;
 
 							break;
@@ -2477,57 +2391,57 @@ bool CEntity::UpdateLightClipBounds(CDLight& light)
 //////////////////////////////////////////////////////////////////////////
 int CEntity::LoadCloud(int nSlot, const char* sFilename)
 {
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
-	return GetRenderProxy()->LoadCloud(nSlot, sFilename);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
+
+	return renderComponent.LoadCloud(nSlot, sFilename);
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CEntity::SetCloudMovementProperties(int nSlot, const SCloudMovementProperties& properties)
 {
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
-	return GetRenderProxy()->SetCloudMovementProperties(nSlot, properties);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
+
+	return renderComponent.SetCloudMovementProperties(nSlot, properties);
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CEntity::LoadFogVolume(int nSlot, const SFogVolumeProperties& properties)
 {
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
-	return GetRenderProxy()->LoadFogVolume(nSlot, properties);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
+
+	return renderComponent.LoadFogVolume(nSlot, properties);
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CEntity::FadeGlobalDensity(int nSlot, float fadeTime, float newGlobalDensity)
 {
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
-	return GetRenderProxy()->FadeGlobalDensity(nSlot, fadeTime, newGlobalDensity);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
+
+	return renderComponent.FadeGlobalDensity(nSlot, fadeTime, newGlobalDensity);
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CEntity::LoadVolumeObject(int nSlot, const char* sFilename)
 {
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
-	return GetRenderProxy()->LoadVolumeObject(nSlot, sFilename);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
+
+	return renderComponent.LoadVolumeObject(nSlot, sFilename);
 }
 
 //////////////////////////////////////////////////////////////////////////
 int CEntity::SetVolumeObjectMovementProperties(int nSlot, const SVolumeObjectMovementProperties& properties)
 {
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
-	return GetRenderProxy()->SetVolumeObjectMovementProperties(nSlot, properties);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
+
+	return renderComponent.SetVolumeObjectMovementProperties(nSlot, properties);
 }
 
 #if !defined(EXCLUDE_DOCUMENTATION_PURPOSE)
 int CEntity::LoadPrismObject(int nSlot)
 {
-	if (!GetRenderProxy())
-		CreateProxy(ENTITY_PROXY_RENDER);
-	return GetRenderProxy()->LoadPrismObject(nSlot);
+	auto &renderComponent = AcquireComponent<CRenderComponent>();
+
+	return renderComponent.LoadPrismObject(nSlot);
 }
 #endif // EXCLUDE_DOCUMENTATION_PURPOSE
 
@@ -2721,6 +2635,11 @@ void CEntity::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
 	std::for_each(m_proxy.begin(), m_proxy.end(), FEntityProxy_GetMemUsage(pSizer));
+
+	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+	{
+		it->second->GetMemoryUsage(pSizer);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2821,10 +2740,9 @@ IAIObject* CEntity::GetAIObject()
 //////////////////////////////////////////////////////////////////////////
 void CEntity::DebugDraw(const SGeometryDebugDrawInfo& info)
 {
-	CRenderProxy* pRenderProxy = GetRenderProxy();
-	if (pRenderProxy)
+	if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
 	{
-		pRenderProxy->DebugDraw(info);
+		pRenderComponent->DebugDraw(info);
 	}
 }
 

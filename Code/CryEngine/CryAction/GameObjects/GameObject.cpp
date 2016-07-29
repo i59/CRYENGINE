@@ -225,10 +225,9 @@ bool CGameObject::IsProbablyVisible()
 
 	if (g_visibilityTimeout)
 	{
-		IEntityRenderProxy* pProxy = (IEntityRenderProxy*)GetEntity()->GetProxy(ENTITY_PROXY_RENDER);
-		if (pProxy)
+		if (auto *pRenderComponent = GetEntity()->QueryComponent<IEntityRenderComponent>())
 		{
-			float fDiff = gEnv->pTimer->GetCurrTime() - pProxy->GetLastSeenTime();
+			float fDiff = gEnv->pTimer->GetCurrTime() - pRenderComponent->GetLastSeenTime();
 			if (fDiff > g_visibilityTimeoutTime)
 			{
 				if (m_bVisible)
@@ -528,12 +527,12 @@ bool CGameObject::BindToNetworkWithParent(EBindToNetworkMode mode, EntityId pare
 	NetworkAspectType aspects = gameObjectAspects;
 	INetChannel* pControllingChannel = NULL;
 
-	if (!m_bNoSyncPhysics && (GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS) || m_pProfileManager))
+	if (!m_bNoSyncPhysics && (GetEntity()->QueryComponent<IEntityPhysicsComponent>() || m_pProfileManager))
 	{
 		aspects |= eEA_Physics;
 		//		aspects &= ~eEA_Volatile;
 	}
-	if (GetEntity()->GetProxy(ENTITY_PROXY_SCRIPT))
+	if(auto *pScriptComponent = GetEntity()->QueryComponent<IEntityScriptComponent>())
 		aspects |= eEA_Script;
 
 	if (gEnv->bServer)
@@ -1266,7 +1265,7 @@ bool CGameObject::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 prof
 
 	if (aspect == eEA_Physics && !m_pProfileManager)
 	{
-		if (IEntityPhysicalProxy* pProxy = (IEntityPhysicalProxy*) GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS))
+		if (IEntityPhysicsComponent* pProxy = (IEntityPhysicsComponent*) GetEntity()->QueryComponent<IEntityPhysicsComponent>())
 			pProxy->Serialize(ser);
 		else
 			return false;
@@ -1284,12 +1283,12 @@ NetworkAspectType CGameObject::GetNetSerializeAspects()
 		aspects |= iter->pExtension->GetNetSerializeAspects();
 	}
 
-	if (!m_bNoSyncPhysics && (GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS) || m_pProfileManager))
+	if (!m_bNoSyncPhysics && (GetEntity()->QueryComponent<IEntityPhysicsComponent>() || m_pProfileManager))
 	{
 		aspects |= eEA_Physics;
 	}
 
-	if (GetEntity()->GetProxy(ENTITY_PROXY_SCRIPT))
+	if (auto *pScriptComponent = GetEntity()->QueryComponent<IEntityScriptComponent>())
 	{
 		aspects |= eEA_Script;
 	}
@@ -2410,65 +2409,3 @@ void CGameObject::UnRegisterExtForEvents(IGameObjectExtension* piExtention, cons
 		}
 	}
 }
-
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
-#if 0
-// deprecated and won't compile at all...
-void SDistanceChecker::Init(CGameObjectSystem* pGameObjectSystem, EntityId receiverId)
-{
-	IEntity* pDistanceChecker = pGameObjectSystem->CreatePlayerProximityTrigger();
-	if (pDistanceChecker)
-	{
-		((IEntityTriggerProxy*)pDistanceChecker->GetProxy(ENTITY_PROXY_TRIGGER))->ForwardEventsTo(receiverId);
-		m_distanceCheckerTimer = -1.0f;
-		m_distanceChecker = pDistanceChecker->GetId();
-		Update(0.0f);
-	}
-}
-
-void SDistanceChecker::Reset()
-{
-	if (m_distanceChecker)
-	{
-		gEnv->pEntitySystem->RemoveEntity(m_distanceChecker);
-		m_distanceChecker = 0;
-	}
-	m_distanceChecker = 0.0f;
-}
-
-void SDistanceChecker::Update(CGameObject& owner, float frameTime)
-{
-	if (!m_distanceChecker)
-		return;
-
-	bool ok = false;
-	IEntity* pDistanceChecker = gEnv->pEntitySystem->GetEntity(m_distanceChecker);
-	if (pDistanceChecker)
-	{
-		m_distanceCheckerTimer -= frameTime;
-		if (m_distanceCheckerTimer < 0.0f)
-		{
-			IEntityTriggerProxy* pProxy = (IEntityTriggerProxy*)pDistanceChecker->GetProxy(ENTITY_PROXY_TRIGGER);
-			if (pProxy)
-			{
-				pProxy->SetTriggerBounds(CreateDistanceAABB(owner.GetEntity()->GetWorldPos()));
-				m_distanceCheckerTimer = DISTANCE_CHECKER_TIMEOUT;
-				ok = true;
-			}
-		}
-		else
-		{
-			ok = true;
-		}
-	}
-
-	if (!ok)
-	{
-		Reset();
-
-		owner.AttachDistanceChecker();
-	}
-}
-
-#endif

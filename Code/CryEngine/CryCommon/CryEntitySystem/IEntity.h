@@ -3,6 +3,7 @@
 #pragma once
 
 #include "IComponent.h"
+#include "IEntityComponent.h"
 
 // Forward declarations.
 struct IPhysicalEntity;
@@ -649,7 +650,7 @@ struct IEntity
 	virtual string GetEntityTextDescription() const = 0;
 
 	//! Serializes entity parameters to/from XML.
-	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading) = 0;
+	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit = false) = 0;
 
 	//! \retval true if this entity was loaded from level file.
 	//! \retval false for entities created dynamically.
@@ -830,6 +831,31 @@ struct IEntity
 	//! Retrieves the entity update policy.
 	virtual EEntityUpdatePolicy GetUpdatePolicy() const = 0;
 
+	// Query a component, return pointer if available, otherwise nullptr
+	template <typename T>
+	T *QueryComponent() const
+	{
+		return static_cast<T *>(GetComponentByTypeId(cryiidof<T>()));
+	}
+
+	template <typename T>
+	T &AcquireComponent()
+	{
+		if (auto *pComponent = QueryComponent<T>())
+		{
+			return *pComponent;
+		}
+
+		// Create a new instance of T, note that the entity system takes over responsibility for deleting
+		auto *pComponent = new T();
+		RegisterEntityComponent(cryiidof<T>(), pComponent);
+
+		return *pComponent;
+	}
+
+	virtual IEntityComponent *GetComponentByTypeId(const CryInterfaceID &interfaceID) const = 0;
+	virtual void RegisterEntityComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent) = 0;
+
 	// Entity Proxies Interfaces access functions.
 
 	//! Retrieves a pointer to the specified proxy interface in the entity.
@@ -856,6 +882,7 @@ struct IEntity
 	// Physics.
 	//////////////////////////////////////////////////////////////////////////
 	virtual void             Physicalize(SEntityPhysicalizeParams& params) = 0;
+
 	//! \return A physical entity assigned to an entity.
 	virtual IPhysicalEntity* GetPhysics() const = 0;
 
@@ -864,6 +891,16 @@ struct IEntity
 	virtual void             UpdateSlotPhysics(int slot) = 0;
 
 	virtual void             SetPhysicsState(XmlNodeRef& physicsState) = 0;
+
+	// Creates a new physics component
+	// Use Physicalize if you want a mesh loaded, this only creates an instance of CPhysicsComponent
+	virtual IEntityPhysicsComponent &CreatePhysicsComponent() = 0;
+	virtual IEntityTriggerComponent &CreateTriggerComponent() = 0;
+	virtual IEntityAudioComponent &CreateAudioComponent() = 0;
+	virtual IEntitySubstitutionComponent &CreatSubstitutionComponent() = 0;
+	virtual IEntityAreaComponent &CreateAreaComponent() = 0;
+	virtual IEntityDynamicResponseComponent &CreateDynamicResponseComponent() = 0;
+	virtual void CreateEntityNodeComponent() = 0;
 
 	// Custom entity material.
 
@@ -1009,7 +1046,13 @@ struct IEntity
 	virtual void InvalidateTM(int nWhyFlags = 0, bool bRecalcPhyBounds = false) = 0;
 
 	//! Easy Script table access.
-	IScriptTable* GetScriptTable() const;
+	IScriptTable* GetScriptTable() const
+	{
+		if (auto *pScriptComponent = QueryComponent<IEntityScriptComponent>())
+			return pScriptComponent->GetScriptTable();
+
+		return nullptr;
+	}
 
 	//! Enable/Disable physics by flag.
 	virtual void EnablePhysics(bool enable) = 0;
@@ -1107,12 +1150,3 @@ std::shared_ptr<TYPE> ComponentCreateAndRegister_DeleteWithRelease(const ICompon
 
 template<typename DST, typename SRC>
 DST crycomponent_cast(SRC pComponent) { return std::static_pointer_cast<typename DST::element_type>(pComponent); }
-
-// Inline implementation.
-inline IScriptTable* IEntity::GetScriptTable() const
-{
-	IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)GetProxy(ENTITY_PROXY_SCRIPT);
-	if (pScriptProxy)
-		return pScriptProxy->GetScriptTable();
-	return NULL;
-}

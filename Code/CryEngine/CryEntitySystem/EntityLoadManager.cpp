@@ -18,6 +18,11 @@
 #include "Entity.h"
 #include "EntityLayer.h"
 
+#include "AreaProxy.h"
+#include "ClipVolumeProxy.h"
+#include "FlowGraphProxy.h"
+#include "RopeProxy.h"
+
 #include <CryNetwork/INetwork.h>
 
 //////////////////////////////////////////////////////////////////////////
@@ -729,15 +734,15 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 			// Create needed proxies
 			if (entityNode->findChild("Area"))
 			{
-				pSpawnedEntity->CreateProxy(ENTITY_PROXY_AREA);
+				pSpawnedEntity->AcquireComponent<CAreaComponent>();
 			}
 			if (entityNode->findChild("Rope"))
 			{
-				pSpawnedEntity->CreateProxy(ENTITY_PROXY_ROPE);
+				pSpawnedEntity->AcquireComponent<CRopeComponent>();
 			}
 			if (entityNode->findChild("ClipVolume"))
 			{
-				pSpawnedEntity->CreateProxy(ENTITY_PROXY_CLIPVOLUME);
+				pSpawnedEntity->AcquireComponent<CClipVolumeComponent>();
 			}
 
 			if (spawnParams.pClass)
@@ -745,15 +750,13 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 				const char* pClassName = spawnParams.pClass->GetName();
 				if (pClassName && !strcmp(pClassName, "Light"))
 				{
-					IEntityRenderProxyPtr pRP = crycomponent_cast<IEntityRenderProxyPtr>(pSpawnedEntity->CreateProxy(ENTITY_PROXY_RENDER));
-					if (pRP)
-					{
-						pRP->SerializeXML(entityNode, true);
+					auto &renderComponent = pSpawnedEntity->AcquireComponent<CRenderComponent>();
 
-						int nMinSpec = -1;
-						if (entityNode->getAttr("MinSpec", nMinSpec) && nMinSpec >= 0)
-							pRP->GetRenderNode()->SetMinSpec(nMinSpec);
-					}
+					renderComponent.SerializeXML(entityNode, true, false);
+
+					int nMinSpec = -1;
+					if (entityNode->getAttr("MinSpec", nMinSpec) && nMinSpec >= 0)
+						renderComponent.GetRenderNode()->SetMinSpec(nMinSpec);
 				}
 			}
 
@@ -773,9 +776,8 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 					pEventHandler->LoadEntityXMLEvents(pCSpawnedEntity, entityNode);
 
 				// Serialize script proxy.
-				CScriptProxy* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
-				if (pScriptProxy)
-					pScriptProxy->SerializeXML(entityNode, true);
+				if (auto *pScriptComponent = pCSpawnedEntity->QueryComponent<IEntityScriptComponent>())
+					pScriptComponent->SerializeXML(entityNode, true, false);
 			}
 		}
 
@@ -806,9 +808,8 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 
 			if (pCSpawnedEntity && loadParams.bCallInit)
 			{
-				CScriptProxy* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
-				if (pScriptProxy)
-					pScriptProxy->CallInitEvent(true);
+				if (auto *pScriptComponent = static_cast<CScriptComponent *>(pCSpawnedEntity->QueryComponent<IEntityScriptComponent>()))
+					pScriptComponent->CallInitEvent(true);
 			}
 		}
 
@@ -840,9 +841,7 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 			// Serialize all entity proxies except Script proxy after initialization.
 			if (pCSpawnedEntity)
 			{
-				CScriptProxy* pScriptProxy = pCSpawnedEntity->GetScriptProxy();
-
-				pCSpawnedEntity->SerializeXML_ExceptScriptProxy(entityNode, true);
+				pCSpawnedEntity->SerializeXML(entityNode, true, true);
 			}
 
 			const char* attachmentType = entityNode->getAttr("AttachmentType");
@@ -940,8 +939,8 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 			int nMinSpec = -1;
 			if (entityNode->getAttr("MinSpec", nMinSpec) && nMinSpec >= 0)
 			{
-				if (IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pSpawnedEntity->GetProxy(ENTITY_PROXY_RENDER))
-					pRenderProxy->GetRenderNode()->SetMinSpec(nMinSpec);
+				if (auto *pRenderComponent = pSpawnedEntity->QueryComponent<IEntityRenderComponent>())
+					pRenderComponent->GetRenderNode()->SetMinSpec(nMinSpec);
 			}
 		}
 	}
@@ -1047,9 +1046,9 @@ void CEntityLoadManager::OnBatchCreationCompleted()
 
 		if (f.pEntity)
 		{
-			IEntityProxyPtr pProxy = f.pEntity->CreateProxy(ENTITY_PROXY_FLOWGRAPH);
-			if (pProxy)
-				pProxy->SerializeXML(f.pNode, true);
+			auto &flowgraphComponent = f.pEntity->AcquireComponent<CFlowGraphComponent>();
+
+			flowgraphComponent.SerializeXML(f.pNode, true, false);
 		}
 	}
 	m_queuedFlowgraphs.clear();

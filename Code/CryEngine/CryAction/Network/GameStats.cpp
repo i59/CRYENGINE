@@ -1143,10 +1143,9 @@ void CGameStats::StartGame(bool server)
 		IGameRules* pR = pGR->GetCurrentGameRules();
 		if (pR)
 		{
-			IEntityScriptProxy* pScriptProxy = static_cast<IEntityScriptProxy*>(pR->GetEntity()->GetProxy(ENTITY_PROXY_SCRIPT));
-			if (pScriptProxy)
+			auto *pScriptComponent = pR->GetEntity()->QueryComponent<IEntityScriptComponent>();
 			{
-				string gameState = pScriptProxy->GetState();
+				string gameState = pScriptComponent->GetState();
 				if (gameState == "InGame")
 				{
 					m_playing = true;
@@ -1501,10 +1500,9 @@ void CGameStats::Connected()
 			IGameRules* pR = pGR->GetCurrentGameRules();
 			if (pR)
 			{
-				IEntityScriptProxy* pScriptProxy = static_cast<IEntityScriptProxy*>(pR->GetEntity()->GetProxy(ENTITY_PROXY_SCRIPT));
-				if (pScriptProxy)
+				auto *pScriptComponent = pR->GetEntity()->QueryComponent<IEntityScriptComponent>();
 				{
-					string gameState = pScriptProxy->GetState();
+					string gameState = pScriptComponent->GetState();
 					if (gameState == "InGame")
 					{
 						m_playing = true;

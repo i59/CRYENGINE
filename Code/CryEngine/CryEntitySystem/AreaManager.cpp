@@ -377,13 +377,11 @@ void CAreaManager::UpdateEntity(Vec3 const& position, IEntity* const pIEntity)
 			areaCacheEntry.pArea->SendCachedEventsFor(entityId);
 		}
 
-		IEntityAudioProxy* const pIEntityAudioProxy = static_cast<IEntityAudioProxy*>(pIEntity->GetProxy(ENTITY_PROXY_AUDIO));
-
-		if (pIEntityAudioProxy != nullptr)
+		if (auto *pAudioComponent = pIEntity->QueryComponent<IEntityAudioComponent>())
 		{
 			for (auto const& areaEnvironment : areaEnvironments)
 			{
-				pIEntityAudioProxy->SetEnvironmentAmount(areaEnvironment.audioEnvironmentId, areaEnvironment.amount, INVALID_AUDIO_PROXY_ID);
+				pAudioComponent->SetEnvironmentAmount(areaEnvironment.audioEnvironmentId, areaEnvironment.amount, INVALID_AUDIO_PROXY_ID);
 			}
 		}
 
@@ -994,11 +992,9 @@ bool CAreaManager::RetrieveEnvironmentAmount(
 
 			if (pIEntity != nullptr)
 			{
-				IEntityAudioProxy const* const pIEntityAudioProxy = static_cast<IEntityAudioProxy*>(pIEntity->GetProxy(ENTITY_PROXY_AUDIO));
-
-				if (pIEntityAudioProxy != nullptr)
+				if (auto *pAudioComponent = pIEntity->QueryComponent<IEntityAudioComponent>())
 				{
-					AudioEnvironmentId const audioEnvironmentId = pIEntityAudioProxy->GetEnvironmentId();
+					AudioEnvironmentId const audioEnvironmentId = pAudioComponent->GetEnvironmentId();
 
 					if (audioEnvironmentId != INVALID_AUDIO_ENVIRONMENT_ID)
 					{
@@ -1006,7 +1002,7 @@ bool CAreaManager::RetrieveEnvironmentAmount(
 
 						if (distance > 0.0f)
 						{
-							finalAmount = pIEntityAudioProxy->GetEnvironmentFadeDistance();
+							finalAmount = pAudioComponent->GetEnvironmentFadeDistance();
 							finalAmount = (finalAmount > 0.0f) ? std::max<float>(0.0f, (finalAmount - distance) / finalAmount) : 0.0f;
 						}
 

@@ -18,33 +18,19 @@
 #include <CryNetwork/ISerialize.h>
 
 //////////////////////////////////////////////////////////////////////////
-CFlowGraphProxy::CFlowGraphProxy()
-{
-	m_pEntity = NULL;
-	m_pFlowGraph = 0;
-}
-
-//////////////////////////////////////////////////////////////////////////
-CFlowGraphProxy::~CFlowGraphProxy()
+CFlowGraphComponent::CFlowGraphComponent()
+	: m_pFlowGraph(nullptr)
 {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFlowGraphProxy::Initialize(const SComponentInitializer& init)
+CFlowGraphComponent::~CFlowGraphComponent()
 {
-	m_pEntity = (CEntity*)init.m_pEntity;
+	SAFE_RELEASE(m_pFlowGraph);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFlowGraphProxy::Done()
-{
-	if (m_pFlowGraph)
-		m_pFlowGraph->Release();
-	m_pFlowGraph = 0;
-};
-
-//////////////////////////////////////////////////////////////////////////
-void CFlowGraphProxy::SetFlowGraph(IFlowGraph* pFlowGraph)
+void CFlowGraphComponent::SetFlowGraph(IFlowGraph* pFlowGraph)
 {
 	if (m_pFlowGraph)
 		m_pFlowGraph->Release();
@@ -54,13 +40,13 @@ void CFlowGraphProxy::SetFlowGraph(IFlowGraph* pFlowGraph)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IFlowGraph* CFlowGraphProxy::GetFlowGraph()
+IFlowGraph* CFlowGraphComponent::GetFlowGraph()
 {
 	return m_pFlowGraph;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFlowGraphProxy::ProcessEvent(SEntityEvent& event)
+void CFlowGraphComponent::ProcessEvent(SEntityEvent& event)
 {
 	// Assumes only 1 current listener can be deleted as a result of the event.
 	Listeners::iterator next;
@@ -95,33 +81,31 @@ void CFlowGraphProxy::ProcessEvent(SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFlowGraphProxy::AddEventListener(IEntityEventListener* pListener)
+void CFlowGraphComponent::AddEventListener(IEntityEventListener* pListener)
 {
 	// Does not check uniquiness due to performance reasons.
 	m_listeners.push_back(pListener);
 }
 
-void CFlowGraphProxy::RemoveEventListener(IEntityEventListener* pListener)
+void CFlowGraphComponent::RemoveEventListener(IEntityEventListener* pListener)
 {
 	stl::find_and_erase(m_listeners, pListener);
 }
 
-void CFlowGraphProxy::Update(SEntityUpdateContext& ctx)
+void CFlowGraphComponent::Update(SEntityUpdateContext& ctx)
 {
 	//	if (m_pFlowGraph)
 	//		m_pFlowGraph->Update();
 }
 
-void CFlowGraphProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
+void CFlowGraphComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
-	m_pEntity = (CEntity*)pEntity;
-
 	SAFE_RELEASE(m_pFlowGraph);
 
 	m_listeners.clear();
 }
 
-void CFlowGraphProxy::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
+void CFlowGraphComponent::SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit)
 {
 	// don't serialize flowgraphs from the editor
 	// (editor needs more information, so it saves them specially)
@@ -191,13 +175,13 @@ void CFlowGraphProxy::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CFlowGraphProxy::NeedSerialize()
+bool CFlowGraphComponent::NeedSerialize()
 {
 	return m_pFlowGraph != 0;
 };
 
 //////////////////////////////////////////////////////////////////////////
-bool CFlowGraphProxy::GetSignature(TSerialize signature)
+bool CFlowGraphComponent::GetSignature(TSerialize signature)
 {
 	signature.BeginGroup("FlowGraphProxy");
 	signature.EndGroup();
@@ -205,7 +189,7 @@ bool CFlowGraphProxy::GetSignature(TSerialize signature)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFlowGraphProxy::Serialize(TSerialize ser)
+void CFlowGraphComponent::Serialize(TSerialize ser)
 {
 	bool hasFlowGraph = m_pFlowGraph != 0;
 	if (ser.BeginOptionalGroup("FlowGraph", hasFlowGraph))

@@ -53,9 +53,9 @@ protected:
 	//! <description>Deletes this entity.</description>
 	int DeleteThis(IFunctionHandler* pH);
 
-	//! <code>Entity.CreateRenderProxy()</code>
-	//! <description>Create a proxy render object for the entity, allows entity to be rendered without loading any assets in immediately.</description>
-	int CreateRenderProxy(IFunctionHandler* pH);
+	//! <code>Entity.CreateRenderComponent()</code>
+	//! <description>Create a proxy render component for the entity, allows entity to be rendered without loading any assets in immediately.</description>
+	int CreateRenderComponent(IFunctionHandler* pH);
 
 	//! <code>Entity.UpdateShaderParamCallback()</code>
 	//! <description>Check all the currently set shader param callbacks on the renderproxy with the current state of the entity.</description>

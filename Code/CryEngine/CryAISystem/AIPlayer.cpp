@@ -1164,18 +1164,14 @@ bool CAIPlayer::IsGrabbedEntityInView(const Vec3& pos) const
 
 	IEntity* pObjectEntity = GetGrabbedEntity();
 
-	IEntityRenderProxy* pObjectRenderProxy = (pObjectEntity ? static_cast<IEntityRenderProxy*>(pObjectEntity->GetProxy(ENTITY_PROXY_RENDER)) : NULL);
-	if (pObjectRenderProxy)
+	IEntityRenderComponent *pObjectRenderComponent = (pObjectEntity ? pObjectEntity->QueryComponent<IEntityRenderComponent>() : nullptr);
+	if (pObjectRenderComponent)
 	{
-		IRenderNode* pObjectRenderNode = pObjectRenderProxy->GetRenderNode();
-		if (pObjectRenderNode)
-		{
-			const float fDistanceSq = pos.GetSquaredDistance(pObjectEntity->GetWorldPos());
-			const float fMinDist = 4.0f;
-			const float fMaxViewDistSq = sqr(max(pObjectRenderNode->GetMaxViewDist(), fMinDist));
+		const float fDistanceSq = pos.GetSquaredDistance(pObjectEntity->GetWorldPos());
+		const float fMinDist = 4.0f;
+		const float fMaxViewDistSq = sqr(max(pObjectRenderComponent->GetRenderNode()->GetMaxViewDist(), fMinDist));
 
-			bInViewDist = (fDistanceSq <= fMaxViewDistSq);
-		}
+		bInViewDist = (fDistanceSq <= fMaxViewDistSq);
 	}
 
 	return bInViewDist;

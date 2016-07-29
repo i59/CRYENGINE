@@ -768,7 +768,7 @@ bool CVehiclePartBase::SetCGASlot(int jointId, IStatObj* pStatObj, bool bUpdateP
 	else
 		return false;
 	if (bUpdatePhys && GetEntity()->GetPhysics())
-		if (IEntityPhysicalProxy* pProxy = (IEntityPhysicalProxy*)GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS))
+		if (IEntityPhysicsComponent* pProxy = (IEntityPhysicsComponent*)GetEntity()->QueryComponent<IEntityPhysicsComponent>())
 			if (pStatObj)
 			{
 				pe_params_part pp;

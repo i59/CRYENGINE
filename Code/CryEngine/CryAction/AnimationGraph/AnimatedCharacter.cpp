@@ -1582,7 +1582,7 @@ void CAnimatedCharacter::KickOffRagdoll()
 
 		      if (pPhysicalEntity)
 		      {
-		        IEntityPhysicalProxy *pPhysicsProxy=static_cast<IEntityPhysicalProxy *>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS));
+		        IEntityPhysicsComponent *pPhysicsProxy=static_cast<IEntityPhysicsComponent *>(GetEntity()->QueryComponent<IEntityPhysicsComponent>());
 		        if (pPhysicsProxy)
 		        {
 		          GetEntity()->SetWorldTM(delta);

@@ -100,9 +100,9 @@ void CVoiceListener::StartPlaying(bool checkStarted)
 
 	m_pSound->AddEventListener(this, "VoiceListener");
 
-	IEntityAudioProxy* pIEntityAudioProxy = (IEntityAudioProxy*)GetGameObject()->GetEntity()->GetProxy(ENTITY_PROXY_AUDIO);
+	IEntityAudioComponent* pIEntityAudioProxy = (IEntityAudioComponent*)GetGameObject()->GetEntity()->GetProxy(ENTITY_PROXY_AUDIO);
 	if (!pIEntityAudioProxy)
-		pIEntityAudioProxy = (IEntityAudioProxy*)GetGameObject()->GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO);
+		pIEntityAudioProxy = (IEntityAudioComponent*)GetGameObject()->GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO);
 
 	if (pIEntityAudioProxy)
 		pIEntityAudioProxy->PlaySound(m_pSound);

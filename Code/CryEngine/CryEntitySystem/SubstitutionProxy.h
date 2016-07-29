@@ -19,32 +19,24 @@
 // Description:
 //    Implements base substitution proxy class for entity.
 //////////////////////////////////////////////////////////////////////////
-struct CSubstitutionProxy : IEntitySubstitutionProxy
+struct CSubstitutionComponent : IEntitySubstitutionComponent
 {
 public:
-	CSubstitutionProxy() { m_pSubstitute = 0; }
-	~CSubstitutionProxy() { if (m_pSubstitute) m_pSubstitute->ReleaseNode(); };
+	CSubstitutionComponent() { m_pSubstitute = 0; }
+	virtual ~CSubstitutionComponent();
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void ProcessEvent(SEntityEvent& event) {}
-	//////////////////////////////////////////////////////////////////////////
+	// IEntityComponent
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode);
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType()                                           { return ENTITY_PROXY_SUBSTITUTION; }
-	virtual void         Release()                                           { delete this; }
-	virtual void         Done();
-	virtual void         Update(SEntityUpdateContext& ctx)                   {}
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params)  { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading) {}
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         NeedSerialize();
-	virtual bool         GetSignature(TSerialize signature);
-	//////////////////////////////////////////////////////////////////////////
+	virtual void Serialize(TSerialize ser) override;
+	virtual bool NeedSerialize() override;
+	virtual bool GetSignature(TSerialize signature) override;
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
+	{
+		pSizer->AddObject(this, sizeof(*this));
+	}
+	// ~IEntityComponent
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntitySubstitutionProxy interface.
@@ -53,10 +45,6 @@ public:
 	virtual IRenderNode* GetSubstitute() { return m_pSubstitute; }
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const
-	{
-		pSizer->AddObject(this, sizeof(*this));
-	}
 protected:
 	IRenderNode* m_pSubstitute;
 };

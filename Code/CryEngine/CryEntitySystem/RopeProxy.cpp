@@ -19,40 +19,42 @@
 #include <CryNetwork/ISerialize.h>
 
 //////////////////////////////////////////////////////////////////////////
-CRopeProxy::CRopeProxy()
-	: m_pEntity(nullptr)
-	, m_pRopeRenderNode(nullptr)
+CRopeComponent::CRopeComponent()
+	: m_pRopeRenderNode(nullptr)
 	, m_nSegmentsOrg(0)
 	, m_texTileVOrg(0.0f)
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
-CRopeProxy::~CRopeProxy()
+CRopeComponent::~CRopeComponent()
 {
+	// Delete physical entity from physical world.
+	if (m_pRopeRenderNode)
+	{
+		gEnv->p3DEngine->DeleteRenderNode(m_pRopeRenderNode);
+		m_pRopeRenderNode = 0;
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRopeProxy::Initialize(const SComponentInitializer& init)
+void CRopeComponent::Initialize(IEntity &entity)
 {
-	m_pEntity = (CEntity*)init.m_pEntity;
+	m_pEntity = &entity;
 	m_pRopeRenderNode = (IRopeRenderNode*)gEnv->p3DEngine->CreateRenderNode(eERType_Rope);
 	m_pRopeRenderNode->SetEntityOwner(m_pEntity->GetId());
 	m_nSegmentsOrg = -1;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRopeProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
+void CRopeComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
-	m_pEntity = (CEntity*)pEntity;
-
 	assert(m_pRopeRenderNode);
 	if (m_pRopeRenderNode)
 	{
-		m_pRopeRenderNode->SetEntityOwner(pEntity->GetId());
-		m_pRopeRenderNode->SetMatrix(pEntity->GetWorldTM());
+		m_pRopeRenderNode->SetEntityOwner(m_pEntity->GetId());
+		m_pRopeRenderNode->SetMatrix(m_pEntity->GetWorldTM());
 
-		if (pEntity->IsHidden())
+		if (m_pEntity->IsHidden())
 		{
 			m_pRopeRenderNode->SetRndFlags(m_pRopeRenderNode->GetRndFlags() | ERF_HIDDEN);
 		}
@@ -64,24 +66,7 @@ void CRopeProxy::Reload(IEntity* pEntity, SEntitySpawnParams& params)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRopeProxy::Release()
-{
-	// Delete physical entity from physical world.
-	if (m_pRopeRenderNode)
-	{
-		gEnv->p3DEngine->DeleteRenderNode(m_pRopeRenderNode);
-		m_pRopeRenderNode = 0;
-	}
-	delete this;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CRopeProxy::Update(SEntityUpdateContext& ctx)
-{
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CRopeProxy::ProcessEvent(SEntityEvent& event)
+void CRopeComponent::ProcessEvent(SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -139,7 +124,7 @@ void CRopeProxy::ProcessEvent(SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRopeProxy::PreserveParams()
+void CRopeComponent::PreserveParams()
 {
 	if (m_pRopeRenderNode && m_nSegmentsOrg < 0)
 	{
@@ -150,13 +135,7 @@ void CRopeProxy::PreserveParams()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CRopeProxy::NeedSerialize()
-{
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CRopeProxy::GetSignature(TSerialize signature)
+bool CRopeComponent::GetSignature(TSerialize signature)
 {
 	signature.BeginGroup("RopeProxy");
 	signature.EndGroup();
@@ -164,7 +143,7 @@ bool CRopeProxy::GetSignature(TSerialize signature)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRopeProxy::Serialize(TSerialize ser)
+void CRopeComponent::Serialize(TSerialize ser)
 {
 	if (m_pRopeRenderNode && m_pRopeRenderNode->GetPhysics())
 		if (ser.IsReading())
@@ -281,7 +260,7 @@ inline void RopeParamsToXml(IRopeRenderNode::SRopeParams& rp, XmlNodeRef& node, 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRopeProxy::SerializeXML(XmlNodeRef& entityNode, bool bLoading)
+void CRopeComponent::SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit)
 {
 	IRopeRenderNode::SRopeParams ropeParams = m_pRopeRenderNode->GetParams();
 	if (bLoading)

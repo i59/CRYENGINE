@@ -222,7 +222,7 @@ CLodValue CEntityObject::ComputeLod(int wantedLod, const SRenderingPassInfo& pas
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityObject::Render(CEntity* pEntity, SRendParams& rParams, int nRndFlags, CRenderProxy* pRenderProxy, const SRenderingPassInfo& passInfo)
+void CEntityObject::Render(CEntity* pEntity, SRendParams& rParams, int nRndFlags, CRenderComponent* pRenderComponent, const SRenderingPassInfo& passInfo)
 {
 	if (!bWorldTMValid)
 	{
@@ -343,8 +343,8 @@ void CEntityObject::Render(CEntity* pEntity, SRendParams& rParams, int nRndFlags
 
 		pCharacter->Render(rParams, Offset, passInfo);
 
-		const uint32 renderProxyFlags = pRenderProxy->GetFlags();
-		if (!passInfo.IsShadowPass() || (renderProxyFlags & CRenderProxy::FLAG_ANIMATE_OFFSCREEN_SHADOW))
+		const uint32 renderProxyFlags = pRenderComponent->GetFlags();
+		if (!passInfo.IsShadowPass() || (renderProxyFlags & CRenderComponent::FLAG_ANIMATE_OFFSCREEN_SHADOW))
 		{
 			// If We render character, make sure it is also gets animation activated.
 			if (!pEntity->m_bInActiveList)

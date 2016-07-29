@@ -27,11 +27,14 @@ CEntityLayer::~CEntityLayer()
 		CEntity* pEntity = (CEntity*) (g_pIEntitySystem->GetEntityFromID(it->first));
 		if (!pEntity)
 			continue;
-		if (it->second.m_bIsNoAwake && pEntity->GetPhysicalProxy() && pEntity->GetPhysicalProxy()->GetPhysicalEntity())
+		if (it->second.m_bIsNoAwake)
 		{
-			pe_action_awake aa;
-			aa.bAwake = false;
-			pEntity->GetPhysicalProxy()->GetPhysicalEntity()->Action(&aa);
+			if(auto *pPhysics = pEntity->GetPhysics())
+			{
+				pe_action_awake aa;
+				aa.bAwake = false;
+				pPhysics->Action(&aa);
+			}
 		}
 		it->second.m_bIsNoAwake = false;
 	}
@@ -216,8 +219,13 @@ void CEntityLayer::EnableEntities(bool isEnable)
 				pEntity->Hide(!isEnable);
 				pEntity->Activate(prop.m_bIsActive);
 
-				if (prop.m_bIsNoAwake && pEntity->GetPhysicalProxy() && pEntity->GetPhysicalProxy()->GetPhysicalEntity())
-					pEntity->GetPhysicalProxy()->GetPhysicalEntity()->Action(&noAwake);
+				if (prop.m_bIsNoAwake)
+				{
+					if (auto *pPhysics = pEntity->GetPhysics())
+					{
+						pPhysics->Action(&noAwake);
+					}
+				}
 
 				prop.m_bIsNoAwake = false;
 
@@ -240,18 +248,23 @@ void CEntityLayer::EnableEntities(bool isEnable)
 			else
 			{
 				prop.m_bIsNoAwake = false;
-				CPhysicalProxy* pPhProxy = pEntity->GetPhysicalProxy();
-				if (pPhProxy)
+				if (auto *pPhysics = pEntity->GetPhysics())
 				{
 					pe_status_awake isawake;
-					IPhysicalEntity* pPhEnt = pPhProxy->GetPhysicalEntity();
-					if (pPhEnt && pPhEnt->GetStatus(&isawake) == 0)
+					if (pPhysics->GetStatus(&isawake) == 0)
 						prop.m_bIsNoAwake = true;
 				}
+
 				pEntity->Hide(!isEnable);
 				pEntity->Activate(isEnable);
-				if (prop.m_bIsNoAwake && pEntity->GetPhysicalProxy() && pEntity->GetPhysicalProxy()->GetPhysicalEntity())
-					pEntity->GetPhysicalProxy()->GetPhysicalEntity()->Action(&noAwake);
+
+				if (prop.m_bIsNoAwake)
+				{
+					if (auto *pPhysics = pEntity->GetPhysics())
+					{
+						pPhysics->Action(&noAwake);
+					}
+				}
 			}
 		}
 

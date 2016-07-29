@@ -85,7 +85,7 @@ public:
 					if (pActInfo->pEntity)
 					{
 						const string& signalName = GetPortString(pActInfo, eIn_SignalName);
-						IEntityDynamicResponseProxyPtr const pIEntityDrsProxy = crycomponent_cast<IEntityDynamicResponseProxyPtr>(pActInfo->pEntity->CreateProxy(ENTITY_PROXY_DYNAMICRESPONSE));
+						auto &dynamicResponseComponent = pActInfo->pEntity->CreateDynamicResponseComponent();
 
 						SET_DRS_USER_SCOPED("SendDrsSignal FlowGraph");
 
@@ -113,11 +113,11 @@ public:
 						if (IsOutputConnected(pActInfo, eOut_Done)) //we only need to register ourself as a listener to the signal, if the done port is used
 						{
 							m_actInfo = *pActInfo;
-							signalID = pIEntityDrsProxy->GetResponseActor()->QueueSignal(signalName, pContextVariableCollection, this);
+							signalID = dynamicResponseComponent.GetResponseActor()->QueueSignal(signalName, pContextVariableCollection, this);
 						}
 						else
 						{
-							signalID = pIEntityDrsProxy->GetResponseActor()->QueueSignal(signalName, pContextVariableCollection);
+							signalID = dynamicResponseComponent.GetResponseActor()->QueueSignal(signalName, pContextVariableCollection);
 						}
 
 						ActivateOutput(pActInfo, eOut_SignalSent, static_cast<int>(signalID));
@@ -219,8 +219,9 @@ public:
 					const string& signalName = GetPortString(pActInfo, eIn_SignalName);
 					if (pActInfo->pEntity)
 					{
-						IEntityDynamicResponseProxyPtr const pIEntityDrsProxy = crycomponent_cast<IEntityDynamicResponseProxyPtr>(pActInfo->pEntity->CreateProxy(ENTITY_PROXY_DYNAMICRESPONSE));
-						gEnv->pDynamicResponseSystem->CancelSignalProcessing(signalName, pIEntityDrsProxy->GetResponseActor());
+						auto &dynamicResponseComponent = pActInfo->pEntity->CreateDynamicResponseComponent();
+
+						gEnv->pDynamicResponseSystem->CancelSignalProcessing(signalName, dynamicResponseComponent.GetResponseActor());
 					}
 					else
 					{

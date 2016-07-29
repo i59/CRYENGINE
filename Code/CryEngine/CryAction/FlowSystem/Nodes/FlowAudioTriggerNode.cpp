@@ -187,37 +187,34 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	void ExecuteOnProxy(IEntity* const pEntity, AudioControlId const nTriggerID, EPlayMode const ePlayMode)
 	{
-		IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+		auto &audioComponent = pEntity->CreateAudioComponent();
 
-		if (pIEntityAudioProxy != nullptr)
+		switch (ePlayMode)
 		{
-			switch (ePlayMode)
+		case ePM_Play:
 			{
-			case ePM_Play:
-				{
-					SAudioCallBackInfo const callbackInfo(this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_playActivationInfo.pGraph->GetGraphId())), this, eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
-					pIEntityAudioProxy->SetCurrentEnvironments();
-					pIEntityAudioProxy->ExecuteTrigger(nTriggerID, DEFAULT_AUDIO_PROXY_ID, callbackInfo);
+				SAudioCallBackInfo const callbackInfo(this, reinterpret_cast<void*>(static_cast<UINT_PTR>(m_playActivationInfo.pGraph->GetGraphId())), this, eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
+				audioComponent.SetCurrentEnvironments();
+				audioComponent.ExecuteTrigger(nTriggerID, DEFAULT_AUDIO_PROXY_ID, callbackInfo);
 
-					break;
-				}
-			case ePM_PlayStop:
-				{
-					pIEntityAudioProxy->SetCurrentEnvironments();
-					pIEntityAudioProxy->ExecuteTrigger(nTriggerID);
+				break;
+			}
+		case ePM_PlayStop:
+			{
+				audioComponent.SetCurrentEnvironments();
+				audioComponent.ExecuteTrigger(nTriggerID);
 
-					break;
-				}
-			case ePM_ForceStop:
-				{
-					pIEntityAudioProxy->StopTrigger(nTriggerID);
+				break;
+			}
+		case ePM_ForceStop:
+			{
+				audioComponent.StopTrigger(nTriggerID);
 
-					break;
-				}
-			default:
-				{
-					assert(false);// Unknown play mode!
-				}
+				break;
+			}
+		default:
+			{
+				assert(false);// Unknown play mode!
 			}
 		}
 	}

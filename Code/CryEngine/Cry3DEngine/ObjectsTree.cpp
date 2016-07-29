@@ -431,7 +431,7 @@ void COctreeNode::CompileObjects()
 							pObj->m_nInternalFlags |= IRenderNode::REQUIRES_NEAREST_CUBEMAP;
 					}
 
-					if (eRType == eERType_RenderProxy)
+					if (eRType == eERType_RenderComponent)
 					{
 						int nSlotCount = pObj->GetSlotCount();
 
@@ -908,7 +908,7 @@ void COctreeNode::MoveObjectsIntoList(PodArray<SRNInfo>* plstResultEntities, con
 			{
 				EERType eRType = pObj->GetRenderNodeType();
 
-				if (eRType == eERType_RenderProxy)
+				if (eRType == eERType_RenderComponent)
 				{
 					if (pObj->IsMovableByGame())
 						continue;
@@ -2822,7 +2822,7 @@ void COctreeNode::RenderCommonObjects(TDoublyLinkedList<IRenderNode>* lstObjects
 
 				if (nRenderMask & OCTREENODE_RENDER_FLAG_OBJECTS_ONLY_ENTITIES)
 				{
-					if (rnType != eERType_RenderProxy)
+					if (rnType != eERType_RenderComponent)
 					{
 						if (rnType == eERType_Light)
 						{
@@ -2873,7 +2873,7 @@ void COctreeNode::RenderCommonObjects(TDoublyLinkedList<IRenderNode>* lstObjects
 					if (rnType == eERType_DistanceCloud || GetObjManager()->CheckOcclusion_TestAABB(objBox, fEntDistance))
 					{
 						if (pObj->CanExecuteRenderAsJob())
-							GetObjManager()->RenderObject(pObj, pAffectingLights, vAmbColor, objBox, fEntDistance, bSunOnly, eERType_RenderProxy, passInfo);
+							GetObjManager()->RenderObject(pObj, pAffectingLights, vAmbColor, objBox, fEntDistance, bSunOnly, eERType_RenderComponent, passInfo);
 						else
 						{
 							GetObjManager()->PushIntoCullOutputQueue(SCheckOcclusionOutput::CreateCommonObjectOutput(pObj, pAffectingLights, vAmbColor, objBox, fEntDistance, bSunOnly, pTerrainTexInfo, passInfo));
@@ -3182,7 +3182,7 @@ void COctreeNode::UpdateObjects(IRenderNode* pObj)
 					pObj->m_nInternalFlags |= IRenderNode::REQUIRES_NEAREST_CUBEMAP;
 			}
 
-			if (eRType == eERType_RenderProxy)
+			if (eRType == eERType_RenderComponent)
 			{
 				int nSlotCount = pObj->GetSlotCount();
 

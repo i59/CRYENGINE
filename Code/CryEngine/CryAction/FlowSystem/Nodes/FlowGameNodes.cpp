@@ -767,10 +767,9 @@ public:
 				IEntity* ent = pActInfo->pEntity;
 				if (ent)
 				{
-					IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)ent->GetProxy(ENTITY_PROXY_SCRIPT);
 					state = "invalid script";
-					if (pScriptProxy)
-						state = pScriptProxy->GetState();
+					if (auto *pScriptComponent = pActInfo->pEntity->QueryComponent<IEntityScriptComponent>())
+						state = pScriptComponent->GetState();
 				}
 
 				ActivateOutput(pActInfo, OUT_STATE, state);

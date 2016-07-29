@@ -34,7 +34,7 @@ typedef uint attachMask, attachMaskLoc;
 // Description:
 //    Implements base physical proxy class for entity.
 //////////////////////////////////////////////////////////////////////////
-class CPhysicalProxy : public IEntityPhysicalProxy
+class CPhysicsComponent : public IEntityPhysicsComponent
 {
 public:
 	enum EFlags
@@ -55,37 +55,31 @@ public:
 		FLAG_PHYSICS_REMOVED           = 0x4000,
 	};
 
-	CPhysicalProxy();
-	~CPhysicalProxy() {};
-	CEntity* GetEntity() const { return m_pEntity; };
+	CPhysicsComponent();
+	~CPhysicsComponent();
+
+	// IEntityComponent
+	virtual void ProcessEvent(SEntityEvent& event) override;
+
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
+	virtual void Update(SEntityUpdateContext& ctx) override;
+
+	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) override;
+	virtual void Serialize(TSerialize ser) override;
+
+	virtual bool NeedSerialize() override;
+
+	virtual bool GetSignature(TSerialize signature) override;
+	// ~IEntityComponent
+
+	CEntity *GetCEntity() const;
 
 	//////////////////////////////////////////////////////////////////////////
-	// IEntityEvent interface implementation.
+	// IEntityPhysicsComponent interface.
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize(const SComponentInitializer& init);
-	virtual void ProcessEvent(SEntityEvent& event);
-	//////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType() { return ENTITY_PROXY_PHYSICS; }
-	virtual void         Release();
-	virtual void         Done();
-	virtual void         Update(SEntityUpdateContext& ctx);
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& params) { return true; }
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool bLoading);
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         NeedSerialize();
 	virtual void         SerializeTyped(TSerialize ser, int type, int flags);
-	virtual bool         GetSignature(TSerialize signature);
 	virtual void         EnableNetworkSerialization(bool enable);
-	//////////////////////////////////////////////////////////////////////////
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityPhysicalProxy interface.
-	//////////////////////////////////////////////////////////////////////////
 	virtual void             GetLocalBounds(AABB& bbox);
 	virtual void             GetWorldBounds(AABB& bbox);
 
@@ -128,7 +122,7 @@ public:
 	int               AddSlotGeometry(int nSlot, SEntityPhysicalizeParams& params, int bNoSubslots = 1);
 	void              RemoveSlotGeometry(int nSlot);
 
-	void              MovePhysics(CPhysicalProxy* dstPhysics);
+	void              MovePhysics(CPhysicsComponent* dstPhysics);
 
 	virtual void      GetMemoryUsage(ICrySizer* pSizer) const;
 	void              ReattachSoftEntityVtx(IPhysicalEntity* pAttachToEntity, int nAttachToPart);
@@ -178,8 +172,6 @@ protected:
 
 	uint32   m_nFlags;
 
-	CEntity* m_pEntity;
-
 	// Pointer to physical object.
 	IPhysicalEntity* m_pPhysicalEntity;
 
@@ -197,6 +189,6 @@ protected:
 	float      m_timeLastSync;
 };
 
-DECLARE_COMPONENT_POINTERS(CPhysicalProxy);
+DECLARE_COMPONENT_POINTERS(CPhysicsComponent);
 
 #endif // __PhysicsProxy_h__

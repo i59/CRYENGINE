@@ -143,7 +143,7 @@ void CLipSyncProvider_TransitionQueue::GetEntityPoolSignature(TSerialize signatu
 	signature.EndGroup();
 }
 
-void CLipSyncProvider_TransitionQueue::RequestLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
+void CLipSyncProvider_TransitionQueue::RequestLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
 {
 	CRY_ASSERT(pProxy);
 	CRY_ASSERT(audioTriggerId != INVALID_AUDIO_CONTROL_ID);
@@ -173,7 +173,7 @@ void CLipSyncProvider_TransitionQueue::RequestLipSync(IEntityAudioProxy* pProxy,
 	m_state = eS_Requested;
 }
 
-void CLipSyncProvider_TransitionQueue::StartLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
+void CLipSyncProvider_TransitionQueue::StartLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
 {
 	CRY_ASSERT(pProxy);
 	CRY_ASSERT(audioTriggerId != INVALID_AUDIO_CONTROL_ID);
@@ -205,7 +205,7 @@ void CLipSyncProvider_TransitionQueue::StartLipSync(IEntityAudioProxy* pProxy, c
 	m_state = eS_Started;
 }
 
-void CLipSyncProvider_TransitionQueue::PauseLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
+void CLipSyncProvider_TransitionQueue::PauseLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
 {
 	CRY_ASSERT(pProxy);
 	CRY_ASSERT(audioTriggerId != INVALID_AUDIO_CONTROL_ID);
@@ -215,7 +215,7 @@ void CLipSyncProvider_TransitionQueue::PauseLipSync(IEntityAudioProxy* pProxy, c
 	m_state = eS_Paused;
 }
 
-void CLipSyncProvider_TransitionQueue::UnpauseLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
+void CLipSyncProvider_TransitionQueue::UnpauseLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
 {
 	CRY_ASSERT(pProxy);
 	CRY_ASSERT(audioTriggerId != INVALID_AUDIO_CONTROL_ID);
@@ -231,7 +231,7 @@ void CLipSyncProvider_TransitionQueue::UnpauseLipSync(IEntityAudioProxy* pProxy,
 	m_state = eS_Unpaused;
 }
 
-void CLipSyncProvider_TransitionQueue::StopLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
+void CLipSyncProvider_TransitionQueue::StopLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
 {
 	CRY_ASSERT(pProxy);
 	CRY_ASSERT(audioTriggerId != INVALID_AUDIO_CONTROL_ID);
@@ -268,7 +268,7 @@ void CLipSyncProvider_TransitionQueue::StopLipSync(IEntityAudioProxy* pProxy, co
 	m_state = eS_Stopped;
 }
 
-void CLipSyncProvider_TransitionQueue::UpdateLipSync(IEntityAudioProxy* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
+void CLipSyncProvider_TransitionQueue::UpdateLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
 {
 	CRY_ASSERT(pProxy);
 
@@ -395,8 +395,7 @@ void CLipSyncProvider_TransitionQueue::SynchronizeAnimationToSound(const AudioCo
 void CLipSync_TransitionQueue::InjectLipSyncProvider()
 {
 	IEntity* pEntity = GetEntity();
-	IEntityAudioProxy* pSoundProxy = static_cast<IEntityAudioProxy*>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO).get());
-	CRY_ASSERT(pSoundProxy);
+	auto &audioComponent = pEntity->CreateAudioComponent();
 	m_pLipSyncProvider.reset(new CLipSyncProvider_TransitionQueue(pEntity->GetId()));
 	REINST(add SetLipSyncProvider to interface)
 	//pSoundProxy->SetLipSyncProvider(m_pLipSyncProvider);
@@ -455,7 +454,7 @@ bool CLipSync_TransitionQueue::GetEntityPoolSignature(TSerialize signature)
 void CLipSync_TransitionQueue::Release()
 {
 	IEntity* pEntity = GetEntity();
-	if (IEntityAudioProxy* pSoundProxy = static_cast<IEntityAudioProxy*>(pEntity->GetProxy(ENTITY_PROXY_AUDIO)))
+	if (auto *pAudioComponent = pEntity->QueryComponent<IEntityAudioComponent>())
 	{
 		REINST(add SetLipSyncProvider to interface)
 		//pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());

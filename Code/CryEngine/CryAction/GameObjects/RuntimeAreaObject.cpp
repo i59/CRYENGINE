@@ -128,51 +128,49 @@ void CRuntimeAreaObject::UpdateParameterValues(IEntity* const pEntity, TAudioPar
 	static float const fParamEpsilon = 0.001f;
 	static float const fMaxDensity = 256.0f;
 
-	IEntityAudioProxy* const pAudioProxy = static_cast<IEntityAudioProxy*>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO).get());
-	if (pAudioProxy != NULL)
+	auto &audioComponent = pEntity->CreateAudioComponent();
+
+	ISurfaceType* aSurfaceTypes[MMRM_MAX_SURFACE_TYPES];
+	memset(aSurfaceTypes, 0x0, sizeof(aSurfaceTypes));
+
+	float aDensities[MMRM_MAX_SURFACE_TYPES];
+	memset(aDensities, 0x0, sizeof(aDensities));
+
+	gEnv->p3DEngine->GetIMergedMeshesManager()->QueryDensity(pEntity->GetPos(), aSurfaceTypes, aDensities);
+
+	for (int i = 0; i < MMRM_MAX_SURFACE_TYPES && (aSurfaceTypes[i] != NULL); ++i)
 	{
-		ISurfaceType* aSurfaceTypes[MMRM_MAX_SURFACE_TYPES];
-		memset(aSurfaceTypes, 0x0, sizeof(aSurfaceTypes));
+		float const fNewParamValue = aDensities[i] / fMaxDensity;
+		TSurfaceCRC const nSurfaceCrc = CCrc32::ComputeLowercase(aSurfaceTypes[i]->GetName());
 
-		float aDensities[MMRM_MAX_SURFACE_TYPES];
-		memset(aDensities, 0x0, sizeof(aDensities));
-
-		gEnv->p3DEngine->GetIMergedMeshesManager()->QueryDensity(pEntity->GetPos(), aSurfaceTypes, aDensities);
-
-		for (int i = 0; i < MMRM_MAX_SURFACE_TYPES && (aSurfaceTypes[i] != NULL); ++i)
+		TAudioParameterMap::iterator iSoundPair = paramMap.find(nSurfaceCrc);
+		if (iSoundPair == paramMap.end())
 		{
-			float const fNewParamValue = aDensities[i] / fMaxDensity;
-			TSurfaceCRC const nSurfaceCrc = CCrc32::ComputeLowercase(aSurfaceTypes[i]->GetName());
-
-			TAudioParameterMap::iterator iSoundPair = paramMap.find(nSurfaceCrc);
-			if (iSoundPair == paramMap.end())
+			if (fNewParamValue > 0.0f)
 			{
-				if (fNewParamValue > 0.0f)
+				// The sound for this surface is not yet playing on this entity, needs to be started.
+				TAudioControlMap::const_iterator const iAudioControls = m_audioControls.find(nSurfaceCrc);
+				if (iAudioControls != m_audioControls.end())
 				{
-					// The sound for this surface is not yet playing on this entity, needs to be started.
-					TAudioControlMap::const_iterator const iAudioControls = m_audioControls.find(nSurfaceCrc);
-					if (iAudioControls != m_audioControls.end())
-					{
-						SAudioControls const& rAudioControls = iAudioControls->second;
+					SAudioControls const& rAudioControls = iAudioControls->second;
 
-						pAudioProxy->SetRtpcValue(rAudioControls.audioRtpcId, fNewParamValue);
-						pAudioProxy->ExecuteTrigger(rAudioControls.audioTriggerId);
+					audioComponent.SetRtpcValue(rAudioControls.audioRtpcId, fNewParamValue);
+					audioComponent.ExecuteTrigger(rAudioControls.audioTriggerId);
 
-						paramMap.insert(
-						  std::pair<TSurfaceCRC, SAreaSoundInfo>(
-						    nSurfaceCrc,
-						    SAreaSoundInfo(rAudioControls, fNewParamValue)));
-					}
+					paramMap.insert(
+						std::pair<TSurfaceCRC, SAreaSoundInfo>(
+						nSurfaceCrc,
+						SAreaSoundInfo(rAudioControls, fNewParamValue)));
 				}
 			}
-			else
+		}
+		else
+		{
+			SAreaSoundInfo& oSoundInfo = iSoundPair->second;
+			if (fabs_tpl(fNewParamValue - oSoundInfo.parameter) >= fParamEpsilon)
 			{
-				SAreaSoundInfo& oSoundInfo = iSoundPair->second;
-				if (fabs_tpl(fNewParamValue - oSoundInfo.parameter) >= fParamEpsilon)
-				{
-					oSoundInfo.parameter = fNewParamValue;
-					pAudioProxy->SetRtpcValue(oSoundInfo.audioControls.audioRtpcId, oSoundInfo.parameter);
-				}
+				oSoundInfo.parameter = fNewParamValue;
+				audioComponent.SetRtpcValue(oSoundInfo.audioControls.audioRtpcId, oSoundInfo.parameter);
 			}
 		}
 	}
@@ -184,16 +182,14 @@ void CRuntimeAreaObject::StopEntitySounds(EntityId const entityId, TAudioParamet
 	IEntity* const pEntity = gEnv->pEntitySystem->GetEntity(entityId);
 	if (pEntity != NULL)
 	{
-		IEntityAudioProxy* const pAudioProxy = static_cast<IEntityAudioProxy*>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO).get());
-		if (pAudioProxy != NULL)
-		{
-			for (TAudioParameterMap::const_iterator iSoundPair = paramMap.begin(), iSoundPairEnd = paramMap.end(); iSoundPair != iSoundPairEnd; ++iSoundPair)
-			{
-				pAudioProxy->StopTrigger(iSoundPair->second.audioControls.audioTriggerId);
-				pAudioProxy->SetRtpcValue(iSoundPair->second.audioControls.audioRtpcId, 0.0f);
-			}
+		auto &audioComponent = pEntity->CreateAudioComponent();
 
-			paramMap.clear();
+		for (TAudioParameterMap::const_iterator iSoundPair = paramMap.begin(), iSoundPairEnd = paramMap.end(); iSoundPair != iSoundPairEnd; ++iSoundPair)
+		{
+			audioComponent.StopTrigger(iSoundPair->second.audioControls.audioTriggerId);
+			audioComponent.SetRtpcValue(iSoundPair->second.audioControls.audioRtpcId, 0.0f);
 		}
+
+		paramMap.clear();
 	}
 }

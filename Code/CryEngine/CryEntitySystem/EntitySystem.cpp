@@ -57,7 +57,7 @@
 
 #pragma warning(disable: 6255)  // _alloca indicates failure by raising a stack overflow exception. Consider using _malloca instead. (Note: _malloca requires _freea.)
 
-stl::PoolAllocatorNoMT<sizeof(CRenderProxy)>* g_Alloc_RenderProxy = 0;
+stl::PoolAllocatorNoMT<sizeof(CRenderComponent)>* g_Alloc_RenderComponent = 0;
 stl::PoolAllocatorNoMT<sizeof(CEntityObject), 8>* g_Alloc_EntitySlot = 0;
 
 namespace
@@ -250,10 +250,10 @@ void SEntityLoadParams::RemoveRef()
 CEntitySystem::CEntitySystem(ISystem* pSystem)
 	: m_entityTimeoutList(gEnv->pTimer)
 {
-	CRenderProxy::SetTimeoutList(&m_entityTimeoutList);
+	CRenderComponent::SetTimeoutList(&m_entityTimeoutList);
 
 	// Assign allocators.
-	g_Alloc_RenderProxy = new stl::PoolAllocatorNoMT<sizeof(CRenderProxy)>(stl::FHeap().FreeWhenEmpty(true));
+	g_Alloc_RenderComponent = new stl::PoolAllocatorNoMT<sizeof(CRenderComponent)>(stl::FHeap().FreeWhenEmpty(true));
 	g_Alloc_EntitySlot = new stl::PoolAllocatorNoMT<sizeof(CEntityObject), 8>(stl::FHeap().FreeWhenEmpty(true));
 
 	m_onEventSinks.reserve(5);
@@ -308,7 +308,7 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 //////////////////////////////////////////////////////////////////////
 CEntitySystem::~CEntitySystem()
 {
-	CRenderProxy::SetTimeoutList(0);
+	CRenderComponent::SetTimeoutList(0);
 
 	Unload();
 
@@ -330,7 +330,7 @@ CEntitySystem::~CEntitySystem()
 	SAFE_DELETE(m_pPartitionGrid);
 	SAFE_DELETE(m_pBreakableManager);
 
-	SAFE_DELETE(g_Alloc_RenderProxy);
+	SAFE_DELETE(g_Alloc_RenderComponent);
 	SAFE_DELETE(g_Alloc_EntitySlot);
 	//ShutDown();
 }
@@ -383,7 +383,7 @@ void CEntitySystem::RegisterPhysicCallbacks()
 	if (m_pPhysicsEventListener)
 		m_pPhysicsEventListener->RegisterPhysicCallbacks();
 #if !defined(_RELEASE)
-	CPhysicalProxy::EnableValidation();
+	CPhysicsComponent::EnableValidation();
 #endif
 }
 
@@ -392,7 +392,7 @@ void CEntitySystem::UnregisterPhysicCallbacks()
 	if (m_pPhysicsEventListener)
 		m_pPhysicsEventListener->UnregisterPhysicCallbacks();
 #if !defined(_RELEASE)
-	CPhysicalProxy::DisableValidation();
+	CPhysicsComponent::DisableValidation();
 #endif
 }
 
@@ -1092,7 +1092,7 @@ IEntity* CEntitySystem::GetEntityFromPhysics(IPhysicalEntity* pPhysEntity) const
 		pEntity = (CEntity*)pPhysEntity->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
 	return pEntity;
 
-	//CPhysicalProxy *pPhysProxy = (CPhysicalProxy*)pPhysEntity->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
+	//CPhysicsComponent *pPhysProxy = (CPhysicsComponent*)pPhysEntity->GetForeignData(PHYS_FOREIGN_ID_ENTITY);
 	//if (pPhysProxy)
 	//return pPhysProxy->GetEntity();
 	//return NULL;
@@ -1792,12 +1792,12 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 							bAIEnabled = aiObject->GetProxy()->GetLinkedDriverEntityId() != 0;
 					}
 
-					CRenderProxy* pProxy = ce->GetRenderProxy();
+					auto *pRenderComponent = ce->QueryComponent<IEntityRenderComponent>();
 
 					float fDiff = -1;
-					if (pProxy)
+					if (pRenderComponent)
 					{
-						fDiff = gEnv->pTimer->GetCurrTime() - pProxy->GetLastSeenTime();
+						fDiff = gEnv->pTimer->GetCurrTime() - pRenderComponent->GetLastSeenTime();
 						if (bProfileEntitiesToLog)
 							CryLogAlways("(%d) %.3f ms : %s (was last visible %0.2f seconds ago)-AI =%s (%s)", nCounter, timeMs, ce->GetEntityTextDescription().c_str(), fDiff, bIsAI ? "" : "NOT an AI", bAIEnabled ? "true" : "false");
 					}
@@ -1807,7 +1807,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 							CryLogAlways("(%d) %.3f ms : %s -AI =%s (%s) ", nCounter, timeMs, ce->GetEntityTextDescription().c_str(), bIsAI ? "" : "NOT an AI", bAIEnabled ? "true" : "false");
 					}
 
-					if (bProfileEntitiesDesigner && (pProxy && bIsAI))
+					if (bProfileEntitiesDesigner && pRenderComponent && bIsAI)
 					{
 						if (((fDiff > 180) && ce->HasAI()) || !bAIEnabled)
 						{
@@ -1841,11 +1841,11 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 				if (!ce)
 					continue;
 
-				if (ce->GetProxy(ENTITY_PROXY_RENDER))
+				if (auto *pRenderComponent = ce->QueryComponent<IEntityRenderComponent>())
 					nNumRenderable++;
-				if (ce->GetProxy(ENTITY_PROXY_PHYSICS))
+				if (auto *pPhysicsComponent = ce->QueryComponent<IEntityPhysicsComponent>())
 					nNumPhysicalize++;
-				if (ce->GetProxy(ENTITY_PROXY_SCRIPT))
+				if (auto *pScriptComponent = ce->QueryComponent<IEntityScriptComponent>())
 					nNumScriptable++;
 
 				if (ce->m_bGarbage || ce->GetUpdateStatus())
@@ -2432,9 +2432,8 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 			float colorsYellow[4] = { 1, 1, 0, 1 };
 			float colorsRed[4] = { 1, 0, 0, 1 };
 
-			CRenderProxy* pProxy = ce->GetRenderProxy();
-			if (pProxy)
-				cry_sprintf(szProfInfo, "%.3f ms : %s (%0.2f ago)", timeMs, ce->GetEntityTextDescription().c_str(), gEnv->pTimer->GetCurrTime() - pProxy->GetLastSeenTime());
+			if (auto *pRenderComponent = ce->QueryComponent<IEntityRenderComponent>())
+				cry_sprintf(szProfInfo, "%.3f ms : %s (%0.2f ago)", timeMs, ce->GetEntityTextDescription().c_str(), gEnv->pTimer->GetCurrTime() - pRenderComponent->GetLastSeenTime());
 			else
 				cry_sprintf(szProfInfo, "%.3f ms : %s", timeMs, ce->GetEntityTextDescription().c_str());
 			if (timeMs > 0.5f)
@@ -2449,10 +2448,10 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 			{
 				pRender->DrawLabelEx(wp, 1.1f, colors, true, true, "%s", szProfInfo);
 
-				if (ce->GetPhysicalProxy() && ce->GetPhysicalProxy()->GetPhysicalEntity())
+				if (auto *pPhysics = ce->GetPhysics())
 				{
 					pe_status_pos pe;
-					ce->GetPhysicalProxy()->GetPhysicalEntity()->GetStatus(&pe);
+					pPhysics->GetStatus(&pe);
 					cry_sprintf(szProfInfo, "Physics: %8.5f %8.5f %8.5f", pe.pos.x, pe.pos.y, pe.pos.z);
 					wp.z -= 0.1f;
 					pRender->DrawLabelEx(wp, 1.1f, colors, true, true, "%s", szProfInfo);
@@ -2740,7 +2739,7 @@ void CEntitySystem::SetNextSpawnId(EntityId id)
 void CEntitySystem::ResetAreas()
 {
 	m_pAreaManager->ResetAreas();
-	CAreaProxy::ResetTempState();
+	CAreaComponent::ResetTempState();
 }
 
 void CEntitySystem::UnloadAreas()
@@ -3472,10 +3471,10 @@ void CEntitySystem::UpdateEngineCVars()
 
 	assert(p_e_view_dist_min && p_e_view_dist_ratio && p_e_view_dist_ratio_detail);
 
-	CRenderProxy::SetViewDistMin(p_e_view_dist_min->GetFVal());
-	CRenderProxy::SetViewDistRatio(p_e_view_dist_ratio->GetFVal());
-	CRenderProxy::SetViewDistRatioCustom(p_e_view_dist_ratio_custom->GetFVal());
-	CRenderProxy::SetViewDistRatioDetail(p_e_view_dist_ratio_detail->GetFVal());
+	CRenderComponent::SetViewDistMin(p_e_view_dist_min->GetFVal());
+	CRenderComponent::SetViewDistRatio(p_e_view_dist_ratio->GetFVal());
+	CRenderComponent::SetViewDistRatioCustom(p_e_view_dist_ratio_custom->GetFVal());
+	CRenderComponent::SetViewDistRatioDetail(p_e_view_dist_ratio_detail->GetFVal());
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -3570,9 +3569,9 @@ void CEntitySystem::DebugDrawProximityTriggers()
 
 			ColorB color(255, 0, 0);  // Red indicates an error
 
-			if (IEntityScriptProxy* pEntityScriptProxy = static_cast<IEntityScriptProxy*>(pEntity->GetProxy(ENTITY_PROXY_SCRIPT)))
+			if(auto *pScriptComponent = pEntity->QueryComponent<IEntityScriptComponent>())
 			{
-				if (IScriptTable* pScriptTable = pEntityScriptProxy->GetScriptTable())
+				if (IScriptTable* pScriptTable = pScriptComponent->GetScriptTable())
 				{
 					bool bEnabled;
 					if (pScriptTable->GetValue("enabled", bEnabled))
@@ -3641,7 +3640,7 @@ void CEntitySystem::DoPrePhysicsUpdateFast()
 
 void CEntitySystem::RegisterCharactersForRendering()
 {
-	CRenderProxy::RegisterCharactersForRendering();
+	CRenderComponent::RegisterCharactersForRendering();
 }
 
 IBSPTree3D* CEntitySystem::CreateBSPTree3D(const IBSPTree3D::FaceList& faceList)

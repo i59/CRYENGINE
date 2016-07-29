@@ -1826,7 +1826,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 	{
 		for (int nObjType = 0; nObjType < eERType_TypesNum; nObjType++)
 		{
-			if ((bThisIsAreaParent && (nObjType == eERType_Brush || nObjType == eERType_RenderProxy)) || (nObjType == eERType_Vegetation))
+			if ((bThisIsAreaParent && (nObjType == eERType_Brush || nObjType == eERType_RenderComponent)) || (nObjType == eERType_Vegetation))
 			{
 				PodArray<IRenderNode*> arrRenderNodes;
 
@@ -1873,7 +1873,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 
 					int nMaxSlots = 1;
 					int nMaxSubSlots = 1;
-					if (pNode->GetRenderNodeType() == eERType_RenderProxy)
+					if (pNode->GetRenderNodeType() == eERType_RenderComponent)
 					{
 						if (!strstr(pNode->GetName(), "_TI_VOX"))
 							continue;
@@ -1900,7 +1900,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 								info.matObj = nodeTM;
 								info.pStatObj = (CStatObj*)pNode->GetEntityStatObj(nSlotId, nSubSlotId, NULL);
 
-								if (!info.pStatObj && nObjType == eERType_RenderProxy)
+								if (!info.pStatObj && nObjType == eERType_RenderComponent)
 								{
 									if (ICharacterInstance* pChar = pNode->GetEntityCharacter(nSlotId, &nodeTM))
 									{
@@ -1954,7 +1954,7 @@ bool CVoxelSegment::CheckCollectObjectsForVoxelization(const AABB& cloudBoxWS, P
 									info.fObjScale = ((CBrush*)pNode)->m_fMatrixScale;
 								else if (pNode->GetRenderNodeType() == eERType_Vegetation)
 									info.fObjScale = ((CVegetation*)pNode)->GetScale();
-								else if (pNode->GetRenderNodeType() == eERType_RenderProxy)
+								else if (pNode->GetRenderNodeType() == eERType_RenderComponent)
 								{
 									Vec3 vScaleAbs = info.matObj.TransformVector(Vec3(1, 1, 1)).abs();
 									info.fObjScale = min(min(vScaleAbs.x, vScaleAbs.y), vScaleAbs.z);

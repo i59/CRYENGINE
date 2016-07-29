@@ -88,7 +88,7 @@ void CDecalRenderNode::CreateDecalOnStaticObjects()
 	for (int nRecId(0); nRecId < decalReceivers.Count(); ++nRecId)
 	{
 		EERType eType = decalReceivers[nRecId].pNode->GetRenderNodeType();
-		if (eType != eERType_Brush && eType != eERType_RenderProxy)
+		if (eType != eERType_Brush && eType != eERType_RenderComponent)
 		{
 			decalReceivers.DeleteFastUnsorted(nRecId);
 			nRecId--;

@@ -227,8 +227,8 @@ void CFlowEntityNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 				SendEventToEntity(pActInfo, pEntity);
 			}
 
-			IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
-			if (!pScriptProxy)
+			auto *pScriptComponent = pEntity->QueryComponent<IEntityScriptComponent>();
+			if (!pScriptComponent)
 				return;
 
 			// Check active ports, and send event to entity.
@@ -240,22 +240,22 @@ void CFlowEntityNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
 					switch (type)
 					{
 					case eFDT_Int:
-						pScriptProxy->CallEvent(m_pClass->m_inputs[i].name, (float)GetPortInt(pActInfo, i));
+						pScriptComponent->CallEvent(m_pClass->m_inputs[i].name, (float)GetPortInt(pActInfo, i));
 						break;
 					case eFDT_Float:
-						pScriptProxy->CallEvent(m_pClass->m_inputs[i].name, GetPortFloat(pActInfo, i));
+						pScriptComponent->CallEvent(m_pClass->m_inputs[i].name, GetPortFloat(pActInfo, i));
 						break;
 					case eFDT_Bool:
-						pScriptProxy->CallEvent(m_pClass->m_inputs[i].name, GetPortBool(pActInfo, i));
+						pScriptComponent->CallEvent(m_pClass->m_inputs[i].name, GetPortBool(pActInfo, i));
 						break;
 					case eFDT_Vec3:
-						pScriptProxy->CallEvent(m_pClass->m_inputs[i].name, GetPortVec3(pActInfo, i));
+						pScriptComponent->CallEvent(m_pClass->m_inputs[i].name, GetPortVec3(pActInfo, i));
 						break;
 					case eFDT_EntityId:
-						pScriptProxy->CallEvent(m_pClass->m_inputs[i].name, GetPortEntityId(pActInfo, i));
+						pScriptComponent->CallEvent(m_pClass->m_inputs[i].name, GetPortEntityId(pActInfo, i));
 						break;
 					case eFDT_String:
-						pScriptProxy->CallEvent(m_pClass->m_inputs[i].name, GetPortString(pActInfo, i).c_str());
+						pScriptComponent->CallEvent(m_pClass->m_inputs[i].name, GetPortString(pActInfo, i).c_str());
 						break;
 					}
 				}
@@ -1870,9 +1870,8 @@ public:
 			{
 				if (strstr(pEntity->GetName(), sSubName) != 0)
 				{
-					IEntityScriptProxy* pScriptProxy = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
-					if (pScriptProxy)
-						pScriptProxy->CallEvent(sEvent);
+					if (auto *pScriptComponent = pEntity->QueryComponent<IEntityScriptComponent>())
+						pScriptComponent->CallEvent(sEvent);
 				}
 			}
 		}
@@ -2500,7 +2499,7 @@ public:
 					nFlags |= IEntity::ATTACHMENT_KEEP_TRANSFORMATION;
 				if (GetPortBool(pActInfo, 3))
 				{
-					IEntityPhysicalProxy* pPhysicsProxy = (IEntityPhysicalProxy*) pChild->GetProxy(ENTITY_PROXY_PHYSICS);
+					IEntityPhysicsComponent* pPhysicsProxy = (IEntityPhysicsComponent*) pChild->QueryComponent<IEntityPhysicsComponent>();
 					if (pPhysicsProxy)
 						pPhysicsProxy->EnablePhysics(false);
 				}
@@ -2549,7 +2548,7 @@ public:
 				nFlags |= IEntity::ATTACHMENT_KEEP_TRANSFORMATION;
 			if (GetPortBool(pActInfo, 2))
 			{
-				IEntityPhysicalProxy* pPhysicsProxy = (IEntityPhysicalProxy*) pActInfo->pEntity->GetProxy(ENTITY_PROXY_PHYSICS);
+				IEntityPhysicsComponent* pPhysicsProxy = (IEntityPhysicsComponent*) pActInfo->pEntity->QueryComponent<IEntityPhysicsComponent>();
 				if (pPhysicsProxy)
 					pPhysicsProxy->EnablePhysics(true);
 			}
@@ -2813,20 +2812,20 @@ public:
 		if (!pEntity)
 			return;
 
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (!pRenderProxy)
+		auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>();
+		if (pRenderComponent == nullptr)
 			return;
 
 		if (ser.IsWriting())
 		{
-			float opacity = pRenderProxy->GetOpacity();
+			float opacity = pRenderComponent->GetOpacity();
 			ser.Value("opacity", opacity);
 		}
 		else
 		{
 			float opacity;
 			ser.Value("opacity", opacity);
-			pRenderProxy->SetOpacity(opacity);
+			pRenderComponent->SetOpacity(opacity);
 		}
 	}
 
@@ -2844,8 +2843,9 @@ public:
 		{
 			return;
 		}
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (!pRenderProxy)
+
+		auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>();
+		if (!pRenderComponent)
 		{
 			return;
 		}
@@ -2858,7 +2858,7 @@ public:
 			switch (paramType)
 			{
 			case 1: // Opacity
-				pRenderProxy->SetOpacity(clamp_tpl(paramValue, 0.0f, 1.0f));
+				pRenderComponent->SetOpacity(clamp_tpl(paramValue, 0.0f, 1.0f));
 				success = true;
 				break;
 			default: // No valid parameter chosen, do nothing
@@ -2957,12 +2957,12 @@ public:
 		if (pEntity == 0)
 			return;
 
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy == 0)
+		auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>();
+		if (pRenderComponent == 0)
 			return;
 
 		const int& slot = GetPortInt(pActInfo, EIP_Slot);
-		IMaterial* pMtl = pRenderProxy->GetRenderMaterial(slot);
+		IMaterial* pMtl = pRenderComponent->GetRenderMaterial(slot);
 		if (pMtl == 0)
 		{
 			GameWarning("[flow] CFlowNodeSetMaterialParam: Entity '%s' [%d] has no material at slot %d", pEntity->GetName(), pEntity->GetId(), slot);
@@ -3327,11 +3327,11 @@ public:
 		if (pEntity == 0)
 			return RETFAIL;
 
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy == 0)
+		auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>();
+		if (pRenderComponent == nullptr)
 			return RETFAIL;
 
-		IMaterial* pMaterial = pRenderProxy->GetRenderMaterial(slot);
+		IMaterial* pMaterial = pRenderComponent->GetRenderMaterial(slot);
 		if (pMaterial == 0)
 		{
 			GameWarning("[flow] CFlowNodeEntityMaterialShaderParam: Entity '%s' [%d] has no material at slot %d", pEntity->GetName(), pEntity->GetId(), slot);
@@ -3346,7 +3346,7 @@ public:
 				GameWarning("[flow] CFlowNodeEntityMaterialShaderParam: Entity '%s' [%d] Can't clone material at slot %d", pEntity->GetName(), pEntity->GetId(), slot);
 				return RETFAIL;
 			}
-			pRenderProxy->SetSlotMaterial(slot, pMaterial);
+			pRenderComponent->SetSlotMaterial(slot, pMaterial);
 			m_pMaterial = pMaterial;
 		}
 
@@ -3727,10 +3727,10 @@ public:
 	{
 		if (pEntity == 0)
 			return;
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy == 0)
+		auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>();
+		if (pRenderComponent == 0)
 			return;
-		pRenderProxy->SetSlotMaterial(slot, 0);
+		pRenderComponent->SetSlotMaterial(slot, 0);
 	}
 
 	void CloneAndApplyMaterial(IEntity* pEntity, int slot)
@@ -3738,15 +3738,15 @@ public:
 		if (pEntity == 0)
 			return;
 
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-		if (pRenderProxy == 0)
+		auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>();
+		if (pRenderComponent == 0)
 			return;
 
-		IMaterial* pMtl = pRenderProxy->GetSlotMaterial(slot);
+		IMaterial* pMtl = pRenderComponent->GetSlotMaterial(slot);
 		if (pMtl)
 			return;
 
-		pMtl = pRenderProxy->GetRenderMaterial(slot);
+		pMtl = pRenderComponent->GetRenderMaterial(slot);
 		if (pMtl == 0)
 		{
 			GameWarning("[flow] CFlowNodeEntityCloneMaterial: Entity '%s' [%d] has no material at slot %d", pEntity->GetName(), pEntity->GetId(), slot);
@@ -3754,7 +3754,7 @@ public:
 		}
 
 		pMtl = gEnv->p3DEngine->GetMaterialManager()->CloneMultiMaterial(pMtl);
-		pRenderProxy->SetSlotMaterial(slot, pMtl);
+		pRenderComponent->SetSlotMaterial(slot, pMtl);
 	}
 
 	virtual void GetMemoryUsage(ICrySizer* s) const
@@ -4284,17 +4284,16 @@ public:
 		const bool bDisable = IsPortActive(pActInfo, EIP_Disable);
 		if (bEnable || bDisable)
 		{
-			IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-			if (pRenderProxy)
+			if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 			{
 				uint8 layer = (uint8) GetPortInt(pActInfo, EIP_Layer);
-				uint8 activeLayers = pRenderProxy->GetMaterialLayersMask();
+				uint8 activeLayers = pRenderComponent->GetMaterialLayersMask();
 				if (bEnable)
 					activeLayers |= layer;
 				else
 					activeLayers &= ~layer;
 
-				pRenderProxy->SetMaterialLayersMask(activeLayers);
+				pRenderComponent->SetMaterialLayersMask(activeLayers);
 			}
 			ActivateOutput(pActInfo, EOP_Done, true);
 		}
@@ -4552,18 +4551,17 @@ public:
 						pEntity = gEnv->pEntitySystem->SpawnEntity(params);
 						if (pEntity)
 						{
-							IEntityRenderProxy* pRenderProx = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
-							if (pRenderProx)
+							if (auto *pRenderComponent = pEntity->QueryComponent<IEntityRenderComponent>())
 							{
 								if (XmlNodeRef objectVars = pArchetype->GetObjectVars())
 								{
 									int nViewDistRatio = 100;
 									objectVars->getAttr("ViewDistRatio", nViewDistRatio);
-									pRenderProx->SetViewDistRatio(nViewDistRatio);
+									pRenderComponent->SetViewDistRatio(nViewDistRatio);
 
 									int nLodRatio = 100;
 									objectVars->getAttr("lodRatio", nLodRatio);
-									pRenderProx->SetLodRatio(nLodRatio);
+									pRenderComponent->SetLodRatio(nLodRatio);
 								}
 							}
 
@@ -4652,22 +4650,24 @@ public:
 		{
 			if (pActInfo->pEntity)
 			{
-				//Get entity's scripttable
-				IEntityScriptProxy* pScriptProx = (IEntityScriptProxy*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
-				IScriptTable* pTable = pScriptProx->GetScriptTable();
-
-				if (pTable)
+				if (auto *pScriptComponent = pActInfo->pEntity->QueryComponent<IEntityScriptComponent>())
 				{
-					//Convert all inputports to arguments for lua
-					ScriptAnyValue arg1 = FillArgumentFromAnyPort(pActInfo, IN_ARG1);
-					ScriptAnyValue arg2 = FillArgumentFromAnyPort(pActInfo, IN_ARG2);
-					ScriptAnyValue arg3 = FillArgumentFromAnyPort(pActInfo, IN_ARG3);
-					ScriptAnyValue arg4 = FillArgumentFromAnyPort(pActInfo, IN_ARG4);
-					ScriptAnyValue arg5 = FillArgumentFromAnyPort(pActInfo, IN_ARG5);
+					//Get entity's scripttable
+					IScriptTable* pTable = pScriptComponent->GetScriptTable();
 
-					Script::CallMethod(pTable, GetPortString(pActInfo, IN_FUNCNAME), arg1, arg2, arg3, arg4, arg5);
+					if (pTable)
+					{
+						//Convert all inputports to arguments for lua
+						ScriptAnyValue arg1 = FillArgumentFromAnyPort(pActInfo, IN_ARG1);
+						ScriptAnyValue arg2 = FillArgumentFromAnyPort(pActInfo, IN_ARG2);
+						ScriptAnyValue arg3 = FillArgumentFromAnyPort(pActInfo, IN_ARG3);
+						ScriptAnyValue arg4 = FillArgumentFromAnyPort(pActInfo, IN_ARG4);
+						ScriptAnyValue arg5 = FillArgumentFromAnyPort(pActInfo, IN_ARG5);
 
-					ActivateOutput(pActInfo, OUT_SUCCESS, true);
+						Script::CallMethod(pTable, GetPortString(pActInfo, IN_FUNCNAME), arg1, arg2, arg3, arg4, arg5);
+
+						ActivateOutput(pActInfo, OUT_SUCCESS, true);
+					}
 				}
 			}
 

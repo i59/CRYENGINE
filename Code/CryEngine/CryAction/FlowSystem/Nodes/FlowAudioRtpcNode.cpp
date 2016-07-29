@@ -146,12 +146,9 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	void SetOnProxy(IEntity* const pEntity, float const value)
 	{
-		IEntityAudioProxyPtr const pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+		auto &audioComponent = pEntity->CreateAudioComponent();
 
-		if (pIEntityAudioProxy != nullptr)
-		{
-			pIEntityAudioProxy->SetRtpcValue(m_requestData.audioRtpcId, value);
-		}
+		audioComponent.SetRtpcValue(m_requestData.audioRtpcId, value);
 	}
 
 	//////////////////////////////////////////////////////////////////////////
