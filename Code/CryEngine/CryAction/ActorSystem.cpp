@@ -453,43 +453,6 @@ void CActorSystem::GetMemoryUsage(class ICrySizer* pSizer) const
 	pSizer->Add(sizeof *this);
 }
 
-//------------------------------------------------------------------------
-#if 0
-IEntityProxy* CActorSystem::CreateActor(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
-{
-	/*
-	   SActorUserData *pActorUserData = reinterpret_cast<SActorUserData *>(pUserData);
-	   string className = pActorUserData->className;
-
-	   CActorSystem *pActorSystem = reinterpret_cast<CActorSystem *>(pActorUserData->pActorSystem);
-	   CRY_ASSERT(pActorSystem);
-
-	   const SSpawnUserData * pSpawnUserData = static_cast<const SSpawnUserData *>(params.pUserData);
-
-	   TActorClassMap::iterator it = pActorSystem->m_classes.find(className);
-
-	   if (it == pActorSystem->m_classes.end())
-	   {
-	   GameWarning( "Unknown Actor class '%s'", className );
-
-	   return 0;
-	   }
-
-	   IActor *pActor = (*it->second)();
-	   CActor *pActor = new CActor(pActorSystem, className.c_str(), pEntity, pActor);
-	   CRY_ASSERT(pActor);
-	 */
-
-	pActor->GetGameObject()->SetChannelId(pSpawnUserData ? pSpawnUserData->channelId : 0);
-
-	//pEntity->Activate(true);
-
-	//pActorSystem->AddActor(pEntity->GetId(), pActor);
-
-	return pActor;
-}
-#endif
-
 IActorIteratorPtr CActorSystem::CreateActorIterator()
 {
 	if (m_iteratorPool.empty())

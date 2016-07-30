@@ -85,29 +85,6 @@ struct SBasicSpawnParams : public ISerializable
 	}
 };
 
-#if 0
-// deprecated and won't compile at all...
-
-struct SDistanceChecker
-{
-	SDistanceChecker()
-		: m_distanceChecker(0)
-		, m_distanceCheckerTimer(0.0f)
-	{
-
-	}
-
-	void           Init(CGameObjectSystem* pGameObjectSystem, EntityId receiverId);
-	void           Reset();
-	void           Update(CGameObject& owner, float frameTime);
-
-	ILINE EntityId GetDistanceChecker() const { return m_distanceChecker; }
-
-private:
-	EntityId m_distanceChecker;
-	float    m_distanceCheckerTimer;
-};
-#else
 struct SDistanceChecker
 {
 	ILINE void     Init(CGameObjectSystem* pGameObjectSystem, EntityId receiverId) {};
@@ -116,7 +93,6 @@ struct SDistanceChecker
 
 	ILINE EntityId GetDistanceChecker() const                                      { return 0; }
 };
-#endif
 
 struct IGOUpdateDbg;
 

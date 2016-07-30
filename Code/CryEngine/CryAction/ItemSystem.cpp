@@ -552,46 +552,6 @@ bool CItemSystem::ScanXML(XmlNodeRef& root, const char* xmlFile)
 
 	SItemParamsDesc& desc = dit->second;
 
-#if 0
-	// deprecated and won't compile at all...
-	if (!configName || !configName[0])
-	{
-		SAFE_RELEASE(desc.params);
-
-		desc.params = new CItemParamsNode();
-		bool filterMP = desc.params->ConvertFromXMLWithFiltering(root, "SP");
-
-		desc.priority = 0;
-		int p = 0;
-		if (desc.params->GetAttribute("priority", p))
-		{
-			desc.priority = (uint8)p;
-		}
-		desc.category = desc.params->GetAttribute("category");
-		desc.uniqueId = 0;
-		int id = 0;
-		if (desc.params->GetAttribute("uniqueId", id))
-		{
-			desc.uniqueId = (uint8)id;
-		}
-
-		if (filterMP)
-		{
-			CItemParamsNode* params = new CItemParamsNode();
-			params->ConvertFromXMLWithFiltering(root, "MP");
-			desc.configurations.insert(std::make_pair<string, CItemParamsNode*>("mp", params));
-		}
-	}
-	else
-	{
-		// to check that a weapon has multiple configuration (we support that for different game modes)
-		//		CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Non-empty configuration found in \"%s\"!!!", xmlFile);
-
-		CItemParamsNode* params = new CItemParamsNode();
-		params->ConvertFromXML(root);
-		desc.configurations.insert(std::make_pair<string, CItemParamsNode*>(configName, params));
-	}
-#else
 	{
 		CRY_ASSERT(desc.params == NULL);
 
@@ -619,7 +579,6 @@ bool CItemSystem::ScanXML(XmlNodeRef& root, const char* xmlFile)
 
 		desc.filePath = xmlFile;
 	}
-#endif
 
 	return true;
 }
