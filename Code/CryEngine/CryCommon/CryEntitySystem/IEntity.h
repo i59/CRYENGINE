@@ -23,7 +23,6 @@ struct AIObjectParams;
 struct IParticleEffect;
 struct SpawnParams;
 struct IComponentEventDistributer;
-struct IEntityProxy;
 struct IGeomCacheRenderNode;
 struct ICharacterInstance;
 struct IParticleEmitter;
@@ -88,7 +87,6 @@ typedef uint32 tAIObjectID;
 #endif
 
 //////////////////////////////////////////////////////////////////////////
-#include "IEntityProxy.h"
 #include <CryNetwork/SerializeFwd.h>
 //////////////////////////////////////////////////////////////////////////
 
@@ -855,23 +853,6 @@ struct IEntity
 
 	virtual IEntityComponent *GetComponentByTypeId(const CryInterfaceID &interfaceID) const = 0;
 	virtual void RegisterEntityComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent) = 0;
-
-	// Entity Proxies Interfaces access functions.
-
-	//! Retrieves a pointer to the specified proxy interface in the entity.
-	//! \param proxy Proxy interface identifier.
-	//! \return Valid pointer to the requested entity proxy object, or NULL if such proxy not exist.
-	virtual IEntityProxy* GetProxy(EEntityProxy proxy) const = 0;
-
-	//! Replaces the specified proxy interface in the entity.
-	//! \param proxy Proxy interface identifier.
-	//! \param pProxy Pointer to the Proxy interface.
-	virtual void SetProxy(EEntityProxy proxy, IEntityProxyPtr pProxy) = 0;
-
-	//! Creates a specified proxy in the entity.
-	//! \param proxy Proxy interface identifier.
-	//! \return Valid pointer to the created entity proxy object, or NULL if creation failed.
-	virtual IEntityProxyPtr CreateProxy(EEntityProxy proxy) = 0;
 
 	//! Register or unregisters a component with the entity.
 	//! \param pComponent The target component.

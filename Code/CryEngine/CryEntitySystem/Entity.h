@@ -49,8 +49,6 @@ class CEntity : public IEntity
 	CEntity(SEntitySpawnParams& params);
 
 public:
-	typedef std::pair<int, IEntityProxyPtr> TProxyPair;
-
 	// Entity destructor.
 	// Should only be called from Entity System.
 	virtual ~CEntity();
@@ -181,13 +179,6 @@ public:
 	virtual void RegisterEntityComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent) override;
 	virtual IEntityComponent *GetComponentByTypeId(const CryInterfaceID &interfaceID) const override;
 
-	//////////////////////////////////////////////////////////////////////////
-	// Entity Proxies Interfaces access functions.
-	//////////////////////////////////////////////////////////////////////////
-	virtual IEntityProxy*   GetProxy(EEntityProxy proxy) const override;
-	virtual void            SetProxy(EEntityProxy proxy, IEntityProxyPtr pProxy) override;
-	virtual IEntityProxyPtr CreateProxy(EEntityProxy proxy) override;
-	//////////////////////////////////////////////////////////////////////////
 	virtual void            RegisterComponent(IComponentPtr pComponentPtr, const int flags) override;
 
 	//////////////////////////////////////////////////////////////////////////
@@ -464,10 +455,6 @@ private:
 	// Custom entity material.
 	_smart_ptr<IMaterial> m_pMaterial;
 
-	//////////////////////////////////////////////////////////////////////////
-	typedef std::map<int, IEntityProxyPtr, std::less<uint32>, stl::STLPoolAllocator<TProxyPair>> TProxyContainer;
-
-	TProxyContainer m_proxy;
 	//////////////////////////////////////////////////////////////////////////
 	typedef std::set<IComponentPtr> TComponents;
 	TComponents m_components;

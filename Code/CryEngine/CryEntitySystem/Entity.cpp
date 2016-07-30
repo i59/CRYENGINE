@@ -60,135 +60,6 @@ namespace
 Matrix34 sIdentityMatrix = Matrix34::CreateIdentity();
 }
 
-namespace
-{
-struct FEntityProxyReload
-{
-	FEntityProxyReload(CEntity* pEntity, SEntitySpawnParams& params) : m_pEntity(pEntity), m_params(params) {}
-	void operator()(const CEntity::TProxyPair& it) const
-	{
-		IEntityProxyPtr pProxy = it.second;
-		if (pProxy)
-		{
-			pProxy->Reload(m_pEntity, m_params);
-		}
-	}
-private:
-	CEntity*            m_pEntity;
-	SEntitySpawnParams& m_params;
-};
-struct FEntityProxyDone
-{
-	void operator()(const CEntity::TProxyPair& it) const
-	{
-		it.second->Done();
-	}
-};
-
-struct FEntityProxyRelease
-{
-	void operator()(const CEntity::TProxyPair& it) const
-	{
-		it.second->Release();
-	}
-};
-struct FEntityProxySendEvent
-{
-	FEntityProxySendEvent(SEntityEvent& event)
-		: m_entityEvent(event)
-	{
-	}
-
-	void operator()(const CEntity::TProxyPair& proxyPair) const
-	{
-		proxyPair.second->ProcessEvent(m_entityEvent);
-	}
-
-private:
-	SEntityEvent& m_entityEvent;
-};
-struct FEntityProxyUpdate
-{
-	FEntityProxyUpdate(SEntityUpdateContext& ctx)
-		: m_ctx(ctx)
-	{
-	}
-
-	void operator()(const CEntity::TProxyPair& proxyPair) const
-	{
-		proxyPair.second->Update(m_ctx);
-	}
-
-private:
-	SEntityUpdateContext& m_ctx;
-};
-
-struct FEntityProxy_SerializeXML
-{
-	FEntityProxy_SerializeXML(XmlNodeRef& node, bool bLoading)
-		: m_node(node)
-		, m_bLoading(bLoading)
-	{
-	}
-
-	void operator()(const CEntity::TProxyPair& it) const
-	{
-		it.second->SerializeXML(m_node, m_bLoading);
-	}
-
-private:
-	XmlNodeRef& m_node;
-	bool        m_bLoading;
-};
-
-struct FEntityProxy_PrePhysicsUpdate
-{
-	FEntityProxy_PrePhysicsUpdate(const SEntityEvent& event)
-		: m_event(event)
-	{
-	}
-
-	void operator()(const CEntity::TProxyPair& it) const
-	{
-		it.second->ProcessEvent(const_cast<SEntityEvent&>(m_event));
-	}
-private:
-	SEntityEvent m_event;
-};
-
-struct FEntityProxy_GetMemUsage
-{
-	FEntityProxy_GetMemUsage(ICrySizer* pSizer)
-		: m_pSizer(pSizer)
-	{
-	}
-	void operator()(const CEntity::TProxyPair& pProxy) const
-	{
-		m_pSizer->AddObject(pProxy);
-	}
-private:
-	ICrySizer* m_pSizer;
-};
-
-struct FEntityProxy_GetSignature
-{
-	FEntityProxy_GetSignature(TSerialize& signature, bool& bSignature)
-		: m_signature(signature)
-		, m_bSignature(bSignature)
-	{
-	}
-
-	void operator()(const CEntity::TProxyPair& it)
-	{
-		m_bSignature &= it.second->GetSignature(m_signature);
-	}
-
-private:
-	TSerialize& m_signature;
-	bool&       m_bSignature;
-};
-}
-
 //////////////////////////////////////////////////////////////////////////
 CEntity::CEntity(SEntitySpawnParams& params)
 {
@@ -247,11 +118,13 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	ComputeForwardDir();
 
 	//////////////////////////////////////////////////////////////////////////
-	// Check if entity needs to create a proxy class.
-	IEntityClass::EntitySpawnCallback entitySpawnCallback = m_pClass->GetEntitySpawnCallback();
-	if (entitySpawnCallback)
+	// Check if entity needs to create a script proxy.
+	IEntityScript* pEntityScript = m_pClass->GetIEntityScript();
+	if (pEntityScript)
 	{
-		entitySpawnCallback(*this, params, m_pClass->GetEntitySpawnCallbackData());
+		auto &scriptComponent = AcquireComponent<CScriptComponent>();
+
+		scriptComponent.InitializeScript(pEntityScript, params.pPropertiesTable);
 	}
 
 	if (IEntityPropertyHandler* pPropertyHandler = m_pClass->GetPropertyHandler())
@@ -261,13 +134,11 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	}
 
 	//////////////////////////////////////////////////////////////////////////
-	// Check if entity needs to create a script proxy.
-	IEntityScript* pEntityScript = m_pClass->GetIEntityScript();
-	if (pEntityScript)
+	// Check if entity needs to create a proxy class.
+	IEntityClass::EntitySpawnCallback entitySpawnCallback = m_pClass->GetEntitySpawnCallback();
+	if (entitySpawnCallback)
 	{
-		auto &scriptComponent = AcquireComponent<CScriptComponent>();
-
-		scriptComponent.InitializeScript(pEntityScript, params.pPropertiesTable);
+		entitySpawnCallback(*this, params, m_pClass->GetEntitySpawnCallbackData());
 	}
 
 	m_nKeepAliveCounter = 0;
@@ -280,8 +151,7 @@ CEntity::~CEntity()
 {
 	assert(m_nKeepAliveCounter == 0);
 
-	// Proxy and components could still be referring to m_szName, so clear them before it gets destroyed
-	m_proxy.clear();
+	// Components could still be referring to m_szName, so clear them before it gets destroyed
 	m_components.clear();
 	m_entityComponentMap.clear();
 }
@@ -390,11 +260,7 @@ bool CEntity::ReloadEntity(SEntityLoadParams& loadParams)
 				pEventHandler->LoadEntityXMLEvents(this, entityNode);
 		}
 
-		//////////////////////////////////////////////////////////////////////////
-		// Reload all proxies
-		//////////////////////////////////////////////////////////////////////////
-		for_each(m_proxy.begin(), m_proxy.end(), FEntityProxyReload(this, params));
-
+		// Reload all components
 		for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 		{
 			it->second->Reload(params, entityNode);
@@ -569,8 +435,6 @@ bool CEntity::SendEvent(SEntityEvent& event)
 		// Broadcast event to proxies.
 		uint32 nWhyFlags = (uint32)event.nParam[0];
 
-		std::for_each(m_proxy.begin(), m_proxy.end(), FEntityProxySendEvent(event));
-
 		for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 		{
 			it->second->ProcessEvent(event);
@@ -599,18 +463,6 @@ bool CEntity::Init(SEntitySpawnParams& params)
 {
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Entity, 0, "Init: %s", params.sName ? params.sName : "(noname)");
 
-	// Initialize all currently existing proxies.
-	TProxyContainer::iterator it = m_proxy.begin();
-	const TProxyContainer::const_iterator iEnd = m_proxy.end();
-	for (; it != iEnd; ++it)
-	{
-		if (!it->second->Init(this, params))
-		{
-			gEnv->pLog->LogError("Couldn't create entity %s: proxy %i couldn't be initialized", params.sName, it->first);
-			return false;
-		}
-	}
-
 	// Make sure position is registered.
 	if (!m_bWasRelocated)
 		OnRellocate(ENTITY_XFORM_POS);
@@ -633,10 +485,7 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 	if (m_bHidden && !CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN))
 		return;
 
-	// Broadcast event to proxies.
-	// Start after render proxy.
-	for_each(m_proxy.begin(), m_proxy.end(), FEntityProxyUpdate(ctx));
-
+	// Update all our components
 	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 	{
 		it->second->Update(ctx);
@@ -659,8 +508,6 @@ void CEntity::PrePhysicsUpdate(float fFrameTime)
 
 	SEntityEvent evt(ENTITY_EVENT_PREPHYSICSUPDATE);
 	evt.fParam[0] = fFrameTime;
-
-	for_each(m_proxy.begin(), m_proxy.end(), FEntityProxy_PrePhysicsUpdate(evt));
 
 	if (auto *pRenderComponent = QueryComponent<IEntityRenderComponent>())
 		pRenderComponent->ProcessEvent(evt);
@@ -734,19 +581,6 @@ void CEntity::ShutDown(bool bRemoveAI /*= true*/, bool bRemoveProxies /*= true*/
 	// First release UserProxy
 	if (bRemoveProxies)
 	{
-		// call Done on every proxy
-		for_each(m_proxy.begin(), m_proxy.end(), FEntityProxyDone());
-
-		// This might not be obvious but during dtor of some proxys, there is access to proxys.
-		// This is probably broken functionality but this copying makes it safe.
-		// As IEntityProxys are IComponents and therefore ref counted,
-		// the final ref calls 'Release', therefore destorying the object.
-		// if the ref counting is correct, this should be the last reference.
-		TProxyContainer proxies;
-		swap(proxies, m_proxy);
-		stl::free_container(m_proxy);
-		proxies.clear();
-
 		// We remove components here instead of in the destructor
 		// This is done since entity deletion may be delayed
 		m_entityComponentMap.clear();
@@ -1376,8 +1210,6 @@ string CEntity::GetEntityTextDescription() const
 //////////////////////////////////////////////////////////////////////////
 void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bFromInit)
 {
-	std::for_each(m_proxy.begin(), m_proxy.end(), FEntityProxy_SerializeXML(node, bLoading));
-
 	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 	{
 		it->second->SerializeXML(node, bLoading, bFromInit);
@@ -1388,8 +1220,6 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bFromInit)
 bool CEntity::GetSignature(TSerialize& signature)
 {
 	bool bSignature = true;
-	std::for_each(m_proxy.begin(), m_proxy.end(), FEntityProxy_GetSignature(signature, bSignature));
-
 	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 	{
 		bSignature &= it->second->GetSignature(signature);
@@ -1416,39 +1246,6 @@ void CEntity::RegisterEntityComponent(const CryInterfaceID &interfaceID, IEntity
 	pComponent->Initialize(*this);
 
 	m_entityComponentMap.insert(TEntityComponentMap::value_type(interfaceID, std::shared_ptr<IEntityComponent>(pComponent)));
-}
-
-//////////////////////////////////////////////////////////////////////////
-IEntityProxy* CEntity::GetProxy(EEntityProxy proxy) const
-{
-	TProxyContainer::const_iterator it = m_proxy.find(proxy);
-	if (it != m_proxy.end())
-	{
-		return it->second.get();
-	}
-	return NULL;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntity::SetProxy(EEntityProxy proxy, IEntityProxyPtr pProxy)
-{
-	const int nIndex = pProxy->GetType();
-	if (nIndex != proxy)
-		return;
-
-	m_proxy[nIndex] = pProxy;
-}
-
-//////////////////////////////////////////////////////////////////////////
-IEntityProxyPtr CEntity::CreateProxy(EEntityProxy proxy)
-{
-	TProxyContainer::iterator it = m_proxy.find(proxy);
-	if (it != m_proxy.end())
-	{
-		return it->second;
-	}
-
-	return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1655,30 +1452,6 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 
 	if (nFlags & ENTITY_SERIALIZE_PROXIES)
 	{
-		//CryLogAlways("Serializing proxies for %s of class %s", GetName(), GetClass()->GetName());
-		bool bSaveProxies = ser.GetSerializationTarget() == eST_Network; // always save for network stream
-		if (!bSaveProxies && !ser.IsReading())
-		{
-			for (auto it = m_proxy.begin(); it != m_proxy.end(); ++it)
-			{
-				if (it->second->NeedSerialize())
-				{
-					bSaveProxies = true;
-					break;
-				}
-			}
-		}
-
-		if (ser.BeginOptionalGroup("EntityProxies", bSaveProxies))
-		{
-			for (auto it = m_proxy.begin(); it != m_proxy.end(); ++it)
-			{
-				it->second->Serialize(ser);
-			}
-
-			ser.EndGroup(); //EntityProxies
-		}
-
 		bool bSaveComponents = ser.GetSerializationTarget() == eST_Network; // always save for network stream
 		if (!bSaveComponents && !ser.IsReading())
 		{
@@ -2629,8 +2402,7 @@ void CEntity::RemoveAllEntityLinks()
 void CEntity::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
-	std::for_each(m_proxy.begin(), m_proxy.end(), FEntityProxy_GetMemUsage(pSizer));
-
+	
 	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 	{
 		it->second->GetMemoryUsage(pSizer);

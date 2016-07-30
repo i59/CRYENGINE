@@ -513,7 +513,6 @@
       "CryEntitySystem/IEntityAttributesProxy.h",
       "CryEntitySystem/IEntityClass.h",
       "CryEntitySystem/IEntityLayer.h",
-      "CryEntitySystem/IEntityProxy.h",
       "CryEntitySystem/IEntityRenderState.h",
       "CryEntitySystem/IEntityRenderState_info.h",
       "CryEntitySystem/IEntitySerialize.h",
