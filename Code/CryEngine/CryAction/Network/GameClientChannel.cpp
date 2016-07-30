@@ -365,8 +365,8 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 			return false;
 		}
 
-		CGameObject* pGameObject = (CGameObject*)CCryAction::GetCryAction()->GetIGameObjectSystem()->CreateGameObjectForEntity(pEntity->GetId());
-		CRY_ASSERT(pGameObject);
+		auto &gameObject = pEntity->AcquireComponent<CGameObject>();
+
 		if (param.bClientActor)
 		{
 			IActor* pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(entityId);
@@ -381,7 +381,7 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 		}
 		GetGameContext()->GetNetContext()->SpawnedObject(entityId);
 		CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
-		pGameObject->PostRemoteSpawn();
+		gameObject.PostRemoteSpawn();
 		return true;
 	}
 
@@ -435,7 +435,8 @@ void CGameClientChannel::SetPlayerId(EntityId id)
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
 		if (pEntity)
 		{
-			IGameObject* pGameObject = CCryAction::GetCryAction()->GetGameObject(id);
+			auto *pGameObject = pEntity->QueryComponent<IGameObject>();
+
 			pSS->SetGlobalValue(LOCAL_ACTOR_VARIABLE, pEntity->GetScriptTable());
 			pSS->SetGlobalValue(LOCAL_CHANNELID_VARIABLE, pGameObject ? pGameObject->GetChannelId() : 0);
 		}
@@ -482,17 +483,13 @@ void CGameClientChannel::CallOnSetPlayerId()
 		pActor->InitLocalPlayer();
 }
 
-bool CGameClientChannel::HookCreateActor(IEntity* pEntity, IGameObject* pGameObject, void* pUserData)
+void CGameClientChannel::HookCreateActor(IEntity& entity, IGameObject& gameObject, void* pUserData)
 {
 	//[AlexMcC|23.11.09]: Set the ChannelId for remote obejcts at the same time as local objects
 	// (which is very early). Setting the ChannelId early like this means that we can trust
 	// IActor::IsPlayer() very early, such as in Player::Init().
 	// Copied from CActorSystem.cpp
-	if (pGameObject)
-	{
-		pGameObject->SetChannelId(*static_cast<uint16*>(pUserData));
-	}
-	return true;
+	gameObject.SetChannelId(*static_cast<uint16*>(pUserData));
 }
 bool CGameClientChannel::SetConsoleVar(const string& key, const string& val)
 {

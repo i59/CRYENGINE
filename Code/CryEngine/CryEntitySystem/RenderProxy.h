@@ -98,11 +98,6 @@ public:
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;
 	virtual bool CanExecuteRenderAsJob() override;
 
-	//////////////////////////////////////////////////////////////////////////
-
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy implementation.
-	//////////////////////////////////////////////////////////////////////////
 	// Called when the subsystem initialize.
 	virtual void         SetViewDistRatio(int nViewDistRatio) override;
 	virtual void         SetLodRatio(int nLodRatio) override;

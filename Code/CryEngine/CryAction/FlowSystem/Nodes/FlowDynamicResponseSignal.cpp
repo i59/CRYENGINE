@@ -2,8 +2,6 @@
 
 #include "StdAfx.h"
 #include "FlowBaseNode.h"
-#include <CrySystem/ISystem.h>
-#include <CryEntitySystem/IEntityProxy.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 
 class CFlowNode_SendDynamicResponseSignal final : public CFlowBaseNode<eNCT_Instanced>, public DRS::IResponseManager::IListener

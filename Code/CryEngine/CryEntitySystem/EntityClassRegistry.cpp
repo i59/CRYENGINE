@@ -91,7 +91,7 @@ IEntityClass* CEntityClassRegistry::RegisterStdClass(const SEntityClassDesc& ent
 	pClass->SetName(entityClassDesc.sName);
 	pClass->SetFlags(entityClassDesc.flags);
 	pClass->SetScriptFile(entityClassDesc.sScriptFile);
-	pClass->SetUserProxyCreateFunc(entityClassDesc.pUserProxyCreateFunc, entityClassDesc.pUserProxyData);
+	pClass->SetEntitySpawnCallback(entityClassDesc.pEntitySpawnCallback, entityClassDesc.pEntitySpawnCallbackData);
 	pClass->SetPropertyHandler(entityClassDesc.pPropertyHandler);
 	pClass->SetEventHandler(entityClassDesc.pEventHandler);
 	pClass->SetScriptFileHandler(entityClassDesc.pScriptFileHandler);

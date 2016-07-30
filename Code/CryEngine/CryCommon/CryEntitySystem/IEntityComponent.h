@@ -1,10 +1,32 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include "IEntityProxy.h"
+#include <CryNetwork/SerializeFwd.h>
+#include <CryAudio/IAudioSystem.h>
 
-#include "../CryNetwork/SerializeFwd.h"
-#include "../CryExtension/ICryUnknown.h"
+#include <CryEntitySystem/IComponent.h>
+#include <CryAction/ILipSyncProvider.h>
+
+#include <CryCore/BitMask.h>
+
+#include <CryExtension/ICryUnknown.h>
+
+struct SEntitySpawnParams;
+struct SEntityEvent;
+struct SEntityUpdateContext;
+struct IShaderPublicParams;
+struct IFlowGraph;
+struct IEntityEventListener;
+struct IPhysicalEntity;
+struct SSGHandle;
+struct a2DPoint;
+struct IRenderMesh;
+struct IClipVolume;
+struct IBSPTree3D;
+struct IMaterial;
+struct IScriptTable;
+struct AABB;
+typedef uint64 EntityGUID;  //!< Same as in IEntity.h.
 
 struct IEntityComponent
 {

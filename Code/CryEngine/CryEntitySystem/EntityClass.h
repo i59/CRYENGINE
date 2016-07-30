@@ -41,8 +41,8 @@ public:
 	virtual IEntityScript*               GetIEntityScript() const override { return m_pEntityScript; }
 	virtual IScriptTable*                GetScriptTable() const override;
 	virtual bool                         LoadScript(bool bForceReload) override;
-	virtual UserProxyCreateFunc          GetUserProxyCreateFunc() const override { return m_pfnUserProxyCreate; };
-	virtual void*                        GetUserProxyData() const override       { return m_pUserProxyUserData; };
+	virtual EntitySpawnCallback          GetEntitySpawnCallback() const override { return m_pfnSpawnCallback; };
+	virtual void*                        GetEntitySpawnCallbackData() const override       { return m_pSpawnCallbackData; };
 
 	virtual IEntityPropertyHandler*      GetPropertyHandler() const override;
 	virtual IEntityEventHandler*         GetEventHandler() const override;
@@ -66,7 +66,7 @@ public:
 	void SetScriptFile(const char* sScriptFile);
 	void SetEntityScript(IEntityScript* pScript);
 
-	void SetUserProxyCreateFunc(UserProxyCreateFunc pFunc, void* pUserData = NULL);
+	void SetEntitySpawnCallback(EntitySpawnCallback pFunc, void* pUserData = NULL);
 	void SetPropertyHandler(IEntityPropertyHandler* pPropertyHandler);
 	void SetEventHandler(IEntityEventHandler* pEventHandler);
 	void SetScriptFileHandler(IEntityScriptFileHandler* pScriptFileHandler);
@@ -88,8 +88,8 @@ private:
 	string                    m_sScriptFile;
 	IEntityScript*            m_pEntityScript;
 
-	UserProxyCreateFunc       m_pfnUserProxyCreate;
-	void*                     m_pUserProxyUserData;
+	EntitySpawnCallback       m_pfnSpawnCallback;
+	void*                     m_pSpawnCallbackData;
 
 	bool                      m_bScriptLoaded;
 

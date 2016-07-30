@@ -1097,8 +1097,10 @@ void CActionMap::InputProcessed()
 	IActionListener* pEntityListener = NULL;
 
 	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_listenerId))
-		if (CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER))
+	{
+		if(auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 			pEntityListener = pGameObject;
+	}
 
 	if (pEntityListener)
 		pEntityListener->AfterAction();
@@ -1127,8 +1129,10 @@ void CActionMap::ReleaseFilteredActions()
 	IActionListener* pEntityListener = NULL;
 
 	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_listenerId))
-		if (CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER))
+	{
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 			pEntityListener = pGameObject;
+	}
 
 	IActionListener* pListener = pEntityListener;
 	if (!pListener)
@@ -1995,7 +1999,7 @@ void CActionMap::ReleaseActionIfActiveInternal(CActionMapAction& action)
 
 		if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_listenerId))
 		{
-			if (CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER))
+			if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 			{
 				pEntityListener = pGameObject;
 			}
@@ -2015,7 +2019,7 @@ void CActionMap::ReleaseActionIfActiveInternal(CActionMapAction& action)
 
 		if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_listenerId))
 		{
-			if (CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER))
+			if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 			{
 				pEntityListener = pGameObject;
 			}

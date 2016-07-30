@@ -8,7 +8,6 @@
 #include "EntitySystem.h"
 #include <CryEntitySystem/IEntityAttributesProxy.h>
 #include <CryEntitySystem/IEntityClass.h>
-#include <CryEntitySystem/IEntityProxy.h>
 #include <CryNetwork/ISerialize.h>
 
 //////////////////////////////////////////////////////////////////////////

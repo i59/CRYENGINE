@@ -5901,7 +5901,7 @@ IComponent::ComponentEventPriority CVehicle::GetEventPriority(const int eventID)
 	switch (eventID)
 	{
 	case ENTITY_EVENT_PREPHYSICSUPDATE:
-		return ENTITY_PROXY_USER + EEntityEventPriority_Vehicle;
+		return EEntityEventPriority_Vehicle;
 	}
 	return IGameObjectExtension::GetEventPriority(eventID);
 }

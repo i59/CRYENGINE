@@ -334,10 +334,6 @@ public:
 
 	static void         RegisterCVars();
 
-	// helper functions
-	static IGameObject* GetEntityGameObject(IEntity* pEntity);
-	static IGameObject* GetPhysicalEntityGameObject(IPhysicalEntity* pPhysEntity);
-
 	static void PerformPlaneBreak(const EventPhysCollision &epc, SBreakEvent * pRecordedEvent, int flags, class CDelayedPlaneBreak * pDelayedTask);
 
 public:

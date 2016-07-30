@@ -69,9 +69,12 @@ CVehicleSeatActionWeapons::~CVehicleSeatActionWeapons()
 //------------------------------------------------------------------------
 void CVehicleSeatActionWeapons::BindWeaponToNetwork(EntityId weaponId)
 {
-	if (IGameObject* pGameObject = CCryAction::GetCryAction()->GetGameObject(weaponId))
+	if (auto *pEntity = gEnv->pEntitySystem->GetEntity(weaponId))
 	{
-		pGameObject->BindToNetworkWithParent(eBTNM_Normal, m_pVehicle->GetEntityId());
+		if (auto *pGameObject = pEntity->QueryComponent<IGameObject>())
+		{
+			pGameObject->BindToNetworkWithParent(eBTNM_Normal, m_pVehicle->GetEntityId());
+		}
 	}
 }
 
@@ -1223,9 +1226,9 @@ void CVehicleSeatActionWeapons::OnVehicleEvent(EVehicleEvent event, const SVehic
 				CVehicle* pVehicleImpl = static_cast<CVehicle*>(m_pVehicle);
 				EntityId childId = vehicleWeapon.networkChildId;
 
-				if (childId)
+				if (auto *pChildEntity = gEnv->pEntitySystem->GetEntity(childId))
 				{
-					if (IGameObject* pGameObject = CCryAction::GetCryAction()->GetGameObject(childId))
+					if (auto *pGameObject = pChildEntity->QueryComponent<IGameObject>())
 					{
 						pGameObject->SetNetworkParent(vehicleWeapon.networkParentId);
 

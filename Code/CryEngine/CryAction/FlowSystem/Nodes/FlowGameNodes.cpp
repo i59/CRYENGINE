@@ -639,7 +639,7 @@ public:
 			else
 			{
 				// send to a specific entity only
-				if (CGameObject* pGameObject = (CGameObject*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_USER))
+				if (auto *pGameObject = pActInfo->pEntity->QueryComponent<CGameObject>())
 					pGameObject->SendEvent(evt);
 			}
 		}

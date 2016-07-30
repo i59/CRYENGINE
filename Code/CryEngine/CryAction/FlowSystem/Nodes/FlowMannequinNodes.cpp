@@ -85,7 +85,7 @@ public:
 			{
 				IGameFramework* const pGameFramework = gEnv->pGame->GetIGameFramework();
 				const EntityId entityId = pActInfo->pEntity ? pActInfo->pEntity->GetId() : 0;
-				IGameObject* const pGameObject = pGameFramework ? pGameFramework->GetGameObject(entityId) : NULL;
+				auto *pGameObject = pActInfo->pEntity ? pActInfo->pEntity->QueryComponent<IGameObject>() : nullptr;
 				IAnimatedCharacter* const pAnimChar = pGameObject ? (IAnimatedCharacter*) pGameObject->QueryExtension("AnimatedCharacter") : NULL;
 				bool bSuccess = false;
 				if (IsPortActive(pActInfo, EIP_Play))
@@ -245,7 +245,7 @@ public:
 			break;
 		case eFE_Activate:
 			IGameFramework* const pGameFramework = gEnv->pGame->GetIGameFramework();
-			IGameObject* const pGameObject = pGameFramework->GetGameObject(pActInfo->pEntity->GetId());
+			auto *pGameObject = pActInfo->pEntity->QueryComponent<IGameObject>();
 
 			if (IsPortActive(pActInfo, EIP_Enslave) || IsPortActive(pActInfo, EIP_UnEnslave))
 			{
@@ -253,26 +253,29 @@ public:
 				if (pAnimChar && pAnimChar->GetActionController())
 				{
 					const EntityId slaveChar = GetPortEntityId(pActInfo, EIP_Slave);
-					IGameObject* pSlaveGameObject = pGameFramework->GetGameObject(slaveChar);
-					IAnimatedCharacter* pSlaveAnimChar = pSlaveGameObject ? (IAnimatedCharacter*) pSlaveGameObject->QueryExtension("AnimatedCharacter") : NULL;
-
-					if (pSlaveAnimChar && pSlaveAnimChar->GetActionController())
+					if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity(slaveChar))
 					{
-						IAnimationDatabaseManager& dbManager = gEnv->pGame->GetIGameFramework()->GetMannequinInterface().GetAnimationDatabaseManager();
-						uint32 db_crc32 = CCrc32::ComputeLowercase(GetPortString(pActInfo, EIP_DB));
-						const IAnimationDatabase* db = dbManager.FindDatabase(db_crc32);
+						auto *pSlaveGameObject = pEntity->QueryComponent<IGameObject>();
+						IAnimatedCharacter* pSlaveAnimChar = pSlaveGameObject ? (IAnimatedCharacter*)pSlaveGameObject->QueryExtension("AnimatedCharacter") : NULL;
 
-						const string& scopeContextName = GetPortString(pActInfo, EIP_ScopeContext);
-						const string& requestedScopeContext = scopeContextName.empty() ? "SlaveChar" : scopeContextName;
-						const TagID scopeContext = pAnimChar->GetActionController()->GetContext().controllerDef.m_scopeContexts.Find(scopeContextName.c_str());
+						if (pSlaveAnimChar && pSlaveAnimChar->GetActionController())
+						{
+							IAnimationDatabaseManager& dbManager = gEnv->pGame->GetIGameFramework()->GetMannequinInterface().GetAnimationDatabaseManager();
+							uint32 db_crc32 = CCrc32::ComputeLowercase(GetPortString(pActInfo, EIP_DB));
+							const IAnimationDatabase* db = dbManager.FindDatabase(db_crc32);
 
-						pAnimChar->GetActionController()->SetSlaveController(*pSlaveAnimChar->GetActionController(), scopeContext, IsPortActive(pActInfo, EIP_Enslave) ? true : false, db);
-						ActivateOutput(pActInfo, EOP_Success, 1);
-					}
-					else
-					{
-						CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "No GameObject or Animated character found for the slave");
-						ActivateOutput(pActInfo, EOP_Fail, 1);
+							const string& scopeContextName = GetPortString(pActInfo, EIP_ScopeContext);
+							const string& requestedScopeContext = scopeContextName.empty() ? "SlaveChar" : scopeContextName;
+							const TagID scopeContext = pAnimChar->GetActionController()->GetContext().controllerDef.m_scopeContexts.Find(scopeContextName.c_str());
+
+							pAnimChar->GetActionController()->SetSlaveController(*pSlaveAnimChar->GetActionController(), scopeContext, IsPortActive(pActInfo, EIP_Enslave) ? true : false, db);
+							ActivateOutput(pActInfo, EOP_Success, 1);
+						}
+						else
+						{
+							CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "No GameObject or Animated character found for the slave");
+							ActivateOutput(pActInfo, EOP_Fail, 1);
+						}
 					}
 				}
 				else
@@ -461,27 +464,30 @@ private:
 	void RegisterListener(const EntityId entityId, const bool enable)
 	{
 		IGameFramework* const pGameFramework = gEnv->pGame->GetIGameFramework();
-		IGameObject* const pGameObject = pGameFramework ? pGameFramework->GetGameObject(entityId) : NULL;
-		IAnimatedCharacter* const pAnimChar = pGameObject ? (IAnimatedCharacter*) pGameObject->QueryExtension("AnimatedCharacter") : NULL;
-		IActionController* const pActionController = pAnimChar ? pAnimChar->GetActionController() : NULL;
-		if (pActionController)
+		if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity(entityId))
 		{
-			CFlowGraphEventsProceduralContext* pContext = static_cast<CFlowGraphEventsProceduralContext*>(pActionController->FindOrCreateProceduralContext(kFlowGraphEventsProcContextName));
-			CRY_ASSERT(pContext);
-			if (enable)
+			IGameObject *pGameObject = pGameFramework ? pEntity->QueryComponent<IGameObject>() : nullptr;
+			IAnimatedCharacter* const pAnimChar = pGameObject ? (IAnimatedCharacter*)pGameObject->QueryExtension("AnimatedCharacter") : NULL;
+			IActionController* const pActionController = pAnimChar ? pAnimChar->GetActionController() : NULL;
+			if (pActionController)
 			{
-				if (m_registeredEntityId && m_registeredEntityId != entityId)
+				CFlowGraphEventsProceduralContext* pContext = static_cast<CFlowGraphEventsProceduralContext*>(pActionController->FindOrCreateProceduralContext(kFlowGraphEventsProcContextName));
+				CRY_ASSERT(pContext);
+				if (enable)
 				{
-					// Unregister from previous context
-					RegisterListener(m_registeredEntityId, false);
+					if (m_registeredEntityId && m_registeredEntityId != entityId)
+					{
+						// Unregister from previous context
+						RegisterListener(m_registeredEntityId, false);
+					}
+					pContext->RegisterListener(this);
+					m_registeredEntityId = entityId;
 				}
-				pContext->RegisterListener(this);
-				m_registeredEntityId = entityId;
-			}
-			else
-			{
-				pContext->UnregisterListener(this);
-				m_registeredEntityId = 0;
+				else
+				{
+					pContext->UnregisterListener(this);
+					m_registeredEntityId = 0;
+				}
 			}
 		}
 	}

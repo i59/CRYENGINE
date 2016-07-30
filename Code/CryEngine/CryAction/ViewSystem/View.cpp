@@ -161,11 +161,11 @@ void CView::Update(float frameTime, bool isActive)
 		IActor* pActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
 		if (pActor)
 		{
-			CGameObject* const linkToObj = static_cast<CGameObject*>(pActor->GetEntity()->GetProxy(ENTITY_PROXY_USER));
+			auto *pLinkToObject = pActor->GetEntity()->QueryComponent<CGameObject>();
 
-			if (linkToObj && linkToObj != pLinkedTo)
+			if (pLinkToObject && pLinkToObject != pLinkedTo)
 			{
-				linkToObj->PostUpdateView(m_viewParams);
+				pLinkToObject->PostUpdateView(m_viewParams);
 			}
 		}
 
@@ -752,7 +752,7 @@ CGameObject* CView::GetLinkedGameObject()
 	if (!pEntity)
 		return nullptr;
 
-	return static_cast<CGameObject*>(pEntity->GetProxy(ENTITY_PROXY_USER));
+	return pEntity->QueryComponent<CGameObject>();
 }
 
 //------------------------------------------------------------------------

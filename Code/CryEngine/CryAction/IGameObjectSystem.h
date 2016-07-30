@@ -30,16 +30,6 @@ struct IGameObjectBoxListener
 	virtual void OnRemoveParent() = 0;
 };
 
-// Description:
-//		A callback interface for a class that wants to be aware when new game objects are being spawned. A class that implements
-//		this interface will be called every time a new game object is spawned.
-struct IGameObjectSystemSink
-{
-	// This callback is called after this game object is initialized.
-	virtual void OnAfterInit(IGameObject* object) = 0;
-	virtual ~IGameObjectSystemSink(){}
-};
-
 struct IGameObjectSystem
 {
 	virtual ~IGameObjectSystem(){}
@@ -55,7 +45,7 @@ struct IGameObjectSystem
 			eSpawnParamsType_Custom,
 		};
 
-		bool  (* hookFunction)(IEntity* pEntity, IGameObject*, void* pUserData);
+		void  (* hookFunction)(IEntity& entity, IGameObject &gameObject, void* pUserData);
 		void* pUserData;
 
 		SEntitySpawnParamsForGameObjectWithPreactivatedExtension()
@@ -86,9 +76,6 @@ struct IGameObjectSystem
 	virtual uint32          GetEventID(const char* name) = 0;
 	virtual const char*     GetEventName(uint32 id) = 0;
 
-	virtual IGameObject*    CreateGameObjectForEntity(EntityId entityId) = 0;
-	virtual IEntityProxyPtr CreateGameObjectEntityProxy(IEntity& entity, IGameObject** ppGameObject = NULL) = 0;
-
 	virtual void            RegisterExtension(const char* name, IGameObjectExtensionCreatorBase* pCreator, IEntityClassRegistry::SEntityClassDesc* pEntityCls) = 0;
 	virtual void            RegisterSchedulingProfile(const char* szEntityClassName, const char* szNormalPolicy, const char* szOwnedPolicy) = 0;
 	virtual void            DefineProtocol(bool server, IProtocolBuilder* pBuilder) = 0;
@@ -100,9 +87,6 @@ struct IGameObjectSystem
 
 	virtual void            SetSpawnSerializerForEntity(const EntityId entityId, TSerialize* pSerializer) = 0;
 	virtual void            ClearSpawnSerializerForEntity(const EntityId entityId) = 0;
-
-	virtual void            AddSink(IGameObjectSystemSink* pSink) = 0;
-	virtual void            RemoveSink(IGameObjectSystemSink* pSink) = 0;
 };
 
 // Summary

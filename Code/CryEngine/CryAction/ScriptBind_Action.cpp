@@ -251,9 +251,11 @@ int CScriptBind_Action::IsGameObjectProbablyVisible(IFunctionHandler* pH, Script
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity((EntityId)gameObject.n);
 	if (pEntity)
 	{
-		CGameObject* pGameObject = static_cast<CGameObject*>(pEntity->GetProxy(ENTITY_PROXY_USER));
-		if (pGameObject && pGameObject->IsProbablyVisible())
-			return pH->EndFunction(1);
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
+		{
+			if (pGameObject->IsProbablyVisible())
+				return pH->EndFunction(1);
+		}
 	}
 	return pH->EndFunction();
 }
@@ -333,8 +335,11 @@ int CScriptBind_Action::GetServerTime(IFunctionHandler* pFH)
 //------------------------------------------------------------------------
 int CScriptBind_Action::ForceGameObjectUpdate(IFunctionHandler* pH, ScriptHandle entityId, bool force)
 {
-	if (IGameObject* pGameObject = CCryAction::GetCryAction()->GetGameObject((EntityId)entityId.n))
-		pGameObject->ForceUpdate(force);
+	if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity((EntityId)entityId.n))
+	{
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
+			pGameObject->ForceUpdate(force);
+	}
 
 	return pH->EndFunction();
 }
@@ -342,7 +347,10 @@ int CScriptBind_Action::ForceGameObjectUpdate(IFunctionHandler* pH, ScriptHandle
 //------------------------------------------------------------------------
 int CScriptBind_Action::CreateGameObjectForEntity(IFunctionHandler* pH, ScriptHandle entityId)
 {
-	CCryAction::GetCryAction()->GetIGameObjectSystem()->CreateGameObjectForEntity((EntityId)entityId.n);
+	if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity((EntityId)entityId.n))
+	{
+		pEntity->AcquireComponent<CGameObject>();
+	}
 
 	return pH->EndFunction();
 }
@@ -350,8 +358,11 @@ int CScriptBind_Action::CreateGameObjectForEntity(IFunctionHandler* pH, ScriptHa
 //------------------------------------------------------------------------
 int CScriptBind_Action::BindGameObjectToNetwork(IFunctionHandler* pH, ScriptHandle entityId)
 {
-	if (IGameObject* pGameObject = CCryAction::GetCryAction()->GetGameObject((EntityId)entityId.n))
-		pGameObject->BindToNetwork();
+	if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity((EntityId)entityId.n))
+	{
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
+			pGameObject->BindToNetwork();
+	}
 
 	return pH->EndFunction();
 }
@@ -359,12 +370,15 @@ int CScriptBind_Action::BindGameObjectToNetwork(IFunctionHandler* pH, ScriptHand
 //------------------------------------------------------------------------
 int CScriptBind_Action::ActivateExtensionForGameObject(IFunctionHandler* pH, ScriptHandle entityId, const char* extension, bool activate)
 {
-	if (IGameObject* pGameObject = CCryAction::GetCryAction()->GetGameObject((EntityId)entityId.n))
+	if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity((EntityId)entityId.n))
 	{
-		if (activate)
-			pGameObject->ActivateExtension(extension);
-		else
-			pGameObject->DeactivateExtension(extension);
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
+		{
+			if (activate)
+				pGameObject->ActivateExtension(extension);
+			else
+				pGameObject->DeactivateExtension(extension);
+		}
 	}
 
 	return pH->EndFunction();
@@ -374,8 +388,11 @@ int CScriptBind_Action::ActivateExtensionForGameObject(IFunctionHandler* pH, Scr
 //------------------------------------------------------------------------
 int CScriptBind_Action::SetNetworkParent(IFunctionHandler* pH, ScriptHandle entityId, ScriptHandle parentId)
 {
-	if (IGameObject* pGameObject = CCryAction::GetCryAction()->GetGameObject((EntityId)entityId.n))
-		pGameObject->SetNetworkParent((EntityId)parentId.n);
+	if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity((EntityId)entityId.n))
+	{
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
+			pGameObject->SetNetworkParent((EntityId)parentId.n);
+	}
 
 	return pH->EndFunction();
 }
@@ -385,6 +402,7 @@ int CScriptBind_Action::IsChannelOnHold(IFunctionHandler* pH, int channelId)
 {
 	if (CGameServerChannel* pServerChannel = CCryAction::GetCryAction()->GetGameServerNub()->GetChannel(channelId))
 		return pH->EndFunction(pServerChannel->IsOnHold());
+
 	return pH->EndFunction();
 }
 
@@ -730,8 +748,12 @@ int CScriptBind_Action::AddAngleSignal(IFunctionHandler* pH, ScriptHandle entity
 //------------------------------------------------------------------------
 int CScriptBind_Action::DontSyncPhysics(IFunctionHandler* pH, ScriptHandle entityId)
 {
-	if (CGameObject* pGO = static_cast<CGameObject*>(CCryAction::GetCryAction()->GetIGameObjectSystem()->CreateGameObjectForEntity((EntityId)entityId.n)))
-		pGO->DontSyncPhysics();
+	if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity((EntityId)entityId.n))
+	{
+		auto &gameObject = pEntity->AcquireComponent<CGameObject>();
+
+		gameObject.DontSyncPhysics();
+	}
 	else
 		GameWarning("DontSyncPhysics: Unable to find entity %" PRISIZE_T, entityId.n);
 	return pH->EndFunction();

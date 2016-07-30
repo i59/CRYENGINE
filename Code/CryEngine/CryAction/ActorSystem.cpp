@@ -85,7 +85,7 @@ CActorSystem::~CActorSystem()
 	{
 		IEntityClass* pClass = m_pEntitySystem->GetClassRegistry()->FindClass(it->first.c_str());
 		if (pClass)
-			delete (char*)pClass->GetUserProxyData();
+			delete (char*)pClass->GetEntitySpawnCallbackData();
 	}
 }
 
@@ -279,10 +279,9 @@ void CActorSystem::RemoveActor(EntityId entityId)
 }
 
 //------------------------------------------------------------------------
-bool CActorSystem::HookCreateActor(IEntity* pEntity, IGameObject* pGameObject, void* pUserData)
+void CActorSystem::HookCreateActor(IEntity& entity, IGameObject& gameObject, void* pUserData)
 {
-	pGameObject->SetChannelId(*static_cast<uint16*>(pUserData));
-	return true;
+	gameObject.SetChannelId(*static_cast<uint16*>(pUserData));
 }
 
 //---------------------------------------------------------------------

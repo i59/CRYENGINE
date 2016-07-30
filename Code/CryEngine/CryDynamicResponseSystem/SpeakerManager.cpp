@@ -5,7 +5,6 @@
 #include "ResponseSystem.h"
 
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
-#include <CryEntitySystem/IEntityProxy.h>
 #include <CryAnimation/IAttachment.h>
 #include <CrySystem/IConsole.h>
 #include <CryRenderer/IRenderer.h>

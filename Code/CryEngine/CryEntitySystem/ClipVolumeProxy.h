@@ -7,7 +7,6 @@
 
 #include "EntitySystem.h"
 #include <CryEntitySystem/IEntityClass.h>
-#include <CryEntitySystem/IEntityProxy.h>
 #include <CryNetwork/ISerialize.h>
 #include <CryRenderer/IRenderMesh.h>
 

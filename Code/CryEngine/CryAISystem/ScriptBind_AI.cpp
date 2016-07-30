@@ -33,7 +33,6 @@
 
 #include "AIActions.h"
 
-#include <CryEntitySystem/IEntityProxy.h>
 #include <CryFlowGraph/IFlowSystem.h>
 #include <CryAISystem/IInterestSystem.h>
 #include "TacticalPointSystem/TacticalPointSystem.h"

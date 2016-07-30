@@ -1619,11 +1619,8 @@ bool CActionMapManager::HandleAcceptedEvents(const SInputEvent& event, TBindPrio
 		if (!pEntity)
 			continue;
 
-		CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER);
-		if (!pGameObject)
-			continue;
-
-		pGameObject->OnAction(actionID, currentState, event.value);
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
+			pGameObject->OnAction(actionID, currentState, event.value);
 	}
 
 	return false; // Not handled

@@ -54,13 +54,18 @@ bool CGameRules::OnClientConnect(int channelId, bool isReset)
 		}
 	}
 
-	IEntity* pPlayerEntity = pEntitySystem->SpawnEntity(params, false);
+	if (IEntity *pPlayerEntity = pEntitySystem->SpawnEntity(params, false))
+	{
+		if (auto *pPlayerGameObject = pPlayerEntity->QueryComponent<IGameObject>())
+		{
+			// always set the channel id before initializing the entity
+			pPlayerGameObject->SetChannelId(channelId);
+		}
 
-	CGameObject* pGameObject = static_cast<CGameObject*>(pPlayerEntity->GetProxy(ENTITY_PROXY_USER));
-	// always set the channel id before initializing the entity
-	pGameObject->SetChannelId(channelId);
+		return pEntitySystem->InitEntity(pPlayerEntity, params);
+	}
 
-	return pEntitySystem->InitEntity(pPlayerEntity, params);
+	return false;
 }
 
 void CGameRules::GetMemoryUsage(ICrySizer* s) const

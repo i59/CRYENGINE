@@ -248,15 +248,10 @@ CEntity::CEntity(SEntitySpawnParams& params)
 
 	//////////////////////////////////////////////////////////////////////////
 	// Check if entity needs to create a proxy class.
-	IEntityClass::UserProxyCreateFunc pUserProxyCreateFunc = m_pClass->GetUserProxyCreateFunc();
-	if (pUserProxyCreateFunc)
+	IEntityClass::EntitySpawnCallback entitySpawnCallback = m_pClass->GetEntitySpawnCallback();
+	if (entitySpawnCallback)
 	{
-		IEntityProxyPtr pUserProxy = pUserProxyCreateFunc(this, params, m_pClass->GetUserProxyData());
-		if (pUserProxy)
-		{
-			// Assign user proxy if successfully created.
-			SetProxy(ENTITY_PROXY_USER, pUserProxy);
-		}
+		entitySpawnCallback(*this, params, m_pClass->GetEntitySpawnCallbackData());
 	}
 
 	if (IEntityPropertyHandler* pPropertyHandler = m_pClass->GetPropertyHandler())

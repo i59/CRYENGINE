@@ -1296,19 +1296,6 @@ void CActionGame::UpdateFadeEntities(float dt)
 	}
 }
 
-IGameObject* CActionGame::GetEntityGameObject(IEntity* pEntity)
-{
-	return static_cast<CGameObject*>(pEntity ? pEntity->GetProxy(ENTITY_PROXY_USER) : 0);
-}
-
-IGameObject* CActionGame::GetPhysicalEntityGameObject(IPhysicalEntity* pPhysEntity)
-{
-	IEntity* pEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pPhysEntity);
-	if (pEntity)
-		return static_cast<CGameObject*>(pEntity->GetProxy(ENTITY_PROXY_USER));
-	return 0;
-}
-
 bool CActionGame::IsStale()
 {
 	if (m_pGameClientNub && m_pClientNub)
@@ -1833,13 +1820,13 @@ int CActionGame::OnCollisionLogged(const EventPhys* pEvent)
 	{
 		//gameCollision.pSrcEntity = gEnv->pEntitySystem->GetEntityFromPhysics(gameCollision.pCollision->pEntity[0]);
 		gameCollision.pSrcEntity = (IEntity*)pCollision->pForeignData[0];
-		gameCollision.pSrc = GetEntityGameObject(gameCollision.pSrcEntity);
+		gameCollision.pSrc = gameCollision.pSrcEntity->QueryComponent<IGameObject>();
 	}
 	if (pCollision->iForeignData[1] == PHYS_FOREIGN_ID_ENTITY)
 	{
 		//gameCollision.pTrgEntity = gEnv->pEntitySystem->GetEntityFromPhysics(gameCollision.pCollision->pEntity[1]);
 		gameCollision.pTrgEntity = (IEntity*)pCollision->pForeignData[1];
-		gameCollision.pTrg = GetEntityGameObject(gameCollision.pTrgEntity);
+		gameCollision.pTrg = gameCollision.pTrgEntity->QueryComponent<IGameObject>();
 	}
 
 	SGameObjectEvent event(eGFE_OnCollision, eGOEF_ToExtensions | eGOEF_ToGameObject | eGOEF_LoggedPhysicsEvent);
@@ -2540,7 +2527,7 @@ ForceObjUpdate:
 
 			if (pEntityTrg && pStatObjNew)
 			{
-				if (IGameObject* pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(pEntityTrg->GetId()))
+				if (auto *pGameObject = pEntityTrg->QueryComponent<IGameObject>())
 				{
 					SGameObjectEvent evt(eGFE_OnBreakable2d, eGOEF_ToExtensions);
 					evt.ptr = (void*)&epc;
@@ -3237,13 +3224,17 @@ int CActionGame::OnPostStepLogged(const EventPhys* pEvent)
 	}
 
 	const EventPhysPostStep* pPostStep = static_cast<const EventPhysPostStep*>(pEvent);
-	IGameObject* pSrc = s_this->GetPhysicalEntityGameObject(pPostStep->pEntity);
-
-	if (pSrc && pSrc->WantsPhysicsEvent(eEPE_OnPostStepLogged))
+	if (auto *pEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pPostStep->pEntity))
 	{
-		SGameObjectEvent event(eGFE_OnPostStep, eGOEF_ToExtensions | eGOEF_ToGameObject | eGOEF_LoggedPhysicsEvent);
-		event.ptr = (void*)pPostStep;
-		pSrc->SendEvent(event);
+		if (auto *pGameObject = pEntity->QueryComponent<IGameObject>())
+		{
+			if (pGameObject->WantsPhysicsEvent(eEPE_OnPostStepLogged))
+			{
+				SGameObjectEvent event(eGFE_OnPostStep, eGOEF_ToExtensions | eGOEF_ToGameObject | eGOEF_LoggedPhysicsEvent);
+				event.ptr = (void*)pPostStep;
+				pGameObject->SendEvent(event);
+			}
+		}
 	}
 
 	OnPostStepLogged_MaterialFX(pEvent);
@@ -3339,19 +3330,23 @@ int CActionGame::OnStateChangeLogged(const EventPhys* pEvent)
 	}
 
 	const EventPhysStateChange* pStateChange = static_cast<const EventPhysStateChange*>(pEvent);
-	IGameObject* pSrc = s_this->GetPhysicalEntityGameObject(pStateChange->pEntity);
-
-	if (!gEnv->bServer && pSrc && pStateChange->iSimClass[1] > 1 && pStateChange->iSimClass[0] <= 1 && Get()->m_pNetContext)
+	if (IEntity *pSourceEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pStateChange->pEntity))
 	{
-		//CryLogAlways("[0] = %d, [1] = %d", pStateChange->iSimClass[0], pStateChange->iSimClass[1]);
-		Get()->m_pNetContext->RequestRemoteUpdate(pSrc->GetEntityId(), eEA_Physics);
-	}
+		if (auto *pSourceGameObject = pSourceEntity->QueryComponent<IGameObject>())
+		{
+			if (!gEnv->bServer && pStateChange->iSimClass[1] > 1 && pStateChange->iSimClass[0] <= 1 && Get()->m_pNetContext)
+			{
+				//CryLogAlways("[0] = %d, [1] = %d", pStateChange->iSimClass[0], pStateChange->iSimClass[1]);
+				Get()->m_pNetContext->RequestRemoteUpdate(pSourceGameObject->GetEntityId(), eEA_Physics);
+			}
 
-	if (pSrc && pSrc->WantsPhysicsEvent(eEPE_OnStateChangeLogged))
-	{
-		SGameObjectEvent event(eGFE_OnStateChange, eGOEF_ToExtensions | eGOEF_ToGameObject | eGOEF_LoggedPhysicsEvent);
-		event.ptr = (void*)pStateChange;
-		pSrc->SendEvent(event);
+			if (pSourceGameObject->WantsPhysicsEvent(eEPE_OnStateChangeLogged))
+			{
+				SGameObjectEvent event(eGFE_OnStateChange, eGOEF_ToExtensions | eGOEF_ToGameObject | eGOEF_LoggedPhysicsEvent);
+				event.ptr = (void*)pStateChange;
+				pSourceGameObject->SendEvent(event);
+			}
+		}
 	}
 
 	OnStateChangeLogged_MaterialFX(pEvent);
@@ -4204,16 +4199,21 @@ int CActionGame::OnCollisionImmediate(const EventPhys* pEvent)
 	}
 
 	const EventPhysCollision* pCollision = static_cast<const EventPhysCollision*>(pEvent);
-	IGameObject* pSrc = s_this->GetPhysicalEntityGameObject(pCollision->pEntity[0]);
-	IGameObject* pTrg = s_this->GetPhysicalEntityGameObject(pCollision->pEntity[1]);
-
+	
 	SGameObjectEvent event(eGFE_OnCollision, eGOEF_ToExtensions | eGOEF_ToGameObject);
 	event.ptr = (void*)pCollision;
 
-	if (pSrc && pSrc->WantsPhysicsEvent(eEPE_OnCollisionImmediate))
-		pSrc->SendEvent(event);
-	if (pTrg && pTrg->WantsPhysicsEvent(eEPE_OnCollisionImmediate))
-		pTrg->SendEvent(event);
+	for (uint8 i = 0; i < 2; i++)
+	{
+		if (auto *pEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pCollision->pEntity[i]))
+		{
+			if (auto *pGameObject = pEntity->QueryComponent<IGameObject>())
+			{
+				if (pGameObject->WantsPhysicsEvent(eEPE_OnCollisionImmediate))
+					pGameObject->SendEvent(event);
+			}
+		}
+	}
 
 	ISurfaceTypeManager* pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
 	ISurfaceType* pMat = pSurfaceTypeManager->GetSurfaceType(pCollision->idmat[1]);
@@ -4254,23 +4254,24 @@ int CActionGame::OnPostStepImmediate(const EventPhys* pEvent)
 	}
 
 	const EventPhysPostStep* pPostStep = static_cast<const EventPhysPostStep*>(pEvent);
-	IGameObject* piGameObject = s_this->GetPhysicalEntityGameObject(pPostStep->pEntity);
 
-	// we cannot delete the gameobject while the event is processed
-	if (piGameObject)
+	if (auto *pEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pPostStep->pEntity))
 	{
-		CGameObject* pGameObject = static_cast<CGameObject*>(piGameObject);
-		pGameObject->AcquireMutex();
-
-		// Test that the physics proxy is still enabled.
-		if (piGameObject->WantsPhysicsEvent(eEPE_OnPostStepImmediate))
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 		{
-			SGameObjectEvent event(eGFE_OnPostStep, eGOEF_ToExtensions | eGOEF_ToGameObject);
-			event.ptr = (void*)pEvent;
+			// we cannot delete the gameobject while the event is processed
+			pGameObject->AcquireMutex();
 
-			piGameObject->SendEvent(event);
+			// Test that the physics proxy is still enabled.
+			if (pGameObject->WantsPhysicsEvent(eEPE_OnPostStepImmediate))
+			{
+				SGameObjectEvent event(eGFE_OnPostStep, eGOEF_ToExtensions | eGOEF_ToGameObject);
+				event.ptr = (void*)pEvent;
+
+				pGameObject->SendEvent(event);
+			}
+			pGameObject->ReleaseMutex();
 		}
-		pGameObject->ReleaseMutex();
 	}
 
 	return 1;
@@ -4286,13 +4287,18 @@ int CActionGame::OnStateChangeImmediate(const EventPhys* pEvent)
 	}
 
 	const EventPhysStateChange* pStateChange = static_cast<const EventPhysStateChange*>(pEvent);
-	IGameObject* pSrc = s_this->GetPhysicalEntityGameObject(pStateChange->pEntity);
-
-	if (pSrc && pSrc->WantsPhysicsEvent(eEPE_OnStateChangeImmediate))
+	
+	if (auto *pEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pStateChange->pEntity))
 	{
-		SGameObjectEvent event(eGFE_OnStateChange, eGOEF_ToExtensions | eGOEF_ToGameObject);
-		event.ptr = (void*)pStateChange;
-		pSrc->SendEvent(event);
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
+		{
+			if (pGameObject->WantsPhysicsEvent(eEPE_OnStateChangeImmediate))
+			{
+				SGameObjectEvent event(eGFE_OnStateChange, eGOEF_ToExtensions | eGOEF_ToGameObject);
+				event.ptr = (void*)pStateChange;
+				pGameObject->SendEvent(event);
+			}
+		}
 	}
 
 	return 1;

@@ -201,7 +201,7 @@ void CGameObjectSystem::RegisterExtension(const char* name, IGameObjectExtension
 
 	if (pClsDesc)
 	{
-		pClsDesc->pUserProxyCreateFunc = CreateGameObjectWithPreactivatedExtension;
+		pClsDesc->pEntitySpawnCallback = CreateGameObjectWithPreactivatedExtension;
 		//		pClsDesc->pUserProxyData = new SSpawnUserData(sName);
 		if (!gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(*pClsDesc))
 		{
@@ -269,7 +269,7 @@ void CGameObjectSystem::BroadcastEvent(const SGameObjectEvent& evt)
 	IEntityItPtr pEntIt = gEnv->pEntitySystem->GetEntityIterator();
 	while (IEntity* pEntity = pEntIt->Next())
 	{
-		if (CGameObject* pGameObject = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER))
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 		{
 			pGameObject->SendEvent(evt);
 		}
@@ -308,41 +308,6 @@ const char* CGameObjectSystem::GetEventName(uint32 id)
 		return 0;
 }
 
-IGameObject* CGameObjectSystem::CreateGameObjectForEntity(EntityId entityId)
-{
-	if (IGameObject* pGameObject = CCryAction::GetCryAction()->GetGameObject(entityId))
-		return pGameObject;
-
-	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(entityId);
-	if (pEntity)
-	{
-		CGameObjectPtr pGameObject = ComponentCreateAndRegister_DeleteWithRelease<CGameObject>(IComponent::SComponentInitializer(pEntity), IComponent::EComponentFlags_LazyRegistration);
-		pEntity->SetProxy(ENTITY_PROXY_USER, pGameObject);
-
-		SEntitySpawnParams spawnParams;
-		pGameObject->Init(pEntity, spawnParams);
-		// call sink
-		for (SinkList::iterator si = m_lstSinks.begin(); si != m_lstSinks.end(); ++si)
-		{
-			(*si)->OnAfterInit(pGameObject.get());
-		}
-		//
-		return pGameObject.get();
-	}
-
-	return 0;
-}
-
-IEntityProxyPtr CGameObjectSystem::CreateGameObjectEntityProxy(IEntity& entity, IGameObject** ppGameObject)
-{
-	CGameObjectPtr pGameObject = ComponentCreateAndRegister_DeleteWithRelease<CGameObject>(IComponent::SComponentInitializer(&entity), IComponent::EComponentFlags_LazyRegistration);
-	if (ppGameObject)
-	{
-		*ppGameObject = pGameObject.get();
-	}
-	return pGameObject;
-}
-
 IGameObjectExtensionPtr CGameObjectSystem::Instantiate(ExtensionID id, IGameObject* pObject)
 {
 	if (id > m_extensionInfo.size())
@@ -368,33 +333,26 @@ IGameObjectExtensionPtr CGameObjectSystem::Instantiate(ExtensionID id, IGameObje
 }
 
 /* static */
-IEntityProxyPtr CGameObjectSystem::CreateGameObjectWithPreactivatedExtension(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
+void CGameObjectSystem::CreateGameObjectWithPreactivatedExtension(IEntity& entity, SEntitySpawnParams& params, void* pUserData)
 {
-	CGameObjectPtr pGameObject = ComponentCreateAndRegister_DeleteWithRelease<CGameObject>(IComponent::SComponentInitializer(pEntity), IComponent::EComponentFlags_LazyRegistration);
-	if (!pGameObject->ActivateExtension(params.pClass->GetName()))
+	auto &gameObject = entity.AcquireComponent<CGameObject>();
+
+	if (!gameObject.ActivateExtension(params.pClass->GetName()))
 	{
-		pEntity->RegisterComponent(pGameObject, false);
-		pGameObject.reset();
-		return IEntityProxyPtr();
+		GameWarning("Failed to activate default extension %s for newly created entity", params.pClass->GetName());
 	}
 
 	if (params.pUserData)
 	{
 		SEntitySpawnParamsForGameObjectWithPreactivatedExtension* pParams =
 		  static_cast<SEntitySpawnParamsForGameObjectWithPreactivatedExtension*>(params.pUserData);
-		if (!pParams->hookFunction(pEntity, pGameObject.get(), pParams->pUserData))
-		{
-			pEntity->RegisterComponent(pGameObject, false);
-			pGameObject.reset();
-			return IEntityProxyPtr();
-		}
+
+		pParams->hookFunction(entity, gameObject, pParams->pUserData);
 	}
 
 #if GAME_OBJECT_SUPPORTS_CUSTOM_USER_DATA
-	pGameObject->SetUserData(params.pUserData);
+	gameObject.SetUserData(params.pUserData);
 #endif
-
-	return pGameObject;
 }
 
 void CGameObjectSystem::PostUpdate(float frameTime)
@@ -471,27 +429,4 @@ void CGameObjectSystem::GetMemoryUsage(ICrySizer* s) const
 	s->AddObject(m_dispatch);
 	s->AddObject(m_postUpdateObjects);
 	s->AddObject(m_schedulingParams);
-
-	IEntityItPtr pIt = gEnv->pEntitySystem->GetEntityIterator();
-	while (IEntity* pEnt = pIt->Next())
-	{
-		s->AddObject((CGameObject*)pEnt->GetProxy(ENTITY_PROXY_USER));
-	}
-}
-
-//////////////////////////////////////////////////////////////////////
-void CGameObjectSystem::AddSink(IGameObjectSystemSink* pSink)
-{
-	CRY_ASSERT(pSink);
-
-	if (pSink)
-		stl::push_back_unique(m_lstSinks, pSink);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CGameObjectSystem::RemoveSink(IGameObjectSystemSink* pSink)
-{
-	CRY_ASSERT(pSink);
-
-	m_lstSinks.remove(pSink);
 }

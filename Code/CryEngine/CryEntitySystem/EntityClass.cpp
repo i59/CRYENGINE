@@ -18,8 +18,8 @@
 //////////////////////////////////////////////////////////////////////////
 CEntityClass::CEntityClass()
 {
-	m_pfnUserProxyCreate = NULL;
-	m_pUserProxyUserData = NULL;
+	m_pfnSpawnCallback = NULL;
+	m_pSpawnCallbackData = NULL;
 	m_pPropertyHandler = NULL;
 	m_pEventHandler = NULL;
 	m_pScriptFileHandler = NULL;
@@ -216,10 +216,10 @@ void CEntityClass::SetEntityScript(IEntityScript* pScript)
 	m_pEntityScript = pScript;
 }
 
-void CEntityClass::SetUserProxyCreateFunc(UserProxyCreateFunc pFunc, void* pUserData /*=NULL */)
+void CEntityClass::SetEntitySpawnCallback(EntitySpawnCallback pFunc, void* pUserData /*=NULL */)
 {
-	m_pfnUserProxyCreate = pFunc;
-	m_pUserProxyUserData = pUserData;
+	m_pfnSpawnCallback = pFunc;
+	m_pSpawnCallbackData = pUserData;
 }
 
 void CEntityClass::SetPropertyHandler(IEntityPropertyHandler* pPropertyHandler)

@@ -3864,15 +3864,6 @@ void CCryAction::DelegateAuthority(EntityId entityId, uint16 channelId)
 	pNetContext->DelegateAuthority(entityId, pNetChannel);
 }
 
-IGameObject* CCryAction::GetGameObject(EntityId id)
-{
-	if (IEntity* pEnt = gEnv->pEntitySystem->GetEntity(id))
-		if (CGameObject* pGameObject = (CGameObject*) pEnt->GetProxy(ENTITY_PROXY_USER))
-			return pGameObject;
-
-	return NULL;
-}
-
 bool CCryAction::GetNetworkSafeClassId(uint16& id, const char* className)
 {
 	if (CGameContext* pGameContext = GetGameContext())
@@ -3898,14 +3889,6 @@ bool CCryAction::GetNetworkSafeClassName(char* className, size_t classNameSizeIn
 	}
 
 	return false;
-}
-
-IGameObjectExtension* CCryAction::QueryGameObjectExtension(EntityId id, const char* name)
-{
-	if (IGameObject* pObj = GetGameObject(id))
-		return pObj->QueryExtension(name);
-	else
-		return NULL;
 }
 
 bool CCryAction::ControlsEntity(EntityId id) const

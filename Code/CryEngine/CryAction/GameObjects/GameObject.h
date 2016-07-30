@@ -120,9 +120,7 @@ struct SDistanceChecker
 
 struct IGOUpdateDbg;
 
-class CGameObject :
-	public IEntityProxy,
-	public IGameObject
+class CGameObject : public IGameObject
 {
 public:
 	CGameObject();
@@ -130,19 +128,20 @@ public:
 
 	static void CreateCVars();
 
-	// IEntityProxy
-	virtual EEntityProxy GetType() { return ENTITY_PROXY_USER; };
-	virtual bool         Init(IEntity* pEntity, SEntitySpawnParams& spawnParams);
-	virtual void         Reload(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void         Done();
-	virtual void         Release();
-	virtual void         Update(SEntityUpdateContext& ctx);
-	virtual void         ProcessEvent(SEntityEvent& event);
-	virtual void         SerializeXML(XmlNodeRef& entityNode, bool loading);
-	virtual void         Serialize(TSerialize ser);
-	virtual bool         NeedSerialize();
-	virtual bool         GetSignature(TSerialize signature);
-	// ~IEntityProxy
+	// IEntityComponent
+	virtual void Initialize(IEntity &entity) override;
+
+	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
+	virtual void Update(SEntityUpdateContext& ctx) override;
+
+	virtual void Serialize(TSerialize ser) override;
+
+	virtual bool NeedSerialize() override;
+	virtual bool GetSignature(TSerialize signature) override;
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;
+	// ~IEntityComponent
 
 	// IActionListener
 	virtual void OnAction(const ActionId& actionId, int activationMode, float value);
@@ -150,7 +149,7 @@ public:
 	// ~IActionListener
 
 	// IGameObject
-	virtual bool BindToNetwork(EBindToNetworkMode);
+	virtual bool BindToNetwork(EBindToNetworkMode mode = eBTNM_Normal);
 	virtual bool                  BindToNetworkWithParent(EBindToNetworkMode mode, EntityId parentId);
 	virtual void                  ChangedNetworkState(NetworkAspectType aspects);
 	virtual void                  EnableAspect(NetworkAspectType aspects, bool enable);
@@ -251,8 +250,6 @@ public:
 	void         FlushActivatableExtensions() { FlushExtensions(false); }
 
 	void         PostRemoteSpawn();
-
-	void         GetMemoryUsage(ICrySizer* s) const;
 
 	static void  UpdateSchedulingProfiles();
 

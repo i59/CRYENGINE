@@ -856,10 +856,8 @@ uint8 CGameContext::GetDefaultProfileForAspect(EntityId id, NetworkAspectType as
 		return ~uint8(0);
 	}
 
-	IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
-	if (pProxy)
+	if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 	{
-		CGameObject* pGameObject = (CGameObject*)pProxy;
 		return pGameObject->GetDefaultProfile((EEntityAspects)aspectID);
 	}
 	return 0;
@@ -958,8 +956,8 @@ ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectTyp
 	case eEA_GameServerE:
 	case eEA_Aspect31:
 		{
-			IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
-			if (!pProxy)
+			auto *pGameObject = pEntity->QueryComponent<CGameObject>();
+			if (pGameObject == nullptr)
 			{
 				if (verboseLogging)
 					GameWarning("CGameContext::SynchObject: No user proxy with eEA_GameObject");
@@ -969,7 +967,6 @@ ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectTyp
 
 			NET_PROFILE_SCOPE("NetSerialize", serialize.IsReading());
 
-			CGameObject* pGameObject = (CGameObject*)pProxy;
 			if (!pGameObject->NetSerialize(serialize, (EEntityAspects)nAspect, profile, 0))
 			{
 				if (verboseLogging)
@@ -994,12 +991,11 @@ ESynchObjectResult CGameContext::SynchObject(EntityId entityId, NetworkAspectTyp
 					pflags |= ssf_compensate_time_diff;
 				}
 			}
-			IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
-			if (pProxy)
+
+			if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 			{
 				NET_PROFILE_SCOPE("NetSerialize", serialize.IsReading());
 
-				CGameObject* pGameObject = (CGameObject*)pProxy;
 				if (!pGameObject->NetSerialize(serialize, eEA_Physics, profile, pflags))
 				{
 					if (verboseLogging)
@@ -1056,10 +1052,8 @@ bool CGameContext::SetAspectProfile(EntityId id, NetworkAspectType aspectBit, ui
 
 	CRY_ASSERT(0 == (aspectBit & (aspectBit - 1)));
 
-	IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
-	if (pProxy)
+	if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 	{
-		CGameObject* pGameObject = (CGameObject*)pProxy;
 		if (pGameObject->SetAspectProfile((EEntityAspects)aspectBit, profile, true))
 			return true;
 	}
@@ -1115,11 +1109,7 @@ INetSendableHookPtr CGameContext::CreateObjectSpawner(EntityId entityId, INetCha
 		channelId = pGameServerChannel->GetChannelId();
 	}
 
-	IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
-
-	CGameObject* pGameObject = reinterpret_cast<CGameObject*>(pProxy);
-	assert(pGameObject);
-	PREFAST_ASSUME(pGameObject);
+	auto &gameObject = pEntity->AcquireComponent<CGameObject>();
 
 	SBasicSpawnParams params;
 	params.name = pEntity->GetName();
@@ -1134,7 +1124,7 @@ INetSendableHookPtr CGameContext::CreateObjectSpawner(EntityId entityId, INetCha
 	params.pos = pEntity->GetPos();
 	params.scale = pEntity->GetScale();
 	params.rotation = pEntity->GetRotation();
-	params.nChannelId = pGameObject ? pGameObject->GetChannelId() : 0;
+	params.nChannelId = gameObject.GetChannelId();
 	params.flags = pEntity->GetFlags();
 
 	params.bClientActor = pChannel ?
@@ -1145,7 +1135,7 @@ INetSendableHookPtr CGameContext::CreateObjectSpawner(EntityId entityId, INetCha
 		pChannel->DeclareWitness(entityId);
 	}
 
-	return new CSpawnMsg(params, pGameObject->GetSpawnInfo());
+	return new CSpawnMsg(params, gameObject.GetSpawnInfo());
 }
 
 void CGameContext::ObjectInitClient(EntityId entityId, INetChannel* pChannel)
@@ -1164,10 +1154,7 @@ void CGameContext::ObjectInitClient(EntityId entityId, INetChannel* pChannel)
 		channelId = pGameServerChannel->GetChannelId();
 	}
 
-	IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
-
-	CGameObject* pGameObject = reinterpret_cast<CGameObject*>(pProxy);
-	if (pGameObject)
+	if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 	{
 		pGameObject->InitClient(channelId);
 	}
@@ -1188,10 +1175,9 @@ bool CGameContext::SendPostSpawnObject(EntityId id, INetChannel* pINetChannel)
 		channelId = pGameServerChannel->GetChannelId();
 	}
 
-	IEntityProxy* pProxy = pEntity->GetProxy(ENTITY_PROXY_USER);
-	CGameObject* pGameObject = reinterpret_cast<CGameObject*>(pProxy);
-	if (pGameObject)
+	if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 		pGameObject->PostInitClient(channelId);
+
 	m_pScriptRMI->OnPostInitClient(channelId, pEntity);
 
 	return true;
@@ -1203,7 +1189,7 @@ void CGameContext::ControlObject(EntityId id, bool bHaveControl)
 
 	if (IEntity* pEntity = m_pEntitySystem->GetEntity(id))
 	{
-		if (CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER))
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 		{
 			pGameObject->SetAuthority(bHaveControl);
 		}
@@ -1330,29 +1316,8 @@ void CGameContext::OnSpawn(IEntity* pEntity, SEntitySpawnParams& params)
 		m_pScriptRMI->SetupEntity(params.id, pEntity, true, true);
 	}
 
-	bool calledBindToNetwork = false;
-	if (m_isInLevelLoad && gEnv->bMultiplayer)
-	{
-		if (!pEntity->GetProxy(ENTITY_PROXY_USER))
-		{
-			if (pEntity->GetScriptTable())
-			{
-				IGameObject* pGO = CCryAction::GetCryAction()->GetIGameObjectSystem()->CreateGameObjectForEntity(pEntity->GetId());
-				if (pGO)
-				{
-					//CryLog("Forcibly binding %s to network", params.sName);
-					calledBindToNetwork = true;
-					pGO->BindToNetwork();
-				}
-			}
-		}
-	}
-
-	if (!calledBindToNetwork)
-	{
-		if (CGameObject* pGO = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER))
-			pGO->BindToNetwork(eBTNM_NowInitialized);
-	}
+	if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
+		pGameObject->BindToNetwork(eBTNM_NowInitialized);
 
 	CallOnSpawnComplete(pEntity);
 }
@@ -1449,8 +1414,8 @@ void CGameContext::OnReused(IEntity* pEntity, SEntitySpawnParams& params)
 			if (pClientChannel->GetPlayerId() == params.prevId)
 				pClientChannel->ClearPlayer();
 
-	if (CGameObject* pGO = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER))
-		pGO->BindToNetwork(eBTNM_NowInitialized);
+	if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
+		pGameObject->BindToNetwork(eBTNM_NowInitialized);
 }
 
 void CGameContext::OnEvent(IEntity* pEntity, SEntityEvent& event)
@@ -1594,10 +1559,9 @@ void CGameContext::BoundObject(EntityId id, NetworkAspectType nAspects)
 		GameWarning("[net] notification of binding non existant entity %.8x received", id);
 		return;
 	}
-	CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER);
-	if (!pGameObject)
-		return; // not a game object, things are ok
-	pGameObject->BecomeBound();
+
+	if(auto *pGameObject = pEntity->QueryComponent<CGameObject>())
+		pGameObject->BecomeBound();
 }
 
 bool CGameContext::ChangeContext(bool isServer, const SGameContextParams* params)
@@ -1954,8 +1918,8 @@ void CGameContext::EnableAspects(EntityId id, NetworkAspectType aspects, bool bE
 	{
 		IEntity* pEntity = m_pEntitySystem->GetEntity(id);
 		CRY_ASSERT(pEntity);
-		CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER);
-		if (pGameObject)
+
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 		{
 			aspects &= pGameObject->GetEnabledAspects();
 		}
@@ -2032,13 +1996,14 @@ void CGameContext::PlayerIdSet(EntityId id)
 	if (m_pVoiceController)
 		m_pVoiceController->PlayerIdSet(id);
 #endif
-	if (IEntity* pEnt = gEnv->pEntitySystem->GetEntity(id))
+	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id))
 	{
-		pEnt->AddFlags(ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_TRIGGER_AREAS);
-		if (CGameObject* pGO = (CGameObject*) pEnt->GetProxy(ENTITY_PROXY_USER))
+		pEntity->AddFlags(ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_TRIGGER_AREAS);
+
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 		{
 			SGameObjectEvent goe(eGFE_BecomeLocalPlayer, eGOEF_ToAll);
-			pGO->SendEvent(goe);
+			pGameObject->SendEvent(goe);
 		}
 	}
 }

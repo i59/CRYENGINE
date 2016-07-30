@@ -16,7 +16,6 @@
 #include <CrySerialization/Forward.h>
 
 struct IEntity;
-struct IEntityProxy;
 struct SEntitySpawnParams;
 struct IEntityScript;
 struct IScriptTable;
@@ -218,14 +217,9 @@ typedef DynArray<IEntityAttributePtr> TEntityAttributeArray;
 //! Two entities can be compared if they are of the same type by just comparing their IEntityClass pointers.
 struct IEntityClass
 {
-	//! UserProxyCreateFunc is a function pointer type,.
-	//! By calling this function EntitySystem can create user defined UserProxy class for an entity in SpawnEntity.
-	//! For example:
-	//! IEntityProxy* CreateUserProxy( IEntity *pEntity, SEntitySpawnParams &params )
-	//! {
-	//!     return new CUserProxy( pEntity,params );.
-	//! }
-	typedef IEntityProxyPtr (* UserProxyCreateFunc)(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData);
+	//! EntitySpawnCallback is a function pointer type that is called when an entity of this class is spawned.
+	//! This allows for class-specific logic such as automatically acquiring entity components on entity creation
+	typedef void (* EntitySpawnCallback)(IEntity& entity, SEntitySpawnParams& params, void* pUserData);
 
 	enum EventValueType
 	{
@@ -284,13 +278,13 @@ struct IEntityClass
 	//! \note It is safe to call LoadScript multiple times, the script will only be loaded on the first call (unless bForceReload is specified).
 	virtual bool LoadScript(bool bForceReload) = 0;
 
-	//! Returns pointer to the user defined function to create UserProxy.
-	//! \return Return UserProxyCreateFunc function pointer.
-	virtual IEntityClass::UserProxyCreateFunc GetUserProxyCreateFunc() const = 0;
+	//! Returns pointer to the user defined function invoked on entity spawn.
+	//! \return Return EntitySpawnCallback function pointer.
+	virtual IEntityClass::EntitySpawnCallback GetEntitySpawnCallback() const = 0;
 
-	//! Returns pointer to the user defined data to be passed when creating UserProxy.
-	//! \return Return pointer to custom user proxy data.
-	virtual void* GetUserProxyData() const = 0;
+	//! Returns pointer to the user defined data to be passed with the spawn callback
+	//! \return Return pointer to custom data.
+	virtual void* GetEntitySpawnCallbackData() const = 0;
 
 	//! \return Return Number of input and output events defined in the entity script.
 	virtual int GetEventCount() = 0;
@@ -334,8 +328,8 @@ struct IEntityClassRegistry
 			, sScriptFile("")
 			, pScriptTable(NULL)
 			, editorClassInfo()
-			, pUserProxyCreateFunc(NULL)
-			, pUserProxyData(NULL)
+			, pEntitySpawnCallback(NULL)
+			, pEntitySpawnCallbackData(NULL)
 			, pPropertyHandler(NULL)
 			, pEventHandler(NULL)
 			, pScriptFileHandler(NULL)
@@ -349,8 +343,8 @@ struct IEntityClassRegistry
 
 		SEditorClassInfo                  editorClassInfo;
 
-		IEntityClass::UserProxyCreateFunc pUserProxyCreateFunc;
-		void*                             pUserProxyData;
+		IEntityClass::EntitySpawnCallback pEntitySpawnCallback;
+		void*                             pEntitySpawnCallbackData;
 
 		IEntityPropertyHandler*           pPropertyHandler;
 		IEntityEventHandler*              pEventHandler;

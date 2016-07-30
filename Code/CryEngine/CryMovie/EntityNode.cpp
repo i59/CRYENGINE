@@ -1153,9 +1153,8 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 						m_iCurMannequinKey = key;
 
 						const uint32 valueName = CCrc32::ComputeLowercase(manKey.m_fragmentName);
-						IGameObject* pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(pEntity->GetId());
-
-						if (pGameObject)
+						
+						if (auto *pGameObject = pEntity->QueryComponent<IGameObject>())
 						{
 							IAnimatedCharacter* pAnimChar = (IAnimatedCharacter*) pGameObject->QueryExtension("AnimatedCharacter");
 

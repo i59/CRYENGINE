@@ -63,8 +63,7 @@ public:
 
 private:
 	SGameRulesDef*         GetGameRulesDef(const char* name);
-	static IEntityProxyPtr CreateGameObject(
-	  IEntity* pEntity, SEntitySpawnParams& params, void* pUserData);
+	static void CreateGameObject(IEntity& pEntity, SEntitySpawnParams& params, void* pUserData);
 
 	IGameFramework* m_pGameFW;
 

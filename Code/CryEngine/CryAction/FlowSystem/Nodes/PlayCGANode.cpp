@@ -473,7 +473,7 @@ private:
 			if (animationMovementControl)
 			{
 				bool needsManualUpdate = (m_layer == 0);
-				if (IGameObject* pGameObject = CCryAction::GetCryAction()->GetGameObject(pActInfo->pEntity->GetId()))
+				if (auto *pGameObject = pActInfo->pEntity->QueryComponent<IGameObject>())
 				{
 					if (IAnimatedCharacter* pAnimatedCharacter = static_cast<IAnimatedCharacter*>(pGameObject->QueryExtension("AnimatedCharacter")))
 					{
@@ -824,7 +824,7 @@ public:
 		case eFE_Update:
 			if (pActInfo->pEntity && pCharacter)
 			{
-				CGameObject* pGameObject = (CGameObject*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_USER);
+				auto *pGameObject = pActInfo->pEntity->QueryComponent<CGameObject>();
 				IMovementController* pMC = pGameObject ? pGameObject->GetMovementController() : NULL;
 				if (pMC)
 				{
@@ -859,7 +859,7 @@ public:
 					if (pCharacter)
 					{
 						// Turns off look ik.
-						CGameObject* pGameObject = (CGameObject*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_USER);
+						auto *pGameObject = pActInfo->pEntity->QueryComponent<CGameObject>();
 						IMovementController* pMC = pGameObject ? pGameObject->GetMovementController() : NULL;
 						if (pMC)
 						{
@@ -1370,7 +1370,7 @@ public:
 		{
 		case eFE_Activate:
 			if (pActInfo->pEntity)
-				if (CGameObject* pGameObject = (CGameObject*)pActInfo->pEntity->GetProxy(ENTITY_PROXY_USER))
+				if (auto *pGameObject = pActInfo->pEntity->QueryComponent<CGameObject>())
 					if (IMovementController* pMC = pGameObject->GetMovementController())
 					{
 						CMovementRequest mc;

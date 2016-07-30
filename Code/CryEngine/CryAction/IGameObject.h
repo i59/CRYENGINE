@@ -192,7 +192,9 @@ template<size_t N> stl::PoolAllocator<N>* CRMIAllocator<N>::m_pAllocator = 0;
 //   Interface used to interact with a game object
 // See Also
 //   IGameObjectExtension
-struct IGameObject : public IActionListener
+struct IGameObject 
+	: public IActionListener
+	, public IEntityComponent
 {
 protected:
 	class CRMIBody : public IRMIMessageBody
@@ -247,6 +249,8 @@ protected:
 	};
 
 public:
+	DECLARE_COMPONENT("GameObject", 0x4731B35A5694458C, 0xBA2CB251E98306DC)
+
 	// bind this entity to the network system (it gets synchronized then...)
 	virtual bool                  BindToNetwork(EBindToNetworkMode mode = eBTNM_Normal) = 0;
 	// bind this entity to the network system, with a dependency on its parent
@@ -343,12 +347,6 @@ public:
 	// release a previously acquired extension
 	ILINE void                  ReleaseExtension(const char* extension)    { ChangeExtension(extension, eCE_Release); }
 
-	// retrieve the hosting entity
-	ILINE IEntity* GetEntity() const
-	{
-		return m_pEntity;
-	}
-
 	ILINE EntityId GetEntityId() const
 	{
 		return m_entityId;
@@ -391,10 +389,9 @@ protected:
 		eCE_Release
 	};
 
-	IGameObject() : m_pEntity(0), m_entityId(0), m_pMovementController(0) {}
+	IGameObject() : m_entityId(0), m_pMovementController(0) {}
 	EntityId             m_entityId;
 	IMovementController* m_pMovementController;
-	IEntity*             m_pEntity;
 
 private:
 	// change extension activation/reference somehow
@@ -426,19 +423,26 @@ public:
 		char msg[256];
 		msg[0] = 0;
 
-		if (IGameObject* pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject(m_id))
+		if(auto *pEntity = gEnv->pEntitySystem->GetEntity(m_id))
 		{
-			INDENT_LOG_DURING_SCOPE(true, "During game object sync: %s %s", pGameObject->GetEntity()->GetEntityTextDescription().c_str(), m_pRMI->pMsgDef->description);
+			INDENT_LOG_DURING_SCOPE(true, "During game object sync: %s %s", pEntity->GetEntityTextDescription().c_str(), m_pRMI->pMsgDef->description);
 
-			if (Obj* pGameObjectExtension = (Obj*)pGameObject->GetExtensionWithRMIBase(m_pRMI->pBase))
+			if (auto *pGameObject = pEntity->QueryComponent<IGameObject>())
 			{
-				ok = (pGameObjectExtension->*m_callback)(m_params, m_pChannel);
-				foundObject = true;
+				if (Obj* pGameObjectExtension = (Obj*)pGameObject->GetExtensionWithRMIBase(m_pRMI->pBase))
+				{
+					ok = (pGameObjectExtension->*m_callback)(m_params, m_pChannel);
+					foundObject = true;
+				}
+				else
+				{
+					cry_sprintf(msg, "Game object extension with base %.8x for entity %s for RMI %s not found", (uint32)(TRUNCATE_PTR)m_pRMI->pBase, pGameObject->GetEntity()->GetName(), m_pRMI->pMsgDef->description);
+					GameWarning("%s", msg);
+				}
 			}
 			else
 			{
-				cry_sprintf(msg, "Game object extension with base %.8x for entity %s for RMI %s not found", (uint32)(TRUNCATE_PTR)m_pRMI->pBase, pGameObject->GetEntity()->GetName(), m_pRMI->pMsgDef->description);
-				GameWarning("%s", msg);
+				cry_sprintf(msg, "Game Object %u for RMI %s not found", m_id, m_pRMI->pMsgDef->description);
 			}
 		}
 		else
@@ -527,10 +531,12 @@ protected:
 
 	static T_Derived* QueryExtension(EntityId id)
 	{
-		IGameObject* pGO = gEnv->pGame->GetIGameFramework()->GetGameObject(id);
-		if (pGO)
+		if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity(id))
 		{
-			return static_cast<T_Derived*>(pGO->QueryExtension(T_Derived::ms_statics.m_extensionId));
+			if (auto *pGameObject = pEntity->QueryComponent<IGameObject>())
+			{
+				return static_cast<T_Derived*>(pGameObject->QueryExtension(T_Derived::ms_statics.m_extensionId));
+			}
 		}
 
 		return NULL;
@@ -543,8 +549,7 @@ protected:
 		evnt.nParam[0] = port;
 		evnt.nParam[1] = (INT_PTR)&data;
 
-		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
-		if (pEntity)
+		if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity(id))
 			pEntity->SendEvent(evnt);
 	}
 
@@ -732,7 +737,7 @@ struct IGameObjectExtension : public IComponent
 	IGameObjectExtension() : m_pGameObject(0), m_entityId(0), m_pEntity(0) {}
 
 	// IComponent
-	virtual ComponentEventPriority GetEventPriority(const int eventID) const { return(ENTITY_PROXY_LAST - ENTITY_PROXY_USER); }
+	virtual ComponentEventPriority GetEventPriority(const int eventID) const { return 0; }
 	// ~IComponent
 
 	// Summary

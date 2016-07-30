@@ -72,7 +72,7 @@ public:
 		if (pActInfo->pEntity == NULL)
 			return;
 
-		CGameObject* pGameObject = (CGameObject*)(pActInfo->pEntity->GetProxy(ENTITY_PROXY_USER));
+		auto *pGameObject = pActInfo->pEntity->QueryComponent<CGameObject>();
 		if (pGameObject == NULL)
 			return;
 

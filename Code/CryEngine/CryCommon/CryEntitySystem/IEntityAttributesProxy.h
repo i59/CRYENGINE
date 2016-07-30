@@ -5,7 +5,6 @@
 
 #pragma once
 
-#include "IEntityProxy.h"
 #include <CrySerialization/IArchiveHost.h>
 #include <CrySerialization/Serializer.h>
 

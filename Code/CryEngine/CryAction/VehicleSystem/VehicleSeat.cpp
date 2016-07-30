@@ -327,8 +327,6 @@ void CVehicleSeat::OnSpawnComplete()
 		IEntity* pSerializerEntity = gEnv->pEntitySystem->SpawnEntity(params);
 
 		static_cast<CVehicleSystem*>(CCryAction::GetCryAction()->GetIVehicleSystem())->SetInitializingSeat(0);
-
-		CGameObject* pSerializerGameObject = (CGameObject*)pSerializerEntity->GetProxy(ENTITY_PROXY_USER);
 	}
 
 	for (TVehicleSeatActionVector::iterator it = m_seatActions.begin(), end = m_seatActions.end(); it != end; ++it)

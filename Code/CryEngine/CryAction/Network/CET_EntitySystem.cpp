@@ -179,11 +179,11 @@ public:
 			if (isOther && !allowOthers)
 				continue;
 
-			CGameObject* pGO = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER);
-			if (pGO)
+			auto *pGameObject = pEntity->QueryComponent<CGameObject>();
+			if (pGameObject)
 			{
-				if (pGO->IsBoundToNetwork())
-					pGO->BindToNetwork(eBTNM_Force); // force rebinding
+				if (pGameObject->IsBoundToNetwork())
+					pGameObject->BindToNetwork(eBTNM_Force); // force rebinding
 			}
 
 			SEntitySpawnParams fakeParams;

@@ -49,8 +49,8 @@ bool CGameRulesSystem::RegisterGameRules(const char* rulesName, const char* exte
 
 	ruleClass.sName = rulesName;
 	ruleClass.sScriptFile = scriptName;
-	ruleClass.pUserProxyCreateFunc = CreateGameObject;
-	ruleClass.pUserProxyData = this;
+	ruleClass.pEntitySpawnCallback = CreateGameObject;
+	ruleClass.pEntitySpawnCallbackData = this;
 	ruleClass.flags |= ECLF_INVISIBLE;
 
 	if (!gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(ruleClass))
@@ -223,25 +223,22 @@ CGameRulesSystem::SGameRulesDef* CGameRulesSystem::GetGameRulesDef(const char* n
 }
 
 //------------------------------------------------------------------------
-IEntityProxyPtr CGameRulesSystem::CreateGameObject(IEntity* pEntity, SEntitySpawnParams& params, void* pUserData)
+void CGameRulesSystem::CreateGameObject(IEntity& entity, SEntitySpawnParams& params, void* pUserData)
 {
 	CGameRulesSystem* pThis = static_cast<CGameRulesSystem*>(pUserData);
 	CRY_ASSERT(pThis);
 	TGameRulesMap::iterator it = pThis->m_GameRules.find(params.pClass->GetName());
 	CRY_ASSERT(it != pThis->m_GameRules.end());
 
-	CGameObjectPtr pGameObject = ComponentCreateAndRegister_DeleteWithRelease<CGameObject>(IComponent::SComponentInitializer(pEntity), IComponent::EComponentFlags_LazyRegistration);
+	auto &gameObject = entity.AcquireComponent<CGameObject>();
 
 	if (!it->second.extension.empty())
 	{
-		if (!pGameObject->ActivateExtension(it->second.extension.c_str()))
+		if (!gameObject.ActivateExtension(it->second.extension.c_str()))
 		{
-			pEntity->RegisterComponent(pGameObject, false);
-			pGameObject.reset();
+			GameWarning("Failed to activate default game rules extension");
 		}
 	}
-
-	return pGameObject;
 }
 
 void CGameRulesSystem::GetMemoryStatistics(ICrySizer* s)

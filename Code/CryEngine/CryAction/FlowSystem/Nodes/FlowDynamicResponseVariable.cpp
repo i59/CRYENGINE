@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "FlowBaseNode.h"
 #include <CrySystem/ISystem.h>
-#include <CryEntitySystem/IEntityProxy.h>
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 
 namespace

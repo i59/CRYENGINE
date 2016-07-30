@@ -389,7 +389,7 @@ IView* CViewSystem::GetViewByEntityId(unsigned int id, bool forceCreate)
 	{
 		if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id))
 		{
-			if (CGameObject* pGameObject = static_cast<CGameObject*>(pEntity->GetProxy(ENTITY_PROXY_USER)))
+			if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 			{
 				if (IView* pNew = CreateView())
 				{

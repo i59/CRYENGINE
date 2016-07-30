@@ -317,7 +317,7 @@ private:
 	void        CallOnSetPlayerId();
 	bool        SetConsoleVar(const string& key, const string& val);
 
-	static bool HookCreateActor(IEntity*, IGameObject*, void*);
+	static void HookCreateActor(IEntity&, IGameObject&, void*);
 
 	bool                     m_hasLoadedLevel;
 	std::map<string, string> m_originalCVarValues;

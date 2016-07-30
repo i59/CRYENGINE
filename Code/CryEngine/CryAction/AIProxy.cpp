@@ -1587,7 +1587,7 @@ void CAIProxy::UpdateMind(SOBJECTSTATE& state)
 //----------------------------------------------------------------------------------------------------------
 void CAIProxy::OnReused(IEntity* pEntity, SEntitySpawnParams& params)
 {
-	m_pGameObject = CCryAction::GetCryAction()->GetGameObject(params.id);
+	m_pGameObject = pEntity->QueryComponent<IGameObject>();
 	m_pIActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(params.id);
 
 	EnableUpdate(false);

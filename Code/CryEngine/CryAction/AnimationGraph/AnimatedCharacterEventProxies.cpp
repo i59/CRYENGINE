@@ -66,7 +66,7 @@ IComponent::ComponentEventPriority CAnimatedCharacterComponent_PrepareAnimatedCh
 	{
 	case ENTITY_EVENT_PREPHYSICSUPDATE:
 		{
-			int priority = ENTITY_PROXY_LAST - ENTITY_PROXY_USER + EEntityEventPriority_PrepareAnimatedCharacterForUpdate;
+			int priority = EEntityEventPriority_PrepareAnimatedCharacterForUpdate;
 
 			if (m_pAnimCharacter->IsClient())
 			{
@@ -77,7 +77,7 @@ IComponent::ComponentEventPriority CAnimatedCharacterComponent_PrepareAnimatedCh
 			return priority;
 		}
 	}
-	return(ENTITY_PROXY_LAST - ENTITY_PROXY_USER);
+	return 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -97,7 +97,7 @@ IComponent::ComponentEventPriority CAnimatedCharacterComponent_StartAnimProc::Ge
 	{
 	case ENTITY_EVENT_PREPHYSICSUPDATE:
 		{
-			int priority = ENTITY_PROXY_LAST - ENTITY_PROXY_USER + EEntityEventPriority_StartAnimProc;
+			int priority = EEntityEventPriority_StartAnimProc;
 
 			if (m_pAnimCharacter->IsClient())
 			{
@@ -108,7 +108,7 @@ IComponent::ComponentEventPriority CAnimatedCharacterComponent_StartAnimProc::Ge
 		}
 	}
 
-	return(ENTITY_PROXY_LAST - ENTITY_PROXY_USER);
+	return 0;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -128,7 +128,7 @@ IComponent::ComponentEventPriority CAnimatedCharacterComponent_GenerateMoveReque
 	{
 	case ENTITY_EVENT_PREPHYSICSUPDATE:
 		{
-			int priority = ENTITY_PROXY_LAST - ENTITY_PROXY_USER + EEntityEventPriority_AnimatedCharacter;
+			int priority = EEntityEventPriority_AnimatedCharacter;
 
 			if (m_pAnimCharacter->IsClient())
 			{
@@ -138,5 +138,5 @@ IComponent::ComponentEventPriority CAnimatedCharacterComponent_GenerateMoveReque
 		}
 	}
 
-	return(ENTITY_PROXY_LAST - ENTITY_PROXY_USER);
+	return 0;
 }

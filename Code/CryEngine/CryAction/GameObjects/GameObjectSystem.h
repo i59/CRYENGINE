@@ -40,9 +40,6 @@ public:
 	virtual uint32                                     GetEventID(const char* name) override;
 	virtual const char*                                GetEventName(uint32 id) override;
 
-	virtual IGameObject*                               CreateGameObjectForEntity(EntityId entityId) override;
-	virtual IEntityProxyPtr                            CreateGameObjectEntityProxy(IEntity& entity, IGameObject** pGameObject = NULL) override;
-
 	virtual void                                       PostUpdate(float frameTime) override;
 	virtual void                                       SetPostUpdate(IGameObject* pGameObject, bool enable) override;
 
@@ -60,9 +57,6 @@ public:
 	virtual void                                       ClearSpawnSerializerForEntity(const EntityId entityId) override;
 
 	void                                               GetMemoryUsage(ICrySizer* s) const;
-
-	virtual void                                       AddSink(IGameObjectSystemSink* pSink) override;
-	virtual void                                       RemoveSink(IGameObjectSystemSink* pSink) override;
 private:
 	void                                               LoadSerializationOrderFile();
 	TSerialize*                                        GetSpawnSerializerForEntity(const EntityId entityId) const;
@@ -82,8 +76,7 @@ private:
 	};
 	std::vector<SExtensionInfo> m_extensionInfo;
 
-	static IEntityProxyPtr CreateGameObjectWithPreactivatedExtension(
-	  IEntity* pEntity, SEntitySpawnParams& params, void* pUserData);
+	static void CreateGameObjectWithPreactivatedExtension(IEntity& entity, SEntitySpawnParams& params, void* pUserData);
 
 	CGameObjectDispatch       m_dispatch;
 
@@ -121,10 +114,7 @@ private:
 	// event ID management
 	std::map<string, uint32> m_eventNameToID;
 	std::map<uint32, string> m_eventIDToName;
-	//
-	typedef std::list<IGameObjectSystemSink*> SinkList;
-	SinkList                                    m_lstSinks; // registered sinks get callbacks
-
+	
 	std::vector<IGameObject*>                   m_tempObjects;
 
 	std::vector<IGameObjectSystem::ExtensionID> m_activatedExtensions_top;

@@ -1532,7 +1532,7 @@ void CBreakReplicator::OnEndFrame()
 		{
 			if ((pEntity->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY)) == 0)
 			{
-				if (CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER))
+				if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 				{
 					if (IGameObjectExtension* pExtension = pGameObject->QueryExtension("BreakRepGameObject"))
 					{

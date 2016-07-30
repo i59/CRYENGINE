@@ -486,8 +486,7 @@ void CGameSerialize::FlushActivatableGameObjectExtensions()
 	while (!pIt->IsEnd())
 	{
 		const IEntity* pEntity = pIt->Next();
-		CGameObject* pGameObject = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER);
-		if (pGameObject)
+		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 			pGameObject->FlushActivatableExtensions();
 	}
 }

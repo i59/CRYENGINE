@@ -540,7 +540,7 @@ bool CItemSystem::ScanXML(XmlNodeRef& root, const char* xmlFile)
 		int invisible = 0;
 		root->getAttr("invisible", invisible);
 
-		classDesc.pUserProxyCreateFunc = (IEntityClass::UserProxyCreateFunc)it->second.pCreator;
+		classDesc.pEntitySpawnCallback = (IEntityClass::EntitySpawnCallback)it->second.pCreator;
 		classDesc.flags |= invisible ? ECLF_INVISIBLE : 0;
 
 		if (!m_reloading)

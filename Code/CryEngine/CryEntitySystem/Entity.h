@@ -20,7 +20,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 // These headers cannot be replaced with forward references.
-// They are needed for correct up casting from IEntityProxy to real proxy class.
+// They are needed for correct up casting from IEntityComponent to real component class.
 	#include "RenderProxy.h"
 	#include "PhysicsProxy.h"
 	#include "ScriptProxy.h"

@@ -215,10 +215,8 @@ public:
 	virtual uint16                        GetGameChannelId(INetChannel* pNetChannel);
 	virtual INetChannel*                  GetNetChannel(uint16 channelId);
 	virtual bool                          IsChannelOnHold(uint16 channelId);
-	virtual IGameObject*                  GetGameObject(EntityId id);
 	virtual bool                          GetNetworkSafeClassId(uint16& id, const char* className);
 	virtual bool                          GetNetworkSafeClassName(char* className, size_t classNameSizeInBytes, uint16 id);
-	virtual IGameObjectExtension*         QueryGameObjectExtension(EntityId id, const char* name);
 
 	virtual void                          DelegateAuthority(EntityId entityId, uint16 channelId);
 

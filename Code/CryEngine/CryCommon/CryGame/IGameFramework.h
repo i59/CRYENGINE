@@ -771,10 +771,6 @@ struct IGameFramework
 	//! \return Pointer to INetChannel associated with the specified Game Server Channel Id.
 	virtual INetChannel* GetNetChannel(uint16 channelId) = 0;
 
-	//! Retrieve an IGameObject from an entity id
-	//! \return Pointer to IGameObject of the entity if it exists (or NULL otherwise)
-	virtual IGameObject* GetGameObject(EntityId id) = 0;
-
 	//! Retrieve a network safe entity class id, that will be the same in client and server
 	//! \return true if an entity class with this name has been registered
 	virtual bool GetNetworkSafeClassId(uint16& id, const char* className) = 0;
@@ -782,10 +778,6 @@ struct IGameFramework
 	//! Retrieve a network safe entity class name, that will be the same in client and server
 	//! \return true if an entity class with this id has been registered
 	virtual bool GetNetworkSafeClassName(char* className, size_t maxn, uint16 id) = 0;
-
-	//! Retrieve an IGameObjectExtension by name from an entity
-	//! \return Pointer to IGameObjectExtension of the entity if it exists (or NULL otherwise)
-	virtual IGameObjectExtension* QueryGameObjectExtension(EntityId id, const char* name) = 0;
 
 	//! Retrieve pointer to the ITimeDemoRecorder (or NULL)
 	virtual ITimeDemoRecorder* GetITimeDemoRecorder() const = 0;

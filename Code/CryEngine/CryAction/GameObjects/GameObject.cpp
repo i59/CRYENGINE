@@ -168,7 +168,19 @@ CGameObject::CGameObject() :
 //------------------------------------------------------------------------
 CGameObject::~CGameObject()
 {
+	// cannot release extensions while Physics is in a CB.
+	AcquireMutex();
+
+	// Before deleting the extension, disable receiving any physics events.
+	// Mutex prevents
+	m_enabledPhysicsEvents = 0;
+
+	FlushExtensions(true);
+	m_pGOS->SetPostUpdate(this, false);
+	m_distanceChecker.Reset();
 	g_updateSchedulingProfile.erase(this);
+
+	ReleaseMutex();
 }
 
 //------------------------------------------------------------------------
@@ -330,10 +342,10 @@ bool CGameObject::ShouldUpdateSlot(const SExtension* pExt, uint32 slot, uint32 s
 }
 
 //------------------------------------------------------------------------
-bool CGameObject::Init(IEntity* pEntity, SEntitySpawnParams& spawnParams)
+void CGameObject::Initialize(IEntity &entity)
 {
-	m_pEntity = pEntity;
-	m_entityId = pEntity->GetId();
+	m_pEntity = &entity;
+	m_entityId = entity.GetId();
 
 	m_pSchedulingProfiles = ((CGameObjectSystem*)CCryAction::GetCryAction()->GetIGameObjectSystem())->GetEntitySchedulerProfiles(m_pEntity);
 
@@ -353,7 +365,6 @@ bool CGameObject::Init(IEntity* pEntity, SEntitySpawnParams& spawnParams)
 				{
 					gEnv->pLog->LogError("[GameObject]: Couldn't activate extension %s", szExtensionName);
 				}
-				return false;
 			}
 		}
 
@@ -366,19 +377,12 @@ bool CGameObject::Init(IEntity* pEntity, SEntitySpawnParams& spawnParams)
 	}
 
 	GetEntity()->SetFlags(GetEntity()->GetFlags() | ENTITY_FLAG_SEND_RENDER_EVENT);
-
-	return true;
 }
 
 //------------------------------------------------------------------------
-void CGameObject::Reload(IEntity* pEntity, SEntitySpawnParams& spawnParams)
+void CGameObject::Reload(SEntitySpawnParams& spawnParams, XmlNodeRef entityNode)
 {
-	assert(pEntity);
-	assert(m_pEntity == pEntity);
-	PREFAST_ASSUME(pEntity);
-
-	m_pEntity = pEntity;
-	m_entityId = pEntity ? pEntity->GetId() : 0;
+	m_entityId = m_pEntity->GetId();
 	m_pMovementController = NULL;
 
 	m_pActionDelegate = 0;
@@ -585,30 +589,6 @@ bool CGameObject::BindToNetworkWithParent(EBindToNetworkMode mode, EntityId pare
 bool CGameObject::IsAspectDelegatable(NetworkAspectType aspect)
 {
 	return (m_delegatableAspects & aspect) ? true : false;
-}
-
-//------------------------------------------------------------------------
-void CGameObject::Done()
-{
-	// cannot release extensions while Physics is in a CB.
-	AcquireMutex();
-
-	// Before deleting the extension, disable receiving any physics events.
-	// Mutex prevents
-	m_enabledPhysicsEvents = 0;
-
-	FlushExtensions(true);
-	m_pGOS->SetPostUpdate(this, false);
-	m_distanceChecker.Reset();
-	g_updateSchedulingProfile.erase(this);
-
-	ReleaseMutex();
-}
-
-//------------------------------------------------------------------------
-void CGameObject::Release()
-{
-	delete this;
 }
 
 //------------------------------------------------------------------------
@@ -867,7 +847,7 @@ void CGameObject::ProcessEvent(SEntityEvent& event)
 				{
 					if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity((EntityId)event.nParam[0]))
 					{
-						if (CGameObject* pObj = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER))
+						if (auto *pObj = pEntity->QueryComponent<CGameObject>())
 						{
 							if (!pObj->m_inRange)
 							{
@@ -887,7 +867,7 @@ void CGameObject::ProcessEvent(SEntityEvent& event)
 				{
 					if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity((EntityId)event.nParam[0]))
 					{
-						if (CGameObject* pObj = (CGameObject*) pEntity->GetProxy(ENTITY_PROXY_USER))
+						if (auto *pObj = pEntity->QueryComponent<CGameObject>())
 						{
 							if (pObj->m_inRange)
 							{
@@ -946,11 +926,6 @@ IGameObjectExtension* CGameObject::GetExtensionWithRMIBase(const void* pBase)
 			return iter->pExtension.get();
 	}
 	return NULL;
-}
-
-//------------------------------------------------------------------------
-void CGameObject::SerializeXML(XmlNodeRef& entityNode, bool loading)
-{
 }
 
 //------------------------------------------------------------------------
