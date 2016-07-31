@@ -14,38 +14,25 @@
 #ifndef __VEHICLEPARTDETACHEDENTITY_H__
 #define __VEHICLEPARTDETACHEDENTITY_H__
 
-#include "IGameObject.h"
-
-class CVehiclePartDetachedEntity
-	: public CGameObjectExtensionHelper<CVehiclePartDetachedEntity, IGameObjectExtension>
+class CVehiclePartDetachedEntity : public IEntityComponent
 {
 public:
-	~CVehiclePartDetachedEntity();
+	DECLARE_COMPONENT("VehiclePartDetachedEntity", 0x491E767E8A4448AA, 0x9C647DA183DC20BB)
 
-	virtual bool                 Init(IGameObject* pGameObject);
-	virtual void                 InitClient(int channelId)                                                       {};
-	virtual void                 PostInit(IGameObject*);
-	virtual void                 PostInitClient(int channelId)                                                   {};
-	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params);
-	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) {}
-	virtual void                 Release()                                                                       { delete this; }
+	virtual ~CVehiclePartDetachedEntity() {}
 
-	virtual void                 FullSerialize(TSerialize ser);
-	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; }
-	virtual void                 PostSerialize()                                                               {}
-	virtual void                 SerializeSpawnInfo(TSerialize ser)                                            {}
-	virtual ISerializableInfoPtr GetSpawnInfo()                                                                { return 0; }
-	virtual void                 Update(SEntityUpdateContext& ctx, int slot);
-	virtual void                 HandleEvent(const SGameObjectEvent& event);
-	virtual void                 ProcessEvent(const SEntityEvent& event);
-	virtual void                 SetChannelId(uint16 id)                 {};
-	virtual void                 SetAuthority(bool auth)                 {}
-	virtual void                 PostUpdate(float frameTime)             { CRY_ASSERT(false); }
-	virtual void                 PostRemoteSpawn()                       {};
-	virtual void                 GetMemoryUsage(ICrySizer* pSizer) const { pSizer->Add(*this); }
+	// IEntityComponent
+	virtual void PostInitialize() override;
+	virtual void ProcessEvent(const SEntityEvent& event) override;
+
+	virtual void Update(SEntityUpdateContext& ctx) override;
+
+	virtual bool NeedSerialize() override { return true; }
+	virtual void Serialize(TSerialize ser) override;
+	// ~IEntityComponent
 
 protected:
-	void InitVehiclePart(IGameObject* pGameObject);
+	void InitVehiclePart();
 
 	float m_timeUntilStartIsOver;
 };

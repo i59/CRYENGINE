@@ -86,11 +86,12 @@ protected:
 	}
 
 template <typename T>
-void RegisterEntityWithComponent(const char *name, const char *luaScriptPath = "")
+void RegisterEntityWithComponent(const char *name, int flags = 0, const char *luaScriptPath = "")
 {
-	IEntityClassRegistry::SEntityClassDesc runtimeObjectDesc;
-	runtimeObjectDesc.sName = name;
-	runtimeObjectDesc.sScriptFile = luaScriptPath;
+	IEntityClassRegistry::SEntityClassDesc entityClassDesc;
+	entityClassDesc.sName = name;
+	entityClassDesc.sScriptFile = luaScriptPath;
+	entityClassDesc.flags = flags;
 
 	struct SSpawnCallback
 	{
@@ -100,9 +101,9 @@ void RegisterEntityWithComponent(const char *name, const char *luaScriptPath = "
 		}
 	};
 
-	runtimeObjectDesc.pEntitySpawnCallback = SSpawnCallback::CreateComponent;
+	entityClassDesc.pEntitySpawnCallback = SSpawnCallback::CreateComponent;
 
-	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(runtimeObjectDesc);
+	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(entityClassDesc);
 }
 
 // TODO: Check if we should move out default components below to another file

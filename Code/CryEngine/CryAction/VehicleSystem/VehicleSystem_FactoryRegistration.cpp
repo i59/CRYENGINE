@@ -76,14 +76,7 @@ void CVehicleSystem::RegisterVehicles(IGameFramework* gameFramework)
 	CCryAction::GetCryAction()->GetIGameObjectSystem()->RegisterExtension(serializerClass.sName, &createVehicleSeatSerializer, &serializerClass);
 
 	// register the detached part entity
-
-	IEntityClassRegistry::SEntityClassDesc detachedPartClass;
-	detachedPartClass.sName = "VehiclePartDetached";
-	detachedPartClass.sScriptFile = "Scripts/Entities/Vehicles/VehiclePartDetached.lua";
-	detachedPartClass.flags = ECLF_INVISIBLE;
-
-	static IGameFramework::CGameObjectExtensionCreator<CVehiclePartDetachedEntity> createVehicleDetachedPartEntity;
-	CCryAction::GetCryAction()->GetIGameObjectSystem()->RegisterExtension(detachedPartClass.sName, &createVehicleDetachedPartEntity, &detachedPartClass);
+	RegisterEntityWithComponent<CVehiclePartDetachedEntity>("VehiclePartDetached", ECLF_INVISIBLE, "Scripts/Entities/Vehicles/VehiclePartDetached.lua");
 
 	// register all the vehicles
 

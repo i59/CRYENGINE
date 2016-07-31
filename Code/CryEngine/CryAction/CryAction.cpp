@@ -2020,7 +2020,7 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 	REGISTER_GAME_OBJECT_EXTENSION(this, "WaterVolume", GameVolume_Water, "Scripts/Entities/Environment/WaterVolume.lua");
 
 	//RegisterEntityWithComponent<CGameVolume_Water>("WaterVolume", "Scripts/Entities/Environment/WaterVolume.lua");
-	RegisterEntityWithComponent<CMannequinObject>("MannequinObject", "Scripts/Entities/Anim/MannequinObject.lua");
+	RegisterEntityWithComponent<CMannequinObject>("MannequinObject", 0, "Scripts/Entities/Anim/MannequinObject.lua");
 
 	REGISTER_FACTORY((IGameFramework*)this, "LipSync_TransitionQueue", CLipSync_TransitionQueue, false);
 	REGISTER_FACTORY((IGameFramework*)this, "LipSync_FacialInstance", CLipSync_FacialInstance, false);
