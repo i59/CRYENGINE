@@ -2022,8 +2022,6 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 	//RegisterEntityWithComponent<CGameVolume_Water>("WaterVolume", "Scripts/Entities/Environment/WaterVolume.lua");
 	RegisterEntityWithComponent<CMannequinObject>("MannequinObject", 0, "Scripts/Entities/Anim/MannequinObject.lua");
 
-	REGISTER_FACTORY((IGameFramework*)this, "LipSync_TransitionQueue", CLipSync_TransitionQueue, false);
-	REGISTER_FACTORY((IGameFramework*)this, "LipSync_FacialInstance", CLipSync_FacialInstance, false);
 	gs_lipSyncExtensionNamesForExposureToEditor.clear();
 	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_TransitionQueue");
 	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_FacialInstance");

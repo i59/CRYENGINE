@@ -92,6 +92,15 @@ void CLipSyncProvider_FacialInstance::LipSyncWithSound(const AudioControlId audi
 //
 //=============================================================================
 
+CLipSync_FacialInstance::~CLipSync_FacialInstance()
+{
+	if (auto *pAudioComponent = GetEntity()->QueryComponent<IEntityAudioComponent>())
+	{
+		REINST(add SetLipSyncProvider to interface)
+			//pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
+	}
+}
+
 void CLipSync_FacialInstance::InjectLipSyncProvider()
 {
 	IEntity* pEntity = GetEntity();
@@ -110,48 +119,17 @@ void CLipSync_FacialInstance::GetMemoryUsage(ICrySizer* pSizer) const
 	}
 }
 
-bool CLipSync_FacialInstance::Init(IGameObject* pGameObject)
-{
-	SetGameObject(pGameObject);
-	return true;
-}
-
-void CLipSync_FacialInstance::PostInit(IGameObject* pGameObject)
+void CLipSync_FacialInstance::PostInitialize()
 {
 	InjectLipSyncProvider();
 }
 
-void CLipSync_FacialInstance::InitClient(int channelId)
-{
-}
-
-void CLipSync_FacialInstance::PostInitClient(int channelId)
-{
-}
-
-bool CLipSync_FacialInstance::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
-{
-	ResetGameObject();
-	return true;
-}
-
-void CLipSync_FacialInstance::PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
+void CLipSync_FacialInstance::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	InjectLipSyncProvider();
 }
 
-void CLipSync_FacialInstance::Release()
-{
-	IEntity* pEntity = GetEntity();
-	if (auto *pAudioComponent = pEntity->QueryComponent<IEntityAudioComponent>())
-	{
-		REINST(add SetLipSyncProvider to interface)
-		//pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
-	}
-	delete this;
-}
-
-void CLipSync_FacialInstance::FullSerialize(TSerialize ser)
+void CLipSync_FacialInstance::Serialize(TSerialize ser)
 {
 	ser.BeginGroup("LipSync_FacialInstance");
 
@@ -168,50 +146,4 @@ void CLipSync_FacialInstance::FullSerialize(TSerialize ser)
 	}
 
 	ser.EndGroup();
-}
-
-bool CLipSync_FacialInstance::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int pflags)
-{
-	return true;
-}
-
-void CLipSync_FacialInstance::PostSerialize()
-{
-}
-
-void CLipSync_FacialInstance::SerializeSpawnInfo(TSerialize ser)
-{
-}
-
-ISerializableInfoPtr CLipSync_FacialInstance::GetSpawnInfo()
-{
-	return NULL;
-}
-
-void CLipSync_FacialInstance::Update(SEntityUpdateContext& ctx, int updateSlot)
-{
-}
-
-void CLipSync_FacialInstance::HandleEvent(const SGameObjectEvent& event)
-{
-}
-
-void CLipSync_FacialInstance::ProcessEvent(const SEntityEvent& event)
-{
-}
-
-void CLipSync_FacialInstance::SetChannelId(uint16 id)
-{
-}
-
-void CLipSync_FacialInstance::SetAuthority(bool auth)
-{
-}
-
-void CLipSync_FacialInstance::PostUpdate(float frameTime)
-{
-}
-
-void CLipSync_FacialInstance::PostRemoteSpawn()
-{
 }

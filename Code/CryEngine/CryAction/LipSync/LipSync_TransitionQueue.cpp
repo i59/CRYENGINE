@@ -381,6 +381,15 @@ void CLipSyncProvider_TransitionQueue::SynchronizeAnimationToSound(const AudioCo
 //
 //=============================================================================
 
+CLipSync_TransitionQueue::~CLipSync_TransitionQueue()
+{
+	if (auto *pAudioComponent = GetEntity()->QueryComponent<IEntityAudioComponent>())
+	{
+		REINST(add SetLipSyncProvider to interface)
+			//pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
+	}
+}
+
 void CLipSync_TransitionQueue::InjectLipSyncProvider()
 {
 	IEntity* pEntity = GetEntity();
@@ -399,48 +408,17 @@ void CLipSync_TransitionQueue::GetMemoryUsage(ICrySizer* pSizer) const
 	}
 }
 
-bool CLipSync_TransitionQueue::Init(IGameObject* pGameObject)
-{
-	SetGameObject(pGameObject);
-	return true;
-}
-
-void CLipSync_TransitionQueue::PostInit(IGameObject* pGameObject)
+void CLipSync_TransitionQueue::PostInitialize()
 {
 	InjectLipSyncProvider();
 }
 
-void CLipSync_TransitionQueue::InitClient(int channelId)
-{
-}
-
-void CLipSync_TransitionQueue::PostInitClient(int channelId)
-{
-}
-
-bool CLipSync_TransitionQueue::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
-{
-	ResetGameObject();
-	return true;
-}
-
-void CLipSync_TransitionQueue::PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
+void CLipSync_TransitionQueue::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	InjectLipSyncProvider();
 }
 
-void CLipSync_TransitionQueue::Release()
-{
-	IEntity* pEntity = GetEntity();
-	if (auto *pAudioComponent = pEntity->QueryComponent<IEntityAudioComponent>())
-	{
-		REINST(add SetLipSyncProvider to interface)
-		//pSoundProxy->SetLipSyncProvider(ILipSyncProviderPtr());
-	}
-	delete this;
-}
-
-void CLipSync_TransitionQueue::FullSerialize(TSerialize ser)
+void CLipSync_TransitionQueue::Serialize(TSerialize ser)
 {
 	ser.BeginGroup("LipSync_TransitionQueue");
 
@@ -457,50 +435,4 @@ void CLipSync_TransitionQueue::FullSerialize(TSerialize ser)
 	}
 
 	ser.EndGroup();
-}
-
-bool CLipSync_TransitionQueue::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int pflags)
-{
-	return true;
-}
-
-void CLipSync_TransitionQueue::PostSerialize()
-{
-}
-
-void CLipSync_TransitionQueue::SerializeSpawnInfo(TSerialize ser)
-{
-}
-
-ISerializableInfoPtr CLipSync_TransitionQueue::GetSpawnInfo()
-{
-	return NULL;
-}
-
-void CLipSync_TransitionQueue::Update(SEntityUpdateContext& ctx, int updateSlot)
-{
-}
-
-void CLipSync_TransitionQueue::HandleEvent(const SGameObjectEvent& event)
-{
-}
-
-void CLipSync_TransitionQueue::ProcessEvent(const SEntityEvent& event)
-{
-}
-
-void CLipSync_TransitionQueue::SetChannelId(uint16 id)
-{
-}
-
-void CLipSync_TransitionQueue::SetAuthority(bool auth)
-{
-}
-
-void CLipSync_TransitionQueue::PostUpdate(float frameTime)
-{
-}
-
-void CLipSync_TransitionQueue::PostRemoteSpawn()
-{
 }

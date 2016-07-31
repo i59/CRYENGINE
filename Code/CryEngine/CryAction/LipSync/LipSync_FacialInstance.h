@@ -35,31 +35,20 @@ private:
 };
 DECLARE_SHARED_POINTERS(CLipSyncProvider_FacialInstance);
 
-class CLipSync_FacialInstance : public CGameObjectExtensionHelper<CLipSync_FacialInstance, IGameObjectExtension>
+class CLipSync_FacialInstance : public IEntityComponent
 {
 public:
-	// IGameObjectExtension
-	virtual void                 GetMemoryUsage(ICrySizer* pSizer) const override;
-	virtual bool                 Init(IGameObject* pGameObject) override;
-	virtual void                 PostInit(IGameObject* pGameObject) override;
-	virtual void                 InitClient(int channelId) override;
-	virtual void                 PostInitClient(int channelId) override;
-	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override;
-	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override;
-	virtual void                 Release() override;
-	virtual void                 FullSerialize(TSerialize ser) override;
-	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int pflags) override;
-	virtual void                 PostSerialize() override;
-	virtual void                 SerializeSpawnInfo(TSerialize ser) override;
-	virtual ISerializableInfoPtr GetSpawnInfo() override;
-	virtual void                 Update(SEntityUpdateContext& ctx, int updateSlot) override;
-	virtual void                 HandleEvent(const SGameObjectEvent& event) override;
-	virtual void                 ProcessEvent(const SEntityEvent& event) override;
-	virtual void                 SetChannelId(uint16 id) override;
-	virtual void                 SetAuthority(bool auth) override;
-	virtual void                 PostUpdate(float frameTime) override;
-	virtual void                 PostRemoteSpawn() override;
-	// ~IGameObjectExtension
+	virtual ~CLipSync_FacialInstance();
+
+	// IEntityComponent
+	virtual void PostInitialize() override;
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
+
+	virtual bool NeedSerialize() override { return true; }
+	virtual void Serialize(TSerialize ser) override;
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;
+	// ~IEntityComponent
 
 private:
 	void InjectLipSyncProvider();
