@@ -16,7 +16,6 @@
 
 #pragma once
 
-#include "IGameObject.h"
 #include "IAnimationGraph.h"
 #include <CryAnimation/IFacialAnimation.h>
 #include <CryNetwork/SerializeFwd.h>
@@ -285,8 +284,10 @@ struct SGroundAlignmentParams
 
 //--------------------------------------------------------------------------------
 
-struct IAnimatedCharacter : public IGameObjectExtension
+struct IAnimatedCharacter : public IEntityComponent
 {
+	DECLARE_COMPONENT("AnimatedCharacter", 0x72A1554106524A0E, 0x8491615ECB94620F)
+
 	virtual IAnimationGraphState*    GetAnimationGraphState() = 0;
 	virtual void                     PushForcedState(const char* state) = 0;
 	virtual void                     ClearForcedStates() = 0;

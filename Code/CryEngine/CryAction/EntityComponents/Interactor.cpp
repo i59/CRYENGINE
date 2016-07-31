@@ -35,14 +35,22 @@ CInteractor::CInteractor()
 
 }
 
-bool CInteractor::Init(IGameObject* pGameObject)
+CInteractor::~CInteractor()
 {
-	SetGameObject(pGameObject);
+	gEnv->pScriptSystem->ReleaseFunc(m_funcIsUsable);
+	gEnv->pScriptSystem->ReleaseFunc(m_funcAreUsable);
+	gEnv->pScriptSystem->ReleaseFunc(m_funcOnNewUsable);
+	gEnv->pScriptSystem->ReleaseFunc(m_funcOnUsableMessage);
+	gEnv->pScriptSystem->ReleaseFunc(m_funcOnLongHover);
+}
+
+void CInteractor::PostInitialize()
+{
 	if (!m_pQuery)
 	{
-		m_pQuery = (CWorldQuery*) GetGameObject()->AcquireExtension("WorldQuery");
+		m_pQuery = &GetEntity()->AcquireComponent<CWorldQuery>();
 		if (!m_pQuery)
-			return false;
+			return;
 	}
 
 	m_pQuery->SetProximityRadius(CCryActionCVars::Get().playerInteractorRadius);
@@ -61,37 +69,24 @@ bool CInteractor::Init(IGameObject* pGameObject)
 
 	m_queryMethods = (m_funcAreUsable) ? "m" : "rb";  //m is optimized for Crysis2, "rb" is Crysis1 compatible
 
-	return true;
+	GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Always);
 }
 
-void CInteractor::PostInit(IGameObject* pGameObject)
+void CInteractor::ProcessEvent(const SEntityEvent &event)
 {
-	pGameObject->EnableUpdateSlot(this, 0);
-}
+	switch (event.event)
+	{
+		case ENTITY_EVENT_POST_SERIALIZE:
+		{
+			//?fix? : was invalid sometimes after QL
+			if (!m_pQuery)
+				m_pQuery = &GetEntity()->AcquireComponent<CWorldQuery>();
 
-bool CInteractor::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
-{
-	ResetGameObject();
-
-	CRY_ASSERT_MESSAGE(false, "CInteractor::ReloadExtension not implemented");
-
-	return false;
-}
-
-CInteractor::~CInteractor()
-{
-	if (m_pQuery)
-		GetGameObject()->ReleaseExtension("WorldQuery");
-	gEnv->pScriptSystem->ReleaseFunc(m_funcIsUsable);
-	gEnv->pScriptSystem->ReleaseFunc(m_funcAreUsable);
-	gEnv->pScriptSystem->ReleaseFunc(m_funcOnNewUsable);
-	gEnv->pScriptSystem->ReleaseFunc(m_funcOnUsableMessage);
-	gEnv->pScriptSystem->ReleaseFunc(m_funcOnLongHover);
-}
-
-void CInteractor::Release()
-{
-	delete this;
+			if (m_funcOnNewUsable)
+				Script::CallMethod(m_pGameRules, m_funcOnNewUsable, EntityIdToScript(GetEntityId()), EntityIdToScript(m_overId), m_overIdx);
+		}
+		break;
+	}
 }
 
 ScriptAnyValue CInteractor::EntityIdToScript(EntityId id)
@@ -108,7 +103,7 @@ ScriptAnyValue CInteractor::EntityIdToScript(EntityId id)
 	}
 }
 
-void CInteractor::Update(SEntityUpdateContext&, int)
+void CInteractor::Update(SEntityUpdateContext&)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
 
@@ -566,7 +561,7 @@ void CInteractor::UpdateTimers(EntityId newOverId, int usableIdx)
 	}
 }
 
-void CInteractor::FullSerialize(TSerialize ser)
+void CInteractor::Serialize(TSerialize ser)
 {
 	ser.Value("useHoverTime", m_useHoverTime);
 	ser.Value("unUseHoverTime", m_unUseHoverTime);
@@ -628,31 +623,11 @@ void CInteractor::FullSerialize(TSerialize ser)
 	}
 }
 
-bool CInteractor::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags)
-{
-	return true;
-}
-
-void CInteractor::HandleEvent(const SGameObjectEvent&)
-{
-
-}
-
 void CInteractor::GetMemoryUsage(ICrySizer* pSizer) const
 {
 	pSizer->AddObject(this, sizeof(*this));
 	pSizer->AddObject(m_queryMethods);
 	pSizer->AddObject(m_pQuery);
-}
-
-void CInteractor::PostSerialize()
-{
-	//?fix? : was invalid sometimes after QL
-	if (!m_pQuery)
-		m_pQuery = (CWorldQuery*) GetGameObject()->AcquireExtension("WorldQuery");
-
-	if (m_funcOnNewUsable)
-		Script::CallMethod(m_pGameRules, m_funcOnNewUsable, EntityIdToScript(GetEntityId()), EntityIdToScript(m_overId), m_overIdx);
 }
 
 bool CInteractor::IsEntityUsable(const IEntity* pEntity)

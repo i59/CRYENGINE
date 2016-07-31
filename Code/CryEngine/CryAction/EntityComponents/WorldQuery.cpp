@@ -1,7 +1,6 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "GameObjects/GameObject.h"
 #include "WorldQuery.h"
 #include "CryAction.h"
 #include "IActorSystem.h"
@@ -80,38 +79,18 @@ CWorldQuery::~CWorldQuery()
 #endif
 }
 
-bool CWorldQuery::Init(IGameObject* pGameObject)
+void CWorldQuery::PostInitialize()
 {
-	SetGameObject(pGameObject);
 	m_pActor = CCryAction::GetCryAction()->GetIActorSystem()->GetActor(GetEntityId());
 	if (!m_pActor)
 	{
 		GameWarning("WorldQuery extension only available for actors");
-		return false;
 	}
-	return true;
+
+	GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Always);
 }
 
-void CWorldQuery::PostInit(IGameObject* pGameObject)
-{
-	pGameObject->EnableUpdateSlot(this, 0);
-}
-
-bool CWorldQuery::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
-{
-	ResetGameObject();
-
-	CRY_ASSERT_MESSAGE(false, "CWorldQuery::ReloadExtension not implemented");
-
-	return false;
-}
-
-void CWorldQuery::Release()
-{
-	delete this;
-}
-
-void CWorldQuery::FullSerialize(TSerialize ser)
+void CWorldQuery::Serialize(TSerialize ser)
 {
 	if (ser.GetSerializationTarget() == eST_Network)
 		return;
@@ -126,7 +105,7 @@ void CWorldQuery::FullSerialize(TSerialize ser)
 	}
 }
 
-void CWorldQuery::Update(SEntityUpdateContext& ctx, int slot)
+void CWorldQuery::Update(SEntityUpdateContext& ctx)
 {
 	//m_validQueries = 0;
 	//m_renderFrameId = gEnv->pRenderer->GetFrameID();
@@ -293,10 +272,6 @@ void CWorldQuery::UpdateInFrontOfQuery()
 				m_inFrontOf.push_back(pEntity->GetId());
 		}
 	}
-}
-
-void CWorldQuery::HandleEvent(const SGameObjectEvent&)
-{
 }
 
 void CWorldQuery::GetMemoryUsage(ICrySizer* pSizer) const

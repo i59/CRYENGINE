@@ -189,6 +189,13 @@
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>
 
+#include "EntityComponents/WorldQuery.h"
+#include "EntityComponents/Interactor.h"
+#include "GameVolumes/GameVolume_Water.h"
+#include "EntityComponents/MannequinObject.h"
+
+#include <CryGame/IGameVolumes.h>
+
 CCryAction* CCryAction::m_pThis = 0;
 
 #define DLL_INITFUNC_SYSTEM "CreateSystemInterface"
@@ -236,6 +243,8 @@ public:
 	}
 };
 static CSystemEventListner_Action g_system_event_listener_action;
+
+static std::vector<const char*> gs_lipSyncExtensionNamesForExposureToEditor;
 
 void CCryAction::DumpMemInfo(const char* format, ...)
 {
@@ -1987,8 +1996,50 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 
 	if (m_pVehicleSystem)
 		m_pVehicleSystem->RegisterVehicles(this);
-	if (m_pGameObjectSystem)
-		m_pGameObjectSystem->RegisterFactories(this);
+
+	#define REGISTER_GAME_OBJECT_EXTENSION(framework, entityClassString, extensionClassName, script)  \
+    {                                                                                               \
+      IEntityClassRegistry::SEntityClassDesc clsDesc;                                               \
+      clsDesc.sName = entityClassString;                                                            \
+      clsDesc.sScriptFile = script;                                                                 \
+      struct C ## extensionClassName ## Creator : public IGameObjectExtensionCreatorBase            \
+      {                                                                                             \
+        IGameObjectExtensionPtr Create()                                                            \
+        {                                                                                           \
+          return ComponentCreate_DeleteWithRelease<C ## extensionClassName>();                      \
+        }                                                                                           \
+        void GetGameObjectExtensionRMIData(void** ppRMI, size_t * nCount)                           \
+        {                                                                                           \
+          C ## extensionClassName::GetGameObjectExtensionRMIData(ppRMI, nCount);                    \
+        }                                                                                           \
+      };                                                                                            \
+      static C ## extensionClassName ## Creator _creator;                                           \
+      framework->GetIGameObjectSystem()->RegisterExtension(entityClassString, &_creator, &clsDesc); \
+    }                                                                                               \
+
+	REGISTER_GAME_OBJECT_EXTENSION(this, "WaterVolume", GameVolume_Water, "Scripts/Entities/Environment/WaterVolume.lua");
+
+	//RegisterEntityWithComponent<CGameVolume_Water>("WaterVolume", "Scripts/Entities/Environment/WaterVolume.lua");
+	RegisterEntityWithComponent<CMannequinObject>("MannequinObject", "Scripts/Entities/Anim/MannequinObject.lua");
+
+	REGISTER_FACTORY((IGameFramework*)this, "LipSync_TransitionQueue", CLipSync_TransitionQueue, false);
+	REGISTER_FACTORY((IGameFramework*)this, "LipSync_FacialInstance", CLipSync_FacialInstance, false);
+	gs_lipSyncExtensionNamesForExposureToEditor.clear();
+	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_TransitionQueue");
+	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_FacialInstance");
+
+	// Hide WaterVolume from the Editor
+	IEntityClass* pItemClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("WaterVolume");
+	pItemClass->SetFlags(pItemClass->GetFlags() | ECLF_INVISIBLE);
+
+	// Register with the volume system
+	IGameVolumes* pGameVolumes = GetIGameVolumesManager();
+	IGameVolumesEdit* pGameVolumesEdit = pGameVolumes ? pGameVolumes->GetEditorInterface() : NULL;
+	if (pGameVolumesEdit != NULL)
+	{
+		pGameVolumesEdit->RegisterEntityClass("WaterVolume");
+	}
+
 	CGameContext::RegisterExtensions(this);
 
 	// Player profile stuff
@@ -2102,8 +2153,6 @@ void CCryAction::InitGameType(bool multiplayer, bool fromInit)
 	}
 }
 
-static std::vector<const char*> gs_lipSyncExtensionNamesForExposureToEditor;
-
 //------------------------------------------------------------------------
 bool CCryAction::CompleteInit()
 {
@@ -2113,13 +2162,6 @@ bool CCryAction::CompleteInit()
 #endif
 
 	InlineInitializationProcessing("CCryAction::CompleteInit");
-
-	REGISTER_FACTORY((IGameFramework*)this, "AnimatedCharacter", CAnimatedCharacter, false);
-	REGISTER_FACTORY((IGameFramework*)this, "LipSync_TransitionQueue", CLipSync_TransitionQueue, false);
-	REGISTER_FACTORY((IGameFramework*)this, "LipSync_FacialInstance", CLipSync_FacialInstance, false);
-	gs_lipSyncExtensionNamesForExposureToEditor.clear();
-	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_TransitionQueue");
-	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_FacialInstance");
 
 	EndGameContext();
 

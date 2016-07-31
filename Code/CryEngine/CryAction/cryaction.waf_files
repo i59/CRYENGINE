@@ -399,23 +399,26 @@
   },
   "CryAction_game_objects_uber.cpp":{
     "Game Objects":[
-      "GameObjects/CameraSource.cpp",
       "GameObjects/GameObject.cpp",
       "GameObjects/GameObjectDispatch.cpp",
       "GameObjects/GameObjectSystem.cpp",
-      "GameObjects/GameObjectSystem_FactoryRegistration.cpp",
-      "GameObjects/Interactor.cpp",
-      "GameObjects/WorldQuery.cpp",
-      "GameObjects/CameraSource.h",
       "GameObjects/GameObject.h",
       "GameObjects/GameObjectDispatch.h",
       "GameObjects/GameObjectSystem.h",
-      "GameObjects/Interactor.h",
-      "GameObjects/WorldQuery.h",
-      "GameObjects/MannequinObject.h",
-      "GameObjects/MannequinObject.cpp",
-      "GameObjects/RuntimeAreaObject.h",
-      "GameObjects/RuntimeAreaObject.cpp"
+	  
+	  "GameObjects/CameraSource.cpp",
+	  "GameObjects/CameraSource.h"
+	],
+	"Entity Components":[
+	  "EntityComponents/WorldQuery.h",
+	  "EntityComponents/WorldQuery.cpp",
+	  "EntityComponents/MannequinObject.h",
+	  "EntityComponents/MannequinObject.cpp",
+	  "EntityComponents/RuntimeAreaObject.h",
+	  "EntityComponents/RuntimeAreaObject.cpp",
+	  
+	  "EntityComponents/Interactor.h",
+	  "EntityComponents/Interactor.cpp"
     ],
     "GameRules":[
       "GameRulesSystem.cpp",

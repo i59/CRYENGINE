@@ -2,19 +2,14 @@
 
 #include "StdAfx.h"
 #include "RuntimeAreas.h"
-#include "GameObjects/RuntimeAreaObject.h"
+#include "EntityComponents/RuntimeAreaObject.h"
 #include <IGameObject.h>
 
 CRuntimeAreaManager::CRuntimeAreaManager()
 {
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
 
-	IEntityClassRegistry::SEntityClassDesc runtimeObjectDesc;
-	runtimeObjectDesc.sName = "RuntimeAreaObject";
-	runtimeObjectDesc.sScriptFile = "";
-
-	static IGameFramework::CGameObjectExtensionCreator<CRuntimeAreaObject> runtimeObjectCreator;
-	gEnv->pGame->GetIGameFramework()->GetIGameObjectSystem()->RegisterExtension(runtimeObjectDesc.sName, &runtimeObjectCreator, &runtimeObjectDesc);
+	RegisterEntityWithComponent<CRuntimeAreaObject>("RuntimeAreaObject");
 
 	FillAudioControls();
 }

@@ -2000,6 +2000,9 @@ void CGameContext::PlayerIdSet(EntityId id)
 	{
 		pEntity->AddFlags(ENTITY_FLAG_LOCAL_PLAYER | ENTITY_FLAG_TRIGGER_AREAS);
 
+		SEntityEvent event(ENTITY_EVENT_BECOME_LOCAL_PLAYER);
+		pEntity->SendEvent(event);
+
 		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
 		{
 			SGameObjectEvent goe(eGFE_BecomeLocalPlayer, eGOEF_ToAll);

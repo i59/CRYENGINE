@@ -8,7 +8,7 @@
 #include "StdAfx.h"
 #include "MannequinObject.h"
 
-#include "IAnimatedCharacter.h"
+#include "AnimationGraph/AnimatedCharacter.h"
 
 ///////////////////////////////////////////////////////////////////////////
 CMannequinObject::CMannequinObject()
@@ -17,31 +17,10 @@ CMannequinObject::CMannequinObject()
 }
 
 ///////////////////////////////////////////////////////////////////////////
-CMannequinObject::~CMannequinObject()
+void CMannequinObject::PostInitialize()
 {
-	if (m_pAnimatedCharacter)
-	{
-		IGameObject* pGameObject = GetGameObject();
-		pGameObject->ReleaseExtension("AnimatedCharacter");
-	}
-}
+	m_pAnimatedCharacter = &GetEntity()->AcquireComponent<CAnimatedCharacter>();
 
-///////////////////////////////////////////////////////////////////////////
-bool CMannequinObject::Init(IGameObject* const pGameObject)
-{
-	SetGameObject(pGameObject);
-
-	m_pAnimatedCharacter = static_cast<IAnimatedCharacter*>(pGameObject->AcquireExtension("AnimatedCharacter"));
-
-	pGameObject->EnablePrePhysicsUpdate(ePPU_Always);
-	pGameObject->EnablePhysicsEvent(true, eEPE_OnPostStepImmediate);
-
-	return true;
-}
-
-///////////////////////////////////////////////////////////////////////////
-void CMannequinObject::PostInit(IGameObject* const pGameObject)
-{
 	Reset();
 }
 
@@ -54,7 +33,6 @@ void CMannequinObject::Reset()
 	if (m_pAnimatedCharacter)
 	{
 		m_pAnimatedCharacter->ResetState();
-		m_pAnimatedCharacter->Init(GetGameObject());
 		m_pAnimatedCharacter->SetMovementControlMethods(eMCM_Animation, eMCM_Animation);
 
 		if (IActionController* pActionController = m_pAnimatedCharacter->GetActionController())

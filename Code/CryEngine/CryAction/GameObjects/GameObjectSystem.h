@@ -47,8 +47,6 @@ public:
 
 	const SEntitySchedulingProfiles*                   GetEntitySchedulerProfiles(IEntity* pEnt);
 
-	void                                               RegisterFactories(IGameFramework* pFW);
-
 	IEntity*                                           CreatePlayerProximityTrigger();
 	ILINE IEntityClass*                                GetPlayerProximityTriggerClass() { return m_pClassPlayerProximityTrigger; }
 	ILINE std::vector<IGameObjectSystem::ExtensionID>* GetActivatedExtensionsTop()      { return &m_activatedExtensions_top; }

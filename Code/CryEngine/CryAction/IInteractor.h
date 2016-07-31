@@ -16,8 +16,10 @@
 
 #pragma once
 
-struct IInteractor : public IGameObjectExtension
+struct IInteractor : public IEntityComponent
 {
+	DECLARE_COMPONENT("Interactor", 0x7ACBFF9E0948452B, 0xB04EF07FC31F8AA8)
+
 	virtual bool IsUsable(EntityId entityId) const = 0;
 	virtual bool IsLocked() const = 0;
 	virtual int  GetLockIdx() const = 0;

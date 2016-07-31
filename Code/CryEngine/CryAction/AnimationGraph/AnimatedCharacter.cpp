@@ -94,25 +94,6 @@ bool CheckNANVec(const Vec3& v, IEntity* pEntity)
 }
 }
 
-namespace AC
-{
-void RegisterEvents(IGameObjectExtension& goExt, IGameObject& gameObject)
-{
-	const int eventToRegister[] =
-	{
-		eGFE_QueueRagdollCreation,
-		eGFE_BecomeLocalPlayer,
-		eGFE_OnCollision,
-		eGFE_ResetAnimationGraphs,
-		eGFE_QueueBlendFromRagdoll,
-		eGFE_EnablePhysics,
-		eGFE_DisablePhysics
-	};
-	gameObject.UnRegisterExtForEvents(&goExt, NULL, 0);
-	gameObject.RegisterExtForEvents(&goExt, eventToRegister, sizeof(eventToRegister) / sizeof(int));
-}
-}
-
 CAnimatedCharacter::CAnimatedCharacter() : m_listeners(1)
 {
 	InitVars();
@@ -289,48 +270,38 @@ void CAnimatedCharacter::InitVars()
 	m_useMannequinAGState = false;
 }
 
-bool CAnimatedCharacter::Init(IGameObject* pGameObject)
+void CAnimatedCharacter::PostInitialize()
 {
 #ifdef ANIMCHAR_MEM_DEBUG
 	CCryAction::GetCryAction()->DumpMemInfo("CAnimatedCharacter::Init %p start", pGameObject);
 #endif
 
-	SetGameObject(pGameObject);
-
-	LoadAnimationGraph(pGameObject);
+	LoadAnimationGraph();
 
 #ifdef ANIMCHAR_MEM_DEBUG
 	CCryAction::GetCryAction()->DumpMemInfo("CAnimatedCharacter::Init %p end", pGameObject);
 #endif
 
-	return true;
-}
-
-void CAnimatedCharacter::PostInit(IGameObject* pGameObject)
-{
-	AC::RegisterEvents(*this, *pGameObject);
-
 	m_pComponentPrepareCharForUpdate = &GetEntity()->AcquireComponent<CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate>();
 	m_pComponentPrepareCharForUpdate->SetAnimatedCharacter(this);
 
-	GetEntity()->AcquireComponent<CAnimatedCharacterComponent_GenerateMoveRequest>().SetAnimatedCharacter(this);
-	GetEntity()->AcquireComponent<CAnimatedCharacterComponent_StartAnimProc>().SetAnimatedCharacter(this);
+	auto &moveRequestComponent = GetEntity()->AcquireComponent<CAnimatedCharacterComponent_GenerateMoveRequest>();
+	moveRequestComponent.SetAnimatedCharacter(this);
+
+	auto &startAnimProcComponent = GetEntity()->AcquireComponent<CAnimatedCharacterComponent_StartAnimProc>();
+	moveRequestComponent.SetAnimatedCharacter(this);
 
 	m_proxiesInitialized = true;
 
-	pGameObject->EnableUpdateSlot(this, 0);
-	pGameObject->SetUpdateSlotEnableCondition(this, 0, eUEC_Visible);
-	pGameObject->EnablePhysicsEvent(true, eEPE_OnCollisionLogged);
+	GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Visible);
 }
 
-bool CAnimatedCharacter::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
+void CAnimatedCharacter::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 #ifdef ANIMCHAR_MEM_DEBUG
-	CCryAction::GetCryAction()->DumpMemInfo("CAnimatedCharacter::ReloadExtension %p start", pGameObject);
+	CCryAction::GetCryAction()->DumpMemInfo("CAnimatedCharacter::ReloadExtension %p start", this);
 #endif
 
-	AC::RegisterEvents(*this, *pGameObject);
-	ResetGameObject();
 	ResetInertiaCache();
 
 	SAFE_RELEASE(m_pMannequinAGState);
@@ -341,18 +312,16 @@ bool CAnimatedCharacter::ReloadExtension(IGameObject* pGameObject, const SEntity
 	}
 
 	// Load the new animation graph in
-	LoadAnimationGraph(pGameObject);
+	LoadAnimationGraph();
 
 #ifdef ANIMCHAR_MEM_DEBUG
-	CCryAction::GetCryAction()->DumpMemInfo("CAnimatedCharacter::ReloadExtension %p end", pGameObject);
+	CCryAction::GetCryAction()->DumpMemInfo("CAnimatedCharacter::ReloadExtension %p end", this);
 #endif
 
 	m_pComponentPrepareCharForUpdate->ClearQueuedRotation();
-
-	return true;
 }
 
-bool CAnimatedCharacter::LoadAnimationGraph(IGameObject* pGameObject)
+bool CAnimatedCharacter::LoadAnimationGraph()
 {
 	IEntity* pEntity = GetEntity();
 	SmartScriptTable pScriptTable = pEntity ? pEntity->GetScriptTable() : NULL;
@@ -414,12 +383,7 @@ bool CAnimatedCharacter::LoadAnimationGraph(IGameObject* pGameObject)
 	return true;
 }
 
-void CAnimatedCharacter::Release()
-{
-	delete this;
-}
-
-void CAnimatedCharacter::FullSerialize(TSerialize ser)
+void CAnimatedCharacter::Serialize(TSerialize ser)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Animated character serialization");
 
@@ -506,15 +470,7 @@ void CAnimatedCharacter::FullSerialize(TSerialize ser)
 	ser.EndGroup(); //AnimatedCharacter
 }
 
-void CAnimatedCharacter::PostSerialize()
-{
-	if (m_hasShadowCharacter)
-	{
-		InitShadowCharacter();
-	}
-}
-
-void CAnimatedCharacter::Update(SEntityUpdateContext& ctx, int slot)
+void CAnimatedCharacter::Update(SEntityUpdateContext& ctx)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
 
@@ -602,92 +558,6 @@ void CAnimatedCharacter::RequestPhysicalColliderMode(EColliderMode mode, ECollid
 		m_colliderModeLayers[layer] = mode;
 		UpdatePhysicalColliderMode();
 	}
-}
-
-void CAnimatedCharacter::HandleEvent(const SGameObjectEvent& event)
-{
-	switch (event.event)
-	{
-	case eGFE_QueueBlendFromRagdoll:
-		SetBlendFromRagdollizeParams(event);
-		break;
-	case eGFE_QueueRagdollCreation:
-		SetRagdollizeParams(event);
-		break;
-	case eGFE_BecomeLocalPlayer:
-		{
-			m_isClient = true;
-			break;
-		}
-	case eGFE_OnCollision:
-		{
-			const EventPhysCollision* pCollision = static_cast<const EventPhysCollision*>(event.ptr);
-
-			// Ignore bullets and insignificant particles, etc.
-			// TODO: This early-out condition should ideally be done on a higher level,
-			// to avoid even touching this memory for all bullets and stuff.
-			if (pCollision->pEntity[0]->GetType() == PE_PARTICLE)
-				break;
-
-			if (m_curFrameID > m_collisionFrameID)
-			{
-				m_collisionNormalCount = 0;
-				m_collisionNormal[0].zero();
-				m_collisionNormal[1].zero();
-				m_collisionNormal[2].zero();
-				m_collisionNormal[3].zero();
-			}
-
-			if ((m_curFrameID < m_collisionFrameID) || (m_collisionNormalCount >= 4) || (m_curFrameID <= 10))
-				break;
-
-			// Both entities in a collision recieve the same direction of the normal.
-			// We need to flip the normal if this is the second entity.
-			IPhysicalEntity* pPhysEnt = GetEntity()->GetPhysics();
-			if (pPhysEnt == pCollision->pEntity[0])
-				m_collisionNormal[m_collisionNormalCount] = pCollision->n;
-			else if (pPhysEnt == pCollision->pEntity[1])
-				m_collisionNormal[m_collisionNormalCount] = -pCollision->n;
-			/*
-			      // This might happen for faked collisions, such as punches.
-			      else
-			        assert(!"Entity recieved collision event without being part of collision!");
-			 */
-			// We only care about the horizontal part, so we remove the vertical component for simplicity.
-			m_collisionNormal[m_collisionNormalCount].z = 0.0f;
-			if (!m_collisionNormal[m_collisionNormalCount].IsZero())
-			{
-				m_collisionNormal[m_collisionNormalCount].Normalize();
-
-#if _DEBUG && defined(USER_david)
-				CPersistantDebug* pPD = CCryAction::GetCryAction()->GetPersistantDebug();
-				if ((pPD != NULL) && true)
-				{
-					pPD->Begin(UNIQUE("AnimatedCharacter.HandleEvent.CollisionNormal"), false);
-					pPD->AddSphere(pCollision->pt, 0.02f, ColorF(1, 0.75f, 0.0f, 1), 0.1f);
-					pPD->AddLine(pCollision->pt, pCollision->pt + m_collisionNormal[m_collisionNormalCount] * 0.5f, ColorF(1, 0.75f, 0.0f, 1), 0.1f);
-				}
-#endif
-
-				m_collisionFrameID = m_curFrameID;
-				m_collisionNormalCount++;
-
-			}
-		}
-		break;
-
-	case eGFE_ResetAnimationGraphs:
-		if (m_pMannequinAGState)
-			m_pMannequinAGState->Reset();
-		break;
-	case eGFE_EnablePhysics:
-		RequestPhysicalColliderMode(eColliderMode_Undefined, eColliderModeLayer_ForceSleep, "eGFE_EnablePhysics");
-		break;
-	case eGFE_DisablePhysics:
-		RequestPhysicalColliderMode(eColliderMode_Disabled, eColliderModeLayer_ForceSleep, "eGFE_DisablePhysics");
-		break;
-	}
-	// AnimationControlled/GameControlled: DEPRECATED in favor of MovementControlMethod controlled by AnimGraph.
 }
 
 void CAnimatedCharacter::ResetInertiaCache()
@@ -1107,6 +977,14 @@ void CAnimatedCharacter::ProcessEvent(const SEntityEvent& event)
 				m_pActionController->Reset();
 		}
 		break;
+		case ENTITY_EVENT_POST_SERIALIZE:
+		{
+			if (m_hasShadowCharacter)
+			{
+				InitShadowCharacter();
+			}
+		}
+		break;
 	case ENTITY_EVENT_ANIM_EVENT:
 		{
 			VALIDATE_CHARACTER_PTRS
@@ -1120,6 +998,11 @@ void CAnimatedCharacter::ProcessEvent(const SEntityEvent& event)
 					m_pActionController->OnAnimationEvent(pCharacter, *pAnimEvent);
 				}
 			}
+		}
+		break;
+	case ENTITY_EVENT_BECOME_LOCAL_PLAYER:
+		{
+			m_isClient = true;
 		}
 		break;
 	case ENTITY_EVENT_XFORM:
@@ -1213,7 +1096,63 @@ void CAnimatedCharacter::ProcessEvent(const SEntityEvent& event)
 		{
 			if (!m_pActionController)
 			{
-				LoadAnimationGraph(GetGameObject());
+				LoadAnimationGraph();
+			}
+		}
+		break;
+	case ENTITY_EVENT_COLLISION:
+		{
+			EventPhysCollision* pCollision = (EventPhysCollision*)event.nParam[0];
+
+			// Ignore bullets and insignificant particles, etc.
+			// TODO: This early-out condition should ideally be done on a higher level,
+			// to avoid even touching this memory for all bullets and stuff.
+			if (pCollision->pEntity[0]->GetType() == PE_PARTICLE)
+				break;
+
+			if (m_curFrameID > m_collisionFrameID)
+			{
+				m_collisionNormalCount = 0;
+				m_collisionNormal[0].zero();
+				m_collisionNormal[1].zero();
+				m_collisionNormal[2].zero();
+				m_collisionNormal[3].zero();
+			}
+
+			if ((m_curFrameID < m_collisionFrameID) || (m_collisionNormalCount >= 4) || (m_curFrameID <= 10))
+				break;
+
+			// Both entities in a collision recieve the same direction of the normal.
+			// We need to flip the normal if this is the second entity.
+			IPhysicalEntity* pPhysEnt = GetEntity()->GetPhysics();
+			if (pPhysEnt == pCollision->pEntity[0])
+				m_collisionNormal[m_collisionNormalCount] = pCollision->n;
+			else if (pPhysEnt == pCollision->pEntity[1])
+				m_collisionNormal[m_collisionNormalCount] = -pCollision->n;
+			/*
+			// This might happen for faked collisions, such as punches.
+			else
+			assert(!"Entity recieved collision event without being part of collision!");
+			*/
+			// We only care about the horizontal part, so we remove the vertical component for simplicity.
+			m_collisionNormal[m_collisionNormalCount].z = 0.0f;
+			if (!m_collisionNormal[m_collisionNormalCount].IsZero())
+			{
+				m_collisionNormal[m_collisionNormalCount].Normalize();
+
+	#if _DEBUG && defined(USER_david)
+				CPersistantDebug* pPD = CCryAction::GetCryAction()->GetPersistantDebug();
+				if ((pPD != NULL) && true)
+				{
+					pPD->Begin(UNIQUE("AnimatedCharacter.HandleEvent.CollisionNormal"), false);
+					pPD->AddSphere(pCollision->pt, 0.02f, ColorF(1, 0.75f, 0.0f, 1), 0.1f);
+					pPD->AddLine(pCollision->pt, pCollision->pt + m_collisionNormal[m_collisionNormalCount] * 0.5f, ColorF(1, 0.75f, 0.0f, 1), 0.1f);
+				}
+	#endif
+
+				m_collisionFrameID = m_curFrameID;
+				m_collisionNormalCount++;
+
 			}
 		}
 		break;
@@ -1501,18 +1440,14 @@ void CAnimatedCharacter::SetInGrabbedState(bool bEnable)
 	m_inGrabbedState = bEnable;
 }
 
-void CAnimatedCharacter::SetBlendFromRagdollizeParams(const SGameObjectEvent& event)
+void CAnimatedCharacter::SetBlendFromRagdollizeParams(bool bPendingBlend)
 {
-	CRY_ASSERT(event.event == eGFE_QueueBlendFromRagdoll);
-
-	m_blendFromRagollizeParams.m_bPendingBlend = event.paramAsBool;
+	m_blendFromRagollizeParams.m_bPendingBlend = bPendingBlend;
 }
 
-void CAnimatedCharacter::SetRagdollizeParams(const SGameObjectEvent& event)
+void CAnimatedCharacter::SetRagdollizeParams(const SRagdollizeParams &params)
 {
-	CRY_ASSERT(event.event == eGFE_QueueRagdollCreation);
-
-	m_ragdollParams = *static_cast<const SRagdollizeParams*>(event.ptr);
+	m_ragdollParams = params;
 
 	m_bPendingRagdoll = true;
 }
@@ -1553,19 +1488,12 @@ void CAnimatedCharacter::KickOffRagdoll()
 		pp.bCopyJointVelocities = !gEnv->pSystem->IsSerializingFile();
 		pp.nFlagsOR = pef_log_poststep;
 		GetEntity()->Physicalize(pp);
-
-		SGameObjectEvent triggeredRagdoll(eGFE_RagdollPhysicalized, eGOEF_ToExtensions);
-		triggeredRagdoll.ptr = &m_ragdollParams;
-		GetGameObject()->SendEvent(triggeredRagdoll);
 	}
 	m_bPendingRagdoll = false;
 
 	if (m_blendFromRagollizeParams.m_bPendingBlend)
 	{
 		m_groundAlignmentParams.SetFlag(eGA_Enable, true);
-
-		SGameObjectEvent event(eGFE_DisableBlendRagdoll, eGOEF_ToExtensions);
-		GetGameObject()->SendEvent(event);
 
 		/*		ICharacterInstance *pCharacter=GetEntity()->GetCharacter(0);
 		    if (pCharacter && pCharacter->GetISkeletonAnim())

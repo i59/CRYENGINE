@@ -166,34 +166,25 @@ struct IAnimatedCharacterListener
 
 //--------------------------------------------------------------------------------
 // TODO: Shuffle variable members around to better align and pack things tightly and reduce padding.
-class CAnimatedCharacter : public CGameObjectExtensionHelper<CAnimatedCharacter, IAnimatedCharacter>, public IAnimationGraphStateListener
+class CAnimatedCharacter : public IAnimatedCharacter, public IAnimationGraphStateListener
 {
 public:
 	CAnimatedCharacter();
 	~CAnimatedCharacter();
 
-	// IAnimatedCharacter
-	virtual bool                 Init(IGameObject* pGameObject);
-	virtual void                 InitClient(int channelId)                                                       {};
-	virtual void                 PostInit(IGameObject* pGameObject);
-	virtual void                 PostInitClient(int channelId)                                                   {};
-	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params);
-	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) {}
-	virtual void                 Release();
-	virtual void                 FullSerialize(TSerialize ser);
-	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; }
-	virtual void                 ProcessEvent(const SEntityEvent& event);
-	virtual void                 PostSerialize();
-	virtual void                 SerializeSpawnInfo(TSerialize ser) {}
-	virtual ISerializableInfoPtr GetSpawnInfo()                     { return 0; }
-	virtual void                 Update(SEntityUpdateContext& ctx, int);
-	virtual void                 HandleEvent(const SGameObjectEvent&);
-	virtual void                 SetChannelId(uint16 id)     {}
-	virtual void                 SetAuthority(bool auth)     {}
-	virtual void                 PostUpdate(float frameTime) { CRY_ASSERT(false); }
-	virtual void                 PostRemoteSpawn()           {};
-	virtual void                 GetMemoryUsage(ICrySizer* s) const;
+	// IEntityComponent
+	virtual void PostInitialize() override;
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
+	virtual void ProcessEvent(const SEntityEvent& event) override;
 
+	virtual void Update(SEntityUpdateContext& ctx) override;
+
+	virtual void Serialize(TSerialize ser) override;
+
+	virtual void GetMemoryUsage(ICrySizer* s) const override;
+	// ~IEntityComponent
+
+	// IAnimatedCharacter
 	virtual IActionController*   GetActionController()
 	{
 		return m_pActionController;
@@ -345,7 +336,7 @@ private:
 	bool       EvaluateSimpleMovementConditions() const;
 	void       UpdateSimpleMovementConditions();
 
-	bool       LoadAnimationGraph(IGameObject* pGameObject);
+	bool       LoadAnimationGraph();
 
 	void       PreAnimationUpdate();
 
@@ -418,8 +409,8 @@ private:
 	void UpdateCharacterPtrs();
 	void ValidateCharacterPtrs();
 
-	void SetBlendFromRagdollizeParams(const SGameObjectEvent& event);
-	void SetRagdollizeParams(const SGameObjectEvent& event);
+	void SetBlendFromRagdollizeParams(bool bPendingBlend);
+	void SetRagdollizeParams(const SRagdollizeParams &params);
 	void KickOffRagdoll();
 	bool StartAnimationProcessing(const QuatT& entityLocation) const;
 	void StartAnimationProcessing() const;

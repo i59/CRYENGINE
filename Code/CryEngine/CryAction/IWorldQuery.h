@@ -5,12 +5,12 @@
 
 #pragma once
 
-#include "IGameObject.h"
-
 typedef std::vector<EntityId> Entities;
 
-struct IWorldQuery : IGameObjectExtension
+struct IWorldQuery : IEntityComponent
 {
+	DECLARE_COMPONENT("WorldQuery", 0x598605F3B0B34FD7, 0x916D1D91791D2FE6)
+
 	virtual IEntity*                GetEntityInFrontOf() = 0;
 	virtual const EntityId*         ProximityQuery(int& numberOfEntities) = 0;
 	virtual const Vec3&             GetPos() const = 0;

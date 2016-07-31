@@ -396,6 +396,9 @@ enum EEntityEvent
 	//! Called when the entity should be removed from the radar.
 	ENTITY_EVENT_REMOVE_FROM_RADAR,
 
+	// Called when this entity becomes the local player
+	ENTITY_EVENT_BECOME_LOCAL_PLAYER,
+
 	//! Last entity event in list.
 	ENTITY_EVENT_LAST,
 };

@@ -473,12 +473,9 @@ private:
 			if (animationMovementControl)
 			{
 				bool needsManualUpdate = (m_layer == 0);
-				if (auto *pGameObject = pActInfo->pEntity->QueryComponent<IGameObject>())
+				if (auto *pAnimatedCharacter = pActInfo->pEntity->QueryComponent<IAnimatedCharacter>())
 				{
-					if (IAnimatedCharacter* pAnimatedCharacter = static_cast<IAnimatedCharacter*>(pGameObject->QueryExtension("AnimatedCharacter")))
-					{
-						needsManualUpdate = false;
-					}
+					needsManualUpdate = false;
 				}
 
 				if (needsManualUpdate)

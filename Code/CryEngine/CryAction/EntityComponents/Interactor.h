@@ -5,40 +5,27 @@
 
 #pragma once
 
-#include "IGameObject.h"
 #include "IInteractor.h"
 
 class CWorldQuery;
 struct IEntitySystem;
 
-class CInteractor : public CGameObjectExtensionHelper<CInteractor, IInteractor>
+class CInteractor : public IInteractor
 {
 public:
 	CInteractor();
 	~CInteractor();
 
-	// IGameObjectExtension
-	virtual bool                 Init(IGameObject* pGameObject);
-	virtual void                 InitClient(int channelId)                                                       {};
-	virtual void                 PostInit(IGameObject* pGameObject);
-	virtual void                 PostInitClient(int channelId)                                                   {};
-	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params);
-	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) {}
-	virtual void                 Release();
-	virtual void                 FullSerialize(TSerialize ser);
-	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags);
-	virtual void                 PostSerialize();
-	virtual void                 SerializeSpawnInfo(TSerialize ser) {}
-	virtual ISerializableInfoPtr GetSpawnInfo()                     { return 0; }
-	virtual void                 Update(SEntityUpdateContext& ctx, int slot);
-	virtual void                 HandleEvent(const SGameObjectEvent&);
-	virtual void                 ProcessEvent(const SEntityEvent&) {};
-	virtual void                 SetChannelId(uint16 id)     {};
-	virtual void                 SetAuthority(bool auth)     {}
-	virtual void                 PostUpdate(float frameTime) { CRY_ASSERT(false); }
-	virtual void                 PostRemoteSpawn()           {};
-	virtual void                 GetMemoryUsage(ICrySizer* pSizer) const;
-	// ~IGameObjectExtension
+	// IEntityComponent
+	virtual void PostInitialize() override;
+	virtual void ProcessEvent(const SEntityEvent &event) override;
+
+	virtual void Update(SEntityUpdateContext &) override;
+
+	virtual void Serialize(TSerialize ser) override;
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;
+	// ~IEntityComponent
 
 	// IInteractor
 	virtual bool IsUsable(EntityId entityId) const;

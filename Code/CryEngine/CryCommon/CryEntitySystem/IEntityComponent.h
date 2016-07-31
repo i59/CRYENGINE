@@ -85,6 +85,26 @@ protected:
 		return cid; \
 	}
 
+template <typename T>
+void RegisterEntityWithComponent(const char *name, const char *luaScriptPath = "")
+{
+	IEntityClassRegistry::SEntityClassDesc runtimeObjectDesc;
+	runtimeObjectDesc.sName = name;
+	runtimeObjectDesc.sScriptFile = luaScriptPath;
+
+	struct SSpawnCallback
+	{
+		static void CreateComponent(IEntity& entity, SEntitySpawnParams& params, void* pUserData)
+		{
+			entity.AcquireComponent<T>();
+		}
+	};
+
+	runtimeObjectDesc.pEntitySpawnCallback = SSpawnCallback::CreateComponent;
+
+	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(runtimeObjectDesc);
+}
+
 // TODO: Check if we should move out default components below to another file
 
 struct IShaderParamCallback;
