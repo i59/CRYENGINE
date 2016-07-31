@@ -1931,6 +1931,26 @@ void CEntitySystem::CheckInternalConsistency() const
 }
 
 //////////////////////////////////////////////////////////////////////////
+
+void CEntitySystem::RegisterComponentFactory(const CryInterfaceID &id, struct IEntityComponentFactory *pFactory)
+{
+	m_componentFactoryMap.insert(TEntityComponentFactoryMap::value_type(id, pFactory));
+}
+
+
+IEntityComponent *CEntitySystem::CreateComponentInstance(const CryInterfaceID &id)
+{
+	auto factoryIt = m_componentFactoryMap.find(id);
+	if (factoryIt == m_componentFactoryMap.end())
+	{
+		EntityWarning("Tried to create instance of entity component that was not registered via IEntitySystem::RegisterComponentFactory!");
+		return nullptr;
+	}
+
+	return factoryIt->second->CreateInstance();
+}
+
+//////////////////////////////////////////////////////////////////////////
 IEntityIt* CEntitySystem::GetEntityIterator()
 {
 	return (IEntityIt*)new CEntityItMap(this);

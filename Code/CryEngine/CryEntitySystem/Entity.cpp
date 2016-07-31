@@ -1272,7 +1272,20 @@ IEntityComponent *CEntity::GetComponentByTypeId(const CryInterfaceID &interfaceI
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::RegisterEntityComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent)
+IEntityComponent *CEntity::CreateComponentByTypeId(const CryInterfaceID &interfaceID)
+{
+	if (auto *pComponent = static_cast<CEntitySystem *>(g_pIEntitySystem)->CreateComponentInstance(interfaceID))
+	{
+		RegisterComponent(interfaceID, pComponent);
+
+		return pComponent;
+	}
+
+	return nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::RegisterComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent)
 {
 	pComponent->Initialize(*this);
 

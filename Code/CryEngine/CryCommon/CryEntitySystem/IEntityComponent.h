@@ -4,31 +4,15 @@
 #include <CryNetwork/ISerialize.h>
 #include <CryAudio/IAudioSystem.h>
 
-#include <CryEntitySystem/IComponent.h>
 #include <CryAction/ILipSyncProvider.h>
+#include <CryGame/IGameFramework.h>
+#include <CryFlowGraph/IFlowSystem.h>
 
 #include <CryCore/BitMask.h>
 
 #include <CryExtension/ICryUnknown.h>
 
 #include <CryMemory/CrySizer.h>
-
-struct SEntitySpawnParams;
-struct SEntityEvent;
-struct SEntityUpdateContext;
-struct IShaderPublicParams;
-struct IFlowGraph;
-struct IEntityEventListener;
-struct IPhysicalEntity;
-struct SSGHandle;
-struct a2DPoint;
-struct IRenderMesh;
-struct IClipVolume;
-struct IBSPTree3D;
-struct IMaterial;
-struct IScriptTable;
-struct AABB;
-typedef uint64 EntityGUID;  //!< Same as in IEntity.h.
 
 struct IEntityComponent
 {
@@ -78,6 +62,32 @@ protected:
 	EntityId m_entityId;
 };
 
+struct IEntityComponentFactory
+{
+	virtual IEntityComponent *CreateInstance() = 0;
+};
+
+template <typename T>
+class CEntityComponentFactory
+	: public IEntityComponentFactory
+{
+	// IEntityComponentFactory
+	virtual IEntityComponent *CreateInstance() override
+	{
+		return new T();
+	}
+	// ~IEntityComponentFactory
+};
+
+template <typename T>
+void RegisterExternalComponent()
+{
+	static CEntityComponentFactory<T> creator;
+	gEnv->pEntitySystem->RegisterComponentFactory(cryiidof<T>(), &creator);
+}
+
+// Name is unused for now, but for future compatibility in case we want to instantiate components by name
+// This might be handy from scripts, serialization etc.
 #define DECLARE_COMPONENT(name, iidHigh, iidLow) \
 	static const CryInterfaceID &IID() \
 	{ \

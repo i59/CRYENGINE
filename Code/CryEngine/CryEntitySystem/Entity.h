@@ -175,10 +175,12 @@ public:
 	virtual void                SetUpdatePolicy(unsigned int eUpdatePolicy) override;
 	virtual unsigned int GetUpdatePolicy() const override { return m_updatePolicy; }
 
-	virtual void RegisterEntityComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent) override;
+	virtual void RegisterComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent) override;
 	virtual IEntityComponent *GetComponentByTypeId(const CryInterfaceID &interfaceID) const override;
 
 	virtual void            RegisterComponent(IComponentPtr pComponentPtr, const int flags) override;
+	virtual IEntityComponent *CreateComponentByTypeId(const CryInterfaceID &interfaceID) override;
+
 	virtual bool SendEvent(const SEntityEvent& event) override;
 
 	//////////////////////////////////////////////////////////////////////////

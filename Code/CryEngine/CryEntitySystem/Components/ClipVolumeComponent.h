@@ -58,6 +58,4 @@ private:
 	uint32 m_nFlags;
 };
 
-DECLARE_SHARED_POINTERS(CClipVolumeComponent)
-
 #endif //__CLIPVOLUMEPROXY_H__

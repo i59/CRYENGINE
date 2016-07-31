@@ -697,6 +697,8 @@ struct IEntitySystem
 	virtual IBSPTree3D* CreateBSPTree3D(const IBSPTree3D::FaceList& faceList) = 0;
 	virtual void        ReleaseBSPTree3D(IBSPTree3D*& pTree) = 0;
 
+
+	virtual void RegisterComponentFactory(const CryInterfaceID &id, struct IEntityComponentFactory *pFactory) = 0;
 	// </interfuscator:shuffle>
 };
 

@@ -289,6 +289,10 @@ public:
 	virtual IBSPTree3D*              CreateBSPTree3D(const IBSPTree3D::FaceList& faceList) override;
 	virtual void                     ReleaseBSPTree3D(IBSPTree3D*& pTree) override;
 
+	virtual void RegisterComponentFactory(const CryInterfaceID &id, IEntityComponentFactory *pFactory) override;
+	
+	IEntityComponent *CreateComponentInstance(const CryInterfaceID &id);
+
 private: // -----------------------------------------------------------------
 	void DoPrePhysicsUpdate();
 	void DoPrePhysicsUpdateFast();
@@ -413,6 +417,9 @@ private: // -----------------------------------------------------------------
 	bool    m_bEntitiesUseGUIDs;
 	int     m_nGeneratedFromGuid;
 
+	typedef std::unordered_map<const CryInterfaceID, IEntityComponentFactory *, stl::hash_guid> TEntityComponentFactoryMap;
+	TEntityComponentFactoryMap m_componentFactoryMap;
+	
 	//////////////////////////////////////////////////////////////////////////
 	// Pool Allocators.
 	//////////////////////////////////////////////////////////////////////////
