@@ -39,7 +39,8 @@ private:
 		IActor* pActor = CCryAction::GetCryAction()->GetClientActor();
 		if (!pActor)
 			return 0;
-		return pActor->GetGameObject();
+
+		return pActor->GetEntity()->QueryComponent<IGameObject>();
 	}
 };
 
@@ -54,7 +55,8 @@ private:
 		IActor* pActor = pActorSys->GetCurrentDemoSpectator();
 		if (!pActor)
 			return 0;
-		return pActor->GetGameObject();
+
+		return pActor->GetEntity()->QueryComponent<IGameObject>();
 	}
 };
 

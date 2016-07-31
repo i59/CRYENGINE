@@ -122,7 +122,6 @@ public:
 
 	virtual uint32                        GetPreUpdateTicks();
 
-	virtual void                          RegisterFactory(const char* name, IActorCreator* pCreator, bool isAI);
 	virtual void                          RegisterFactory(const char* name, IItemCreator* pCreator, bool isAI);
 	virtual void                          RegisterFactory(const char* name, IVehicleCreator* pCreator, bool isAI);
 	virtual void                          RegisterFactory(const char* name, IGameObjectExtensionCreator* pCreator, bool isAI);

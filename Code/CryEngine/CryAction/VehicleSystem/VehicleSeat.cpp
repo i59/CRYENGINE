@@ -1123,9 +1123,9 @@ bool CVehicleSeat::StandUp()
 					pActor->HolsterItem(false);
 			}
 		}
-		else
+		else if (auto *pGameObject = pActor->GetEntity()->QueryComponent<IGameObject>())
 		{
-			pActor->GetGameObject()->SetAspectProfile(eEA_Physics, eAP_Ragdoll);
+			pGameObject->SetAspectProfile(eEA_Physics, eAP_Ragdoll);
 		}
 
 		if (pActor->IsPlayer())
@@ -2074,10 +2074,13 @@ void CVehicleSeat::PostSerialize()
 					bool needUpdateTM = false;
 					if (m_isRagdollingOnDeath == false)
 					{
-						if (pActor->GetGameObject()->GetAspectProfile(eEA_Physics) != eAP_Alive)
+						if (auto *pGameObject = pActor->GetEntity()->QueryComponent<IGameObject>())
 						{
-							pActor->GetGameObject()->SetAspectProfile(eEA_Physics, eAP_Alive);
-							needUpdateTM = true;
+							if (pGameObject->GetAspectProfile(eEA_Physics) != eAP_Alive)
+							{
+								pGameObject->SetAspectProfile(eEA_Physics, eAP_Alive);
+								needUpdateTM = true;
+							}
 						}
 					}
 					Enter(m_passengerId, false);
@@ -2087,12 +2090,12 @@ void CVehicleSeat::PostSerialize()
 					if (pActor->IsDead())
 						OnPassengerDeath();
 				}
-				else
+				else if (auto *pGameObject = pActor->GetEntity()->QueryComponent<IGameObject>())
 				{
 					pActor->HolsterItem(true);
 					pActor->MountedGunControllerEnabled(false);
 
-					pActor->GetGameObject()->SetAspectProfile(eEA_Physics, eAP_Alive);
+					pGameObject->SetAspectProfile(eEA_Physics, eAP_Alive);
 					Enter(m_passengerId, true);
 				}
 			}
@@ -2263,7 +2266,8 @@ void CVehicleSeat::UnlinkPassenger(bool ragdoll)
 			CryLog("%s: setting ragdoll physicalization profle", pActor->GetEntity()->GetName());
 #endif
 
-		pActor->GetGameObject()->SetAspectProfile(eEA_Physics, eAP_Ragdoll);
+		if (auto *pGameObject = pActor->GetEntity()->QueryComponent<IGameObject>())
+			pGameObject->SetAspectProfile(eEA_Physics, eAP_Ragdoll);
 	}
 
 	m_transitionType = eVT_None;

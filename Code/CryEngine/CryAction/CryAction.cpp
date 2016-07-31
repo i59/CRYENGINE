@@ -4010,11 +4010,6 @@ CGameContext* CCryAction::GetGameContext()
 	return m_pGame ? m_pGame->GetGameContext() : NULL;
 }
 
-void CCryAction::RegisterFactory(const char* name, IActorCreator* pCreator, bool isAI)
-{
-	m_pActorSystem->RegisterActorClass(name, pCreator, isAI);
-}
-
 void CCryAction::RegisterFactory(const char* name, IItemCreator* pCreator, bool isAI)
 {
 	if (m_pItemSystem)

@@ -163,7 +163,7 @@ struct IEntityRenderComponent : public IEntityComponent
 
 	//! Retrieve and optionally create a shaders public params for this render proxy.
 	//! \param bCreate If Shader public params are not created for this entity, they will be created.
-	virtual IShaderPublicParams* GetShaderPublicParams(bool bCreate = true) = 0;
+	virtual struct IShaderPublicParams* GetShaderPublicParams(bool bCreate = true) = 0;
 
 	//! Add a render proxy callback.
 	virtual void AddShaderParamCallback(IShaderParamCallbackPtr pCallback) = 0;
@@ -629,9 +629,9 @@ struct IClipVolumeComponent : public IEntityComponent
 {
 	DECLARE_COMPONENT("ClipVolumeComponent", 0xC4F90161B5424E2A, 0x8829B85A69EE0F10)
 
-	virtual void         UpdateRenderMesh(IRenderMesh* pRenderMesh, const DynArray<Vec3>& meshFaces) = 0;
-	virtual IClipVolume* GetClipVolume() const = 0;
-	virtual IBSPTree3D*  GetBspTree() const = 0;
+	virtual void         UpdateRenderMesh(struct IRenderMesh* pRenderMesh, const DynArray<Vec3>& meshFaces) = 0;
+	virtual struct IClipVolume* GetClipVolume() const = 0;
+	virtual struct IBSPTree3D*  GetBspTree() const = 0;
 	virtual void         SetProperties(bool bIgnoresOutdoorAO) = 0;
 };
 

@@ -68,8 +68,6 @@ public:
 	virtual void                   Scan(const char* folderName);
 	virtual const IItemParamsNode* GetActorParams(const char* actorClass) const;
 
-	virtual bool                   IsActorClass(IEntityClass* pClass) const;
-
 	// ~IActorSystem
 
 	// IEntitySystemSink
@@ -81,7 +79,6 @@ public:
 	virtual void GetMemoryUsage(class ICrySizer* pSizer) const;
 	// ~IEntitySystemSink
 
-	void         RegisterActorClass(const char* name, IGameFramework::IActorCreator*, bool isAI);
 	void         AddActor(EntityId entityId, IActor* pProxy);
 	void         RemoveActor(EntityId entityId);
 
@@ -90,9 +87,6 @@ public:
 	virtual bool ScanXML(const XmlNodeRef& root, const char* xmlFile);
 
 private:
-
-	//	static IEntityProxy *CreateActor(IEntity *pEntity, SEntitySpawnParams &params, void *pUserData);
-	static void HookCreateActor(IEntity&, IGameObject&, void*);
 
 	static void ActorSystemErrorMessage(const char* fileName, const char* errorInfo, bool displayErrorDialog);
 
@@ -108,14 +102,6 @@ private:
 		SActorUserData(const char* cls, CActorSystem* pNewActorSystem) : className(cls), pActorSystem(pNewActorSystem) {};
 		CActorSystem* pActorSystem;
 		string        className;
-	};
-
-	struct SActorClassDesc
-	{
-		IEntityClass*                  pEntityClass;
-		IGameFramework::IActorCreator* pCreator;
-
-		SActorClassDesc() : pEntityClass(), pCreator() {}
 	};
 
 	class CActorIterator : public IActorIterator
@@ -172,15 +158,13 @@ private:
 
 	} SItemParamsDesc;
 
-	typedef std::map<string, SActorClassDesc> TActorClassMap;
 	typedef std::map<string, SItemParamsDesc> TActorParamsMap;
 
 	ISystem*                     m_pSystem;
 	IEntitySystem*               m_pEntitySystem;
 
 	TActorMap                    m_actors;
-	TActorClassMap               m_classes;
-
+	
 	std::vector<CActorIterator*> m_iteratorPool;
 
 	TActorParamsMap              m_actorParams;

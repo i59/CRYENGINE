@@ -284,7 +284,10 @@ void CFlowNode_AISequenceAction_ApproachAndEnterVehicle::HandleSequenceEvent(AIA
 			{
 				pActor->HolsterItem(true);
 				pActor->MountedGunControllerEnabled(false);
-				pActor->GetGameObject()->SetAspectProfile(eEA_Physics, eAP_Alive);
+
+				if (auto *pGameObject = pActor->GetEntity()->QueryComponent<IGameObject>())
+					pGameObject->SetAspectProfile(eEA_Physics, eAP_Alive);
+
 				TeleportToVehicleSeat();
 				EnterVehicleSeat(GetAnimationTransitionEnabled(), pSeat);
 			}

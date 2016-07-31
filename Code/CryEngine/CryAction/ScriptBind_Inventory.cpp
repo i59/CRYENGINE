@@ -228,7 +228,8 @@ int CScriptBind_Inventory::SetAmmoCount(IFunctionHandler* pH, const char* ammoNa
 		pInventory->SetAmmoCount(pClass, count);
 		if (gEnv->bServer)
 		{
-			pInventory->GetActor()->GetGameObject()->InvokeRMI(CInventory::Cl_SetAmmoCount(),
+			if (auto *pGameObject = pInventory->GetActor()->GetEntity()->QueryComponent<IGameObject>())
+				pGameObject->InvokeRMI(CInventory::Cl_SetAmmoCount(),
 			                                                   TRMIInventory_Ammo(ammoName, count),
 			                                                   eRMI_ToRemoteClients);
 		}

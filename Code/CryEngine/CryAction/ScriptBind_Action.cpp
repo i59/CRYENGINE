@@ -840,7 +840,7 @@ int CScriptBind_Action::RegisterWithAI(IFunctionHandler* pH)
 				GameWarning("RegisterWithAI: no Actor for %s.", pEntity->GetName());
 				return pH->EndFunction();
 			}
-			pGameObject = pActor->GetGameObject();
+			pGameObject = pActor->GetEntity()->QueryComponent<IGameObject>();
 		}
 		break;
 	case AIOBJECT_BOAT:
@@ -879,7 +879,7 @@ int CScriptBind_Action::RegisterWithAI(IFunctionHandler* pH)
 			else
 				return pH->EndFunction();
 
-			pGameObject = pActor->GetGameObject();
+			pGameObject = pActor->GetEntity()->QueryComponent<IGameObject>();
 
 			pTable->GetValue("groupid", params.m_sParamStruct.m_nGroup);
 

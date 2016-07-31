@@ -17,6 +17,8 @@
 #include <CryString/CryPath.h>
 #include "CryAction.h"
 
+#include "GameObjects/GameObject.h"
+
 //------------------------------------------------------------------------
 void CActorSystem::DemoSpectatorSystem::SwitchSpectator(TActorMap* pActors, EntityId id)
 {
@@ -80,13 +82,6 @@ CActorSystem::~CActorSystem()
 	}
 
 	std::for_each(m_iteratorPool.begin(), m_iteratorPool.end(), DeleteActorIterator);
-	// delete the created userdata in each class
-	for (TActorClassMap::iterator it = m_classes.begin(); it != m_classes.end(); ++it)
-	{
-		IEntityClass* pClass = m_pEntitySystem->GetClassRegistry()->FindClass(it->first.c_str());
-		if (pClass)
-			delete (char*)pClass->GetEntitySpawnCallbackData();
-	}
 }
 
 void CActorSystem::Reset()
@@ -133,7 +128,7 @@ IActor* CActorSystem::GetActorByChannelId(uint16 channelId)
 {
 	for (TActorMap::iterator it = m_actors.begin(); it != m_actors.end(); ++it)
 	{
-		if (it->second->GetGameObject()->GetChannelId() == channelId)
+		if (it->second->GetChannelId() == channelId)
 		{
 			return it->second;
 		}
@@ -172,13 +167,8 @@ IActor* CActorSystem::CreateActor(uint16 channelId, const char* name, const char
 				}
 	}
 
-	IGameObjectSystem::SEntitySpawnParamsForGameObjectWithPreactivatedExtension userData;
-	userData.hookFunction = HookCreateActor;
-	userData.pUserData = &channelId;
-
 	SEntitySpawnParams params;
 	params.id = id;
-	params.pUserData = (void*)&userData;
 	params.sName = name;
 	params.vPosition = pos;
 	params.qRotation = rot;
@@ -205,6 +195,9 @@ IActor* CActorSystem::CreateActor(uint16 channelId, const char* name, const char
 	}
 	if (m_pEntitySystem->InitEntity(pEntity, params))
 	{
+		auto &gameObject = pEntity->AcquireComponent<CGameObject>();
+		gameObject.SetChannelId(channelId);
+
 		return GetActor(entityId);
 	}
 	return NULL;
@@ -240,33 +233,6 @@ IActor* CActorSystem::GetOriginalDemoSpectator()
 }
 
 //------------------------------------------------------------------------
-void CActorSystem::RegisterActorClass(const char* name, IGameFramework::IActorCreator* pCreator, bool isAI)
-{
-	IEntityClassRegistry::SEntityClassDesc actorClass;
-
-	char scriptName[1024] = { 0 };
-	if (!isAI)
-		cry_sprintf(scriptName, "Scripts/Entities/Actor/%s.lua", name);
-	else
-		cry_sprintf(scriptName, "Scripts/Entities/AI/%s.lua", name);
-
-	// Allow the name to contain relative path, but use only the name part as class name.
-	string className(PathUtil::GetFile(name));
-	actorClass.sName = className.c_str();
-	actorClass.sScriptFile = scriptName;
-	if (!isAI)
-		actorClass.flags |= ECLF_INVISIBLE;
-
-	CCryAction::GetCryAction()->GetIGameObjectSystem()->RegisterExtension(className.c_str(), pCreator, &actorClass);
-
-	SActorClassDesc classDesc;
-	classDesc.pEntityClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(className.c_str());
-	classDesc.pCreator = pCreator;
-
-	m_classes.insert(TActorClassMap::value_type(name, classDesc));
-}
-
-//------------------------------------------------------------------------
 void CActorSystem::AddActor(EntityId entityId, IActor* pProxy)
 {
 	m_actors.insert(TActorMap::value_type(entityId, pProxy));
@@ -276,12 +242,6 @@ void CActorSystem::AddActor(EntityId entityId, IActor* pProxy)
 void CActorSystem::RemoveActor(EntityId entityId)
 {
 	stl::member_find_and_erase(m_actors, entityId);
-}
-
-//------------------------------------------------------------------------
-void CActorSystem::HookCreateActor(IEntity& entity, IGameObject& gameObject, void* pUserData)
-{
-	gameObject.SetChannelId(*static_cast<uint16*>(pUserData));
 }
 
 //---------------------------------------------------------------------
@@ -390,22 +350,6 @@ const IItemParamsNode* CActorSystem::GetActorParams(const char* actorClass) cons
 	}
 
 	return 0;
-}
-
-//-----------------------------------------------------------------
-bool CActorSystem::IsActorClass(IEntityClass* pClass) const
-{
-	bool bResult = false;
-
-	TActorClassMap::const_iterator itClass = m_classes.begin();
-	TActorClassMap::const_iterator itClassEnd = m_classes.end();
-	for (; !bResult && itClass != itClassEnd; ++itClass)
-	{
-		const SActorClassDesc& classDesc = itClass->second;
-		bResult = (pClass == classDesc.pEntityClass);
-	}
-
-	return bResult;
 }
 
 //------------------------------------------------------------------------

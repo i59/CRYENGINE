@@ -3992,7 +3992,10 @@ void CFlowNode_AIEnterVehicle::DoProcessEvent(EFlowEvent event, SActivationInfo*
 		{
 			pActor->HolsterItem(true);
 			pActor->MountedGunControllerEnabled(false);
-			pActor->GetGameObject()->SetAspectProfile(eEA_Physics, eAP_Alive);
+
+			if(auto *pGameObject = pActor->GetEntity()->QueryComponent<IGameObject>())
+				pGameObject->SetAspectProfile(eEA_Physics, eAP_Alive);
+
 			bSuccess = seat->Enter(pEntity->GetId(), true);
 		}
 	}

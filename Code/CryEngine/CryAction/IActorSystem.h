@@ -39,8 +39,6 @@ struct IActor;
 struct IActionListener;
 struct IAnimationGraphState;
 struct SViewParams;
-class CGameObject;
-struct IGameObjectExtension;
 struct IInventory;
 struct IAnimatedCharacter;
 struct ICharacterInstance;
@@ -54,7 +52,7 @@ struct pe_params_rope;
 
 typedef int ActorClass;
 
-struct IActor : public IGameObjectExtension
+struct IActor : public IEntityComponent
 {
 	virtual ~IActor(){}
 	virtual void                  SetHealth(float health) = 0;
@@ -108,7 +106,7 @@ struct IActor : public IGameObjectExtension
 	virtual IInventory*          GetInventory() const = 0;
 	virtual void                 NotifyCurrentItemChanged(IItem* newItem) = 0;
 
-	virtual IMovementController* GetMovementController() const = 0;
+	virtual struct IMovementController* GetMovementController() const = 0;
 
 	// get currently linked vehicle, or NULL
 	virtual IEntity* LinkToVehicle(EntityId vehicleId) = 0;
@@ -142,9 +140,7 @@ struct IActor : public IGameObjectExtension
 
 	virtual const char*               GetEntityClassName() const = 0;
 
-	virtual void                      SerializeXML(XmlNodeRef& node, bool bLoading) = 0;
 	virtual void                      SerializeLevelToLevel(TSerialize& ser) = 0;
-	virtual void                      ProcessEvent(const SEntityEvent& event) = 0;
 
 	virtual IAnimatedCharacter*       GetAnimatedCharacter() = 0;
 	virtual const IAnimatedCharacter* GetAnimatedCharacter() const = 0;
@@ -181,13 +177,17 @@ struct IActor : public IGameObjectExtension
 	// Some movement/view direction things work differently when running under time demo.
 	virtual void EnableTimeDemo(bool bTimeDemo) = 0;
 
-	uint16       GetChannelId() const
+	uint16 GetChannelId() const
 	{
-		return GetGameObject()->GetChannelId();
+		if(auto *pGameObject = GetEntity()->QueryComponent<IGameObject>())
+			return pGameObject->GetChannelId();
+
+		return 0;
 	}
 	void SetChannelId(uint16 id)
 	{
-		GetGameObject()->SetChannelId(id);
+		if (auto *pGameObject = GetEntity()->QueryComponent<IGameObject>())
+			pGameObject->SetChannelId(id);
 	}
 
 	virtual void SwitchDemoModeSpectator(bool activate) = 0;
@@ -252,8 +252,6 @@ struct IActorSystem
 	virtual void                   Scan(const char* folderName) = 0;
 	virtual bool                   ScanXML(const XmlNodeRef& root, const char* xmlFile) = 0;
 	virtual const IItemParamsNode* GetActorParams(const char* actorClass) const = 0;
-
-	virtual bool                   IsActorClass(IEntityClass* pClass) const = 0;
 };
 
 #endif //__IACTORSYSTEM_H__

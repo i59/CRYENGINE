@@ -317,9 +317,10 @@ bool CEquipmentManager::GiveEquipmentPack(IActor* pActor, const char* packName, 
 					pInventory->SetAmmoCount(pClass, count);
 					if (gEnv->bServer)
 					{
-						pActor->GetGameObject()->InvokeRMI(CInventory::Cl_SetAmmoCount(),
-						                                   TRMIInventory_Ammo(pClass->GetName(), count),
-						                                   eRMI_ToRemoteClients);
+						if (auto *pGameObject = pActor->GetEntity()->QueryComponent<IGameObject>())
+							pGameObject->InvokeRMI(CInventory::Cl_SetAmmoCount(),
+															   TRMIInventory_Ammo(pClass->GetName(), count),
+															   eRMI_ToRemoteClients);
 					}
 					/*
 					          if(IActor* pIventoryActor = pInventory->GetActor())

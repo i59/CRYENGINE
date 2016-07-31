@@ -331,10 +331,6 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 
 	uint16 channelId = bFromDemoSystem ? (param.nChannelId != 0 ? -1 : 0) : param.nChannelId;
 
-	IGameObjectSystem::SEntitySpawnParamsForGameObjectWithPreactivatedExtension userData;
-	userData.hookFunction = HookCreateActor;
-	userData.pUserData = &channelId;
-
 	IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
 	SEntitySpawnParams esp;
 	esp.id = 0;
@@ -345,7 +341,6 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 	esp.pClass = pEntitySystem->GetClassRegistry()->FindClass(actorClass);
 	if (!esp.pClass)
 		return false;
-	esp.pUserData = &userData;
 	esp.qRotation = param.rotation;
 	esp.sName = param.name.c_str();
 	esp.vPosition = param.pos;
@@ -379,6 +374,9 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 			}
 			SetPlayerId(entityId);
 		}
+
+		gameObject.SetChannelId(channelId);
+
 		GetGameContext()->GetNetContext()->SpawnedObject(entityId);
 		CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
 		gameObject.PostRemoteSpawn();
@@ -483,14 +481,6 @@ void CGameClientChannel::CallOnSetPlayerId()
 		pActor->InitLocalPlayer();
 }
 
-void CGameClientChannel::HookCreateActor(IEntity& entity, IGameObject& gameObject, void* pUserData)
-{
-	//[AlexMcC|23.11.09]: Set the ChannelId for remote obejcts at the same time as local objects
-	// (which is very early). Setting the ChannelId early like this means that we can trust
-	// IActor::IsPlayer() very early, such as in Player::Init().
-	// Copied from CActorSystem.cpp
-	gameObject.SetChannelId(*static_cast<uint16*>(pUserData));
-}
 bool CGameClientChannel::SetConsoleVar(const string& key, const string& val)
 {
 	IConsole* pConsole = gEnv->pConsole;
