@@ -12,13 +12,13 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
-#include "CameraProxy.h"
+#include "CameraComponent.h"
 #include <CryNetwork/ISerialize.h>
 
 //////////////////////////////////////////////////////////////////////////
 void CCameraComponent::Initialize(IEntity &entity)
 {
-	m_pEntity = &entity;
+	IEntityComponent::Initialize(entity);
 
 	UpdateMaterialCamera();
 }
@@ -30,7 +30,7 @@ void CCameraComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCameraComponent::ProcessEvent(SEntityEvent& event)
+void CCameraComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -63,12 +63,4 @@ void CCameraComponent::SetCamera(CCamera& cam)
 {
 	m_camera = cam;
 	UpdateMaterialCamera();
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CCameraComponent::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("CameraProxy");
-	signature.EndGroup();
-	return true;
 }

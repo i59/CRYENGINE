@@ -816,7 +816,7 @@ void CGameObject::ForceUpdateExtension(IGameObjectExtension* pExt, int slot)
 }
 
 //------------------------------------------------------------------------
-void CGameObject::ProcessEvent(SEntityEvent& event)
+void CGameObject::ProcessEvent(const SEntityEvent& event)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
 
@@ -1007,30 +1007,6 @@ void CGameObject::AfterAction()
 bool CGameObject::NeedSerialize()
 {
 	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CGameObject::GetSignature(TSerialize signature)
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
-
-	bool bResult = true;
-
-	signature.BeginGroup("GOExtensions");
-
-	TExtensions::iterator itExtension = m_extensions.begin();
-	TExtensions::iterator itExtensionEnd = m_extensions.end();
-	for (; bResult && itExtension != itExtensionEnd; ++itExtension)
-	{
-		struct SExtension& extension = *itExtension;
-
-		// Let extension add to signature
-		bResult &= (!extension.pExtension || extension.pExtension->GetEntityPoolSignature(signature));
-	}
-
-	signature.EndGroup();
-
-	return bResult;
 }
 
 static const char* AspectProfileSerializationName(int i)

@@ -100,13 +100,6 @@ bool CGameVolume_Water::ReloadExtension(IGameObject* pGameObject, const SEntityS
 	return false;
 }
 
-bool CGameVolume_Water::GetEntityPoolSignature(TSerialize signature)
-{
-	CRY_ASSERT_MESSAGE(false, "CGameVolume_Water::GetEntityPoolSignature not implemented");
-
-	return true;
-}
-
 void CGameVolume_Water::Release()
 {
 	delete this;
@@ -163,7 +156,7 @@ void CGameVolume_Water::HandleEvent(const SGameObjectEvent& gameObjectEvent)
 	}
 }
 
-void CGameVolume_Water::ProcessEvent(SEntityEvent& event)
+void CGameVolume_Water::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{

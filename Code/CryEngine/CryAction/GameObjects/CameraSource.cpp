@@ -50,7 +50,7 @@ void CCameraSource::HandleEvent(const SGameObjectEvent& event)
 }
 
 //------------------------------------------------------------------------
-void CCameraSource::ProcessEvent(SEntityEvent& event)
+void CCameraSource::ProcessEvent(const SEntityEvent& event)
 {
 }
 

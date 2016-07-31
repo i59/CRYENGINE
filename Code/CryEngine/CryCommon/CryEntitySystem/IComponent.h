@@ -64,7 +64,7 @@ public:
 	// <interfuscator:shuffle>
 	//! By overriding this function proxy will be able to handle events sent from the host Entity.
 	//! \param event Event structure, contains event id and parameters.
-	virtual void                   ProcessEvent(SEntityEvent& event) = 0;
+	virtual void                   ProcessEvent(const SEntityEvent& event) = 0;
 	virtual ComponentEventPriority GetEventPriority(const int eventID) const = 0;
 	virtual void                   Initialize(const SComponentInitializer& init) {}
 	// </interfuscator:shuffle>

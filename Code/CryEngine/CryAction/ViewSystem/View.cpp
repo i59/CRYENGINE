@@ -783,7 +783,7 @@ void CView::PostSerialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CView::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
+void CView::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	switch (event.event)
 	{

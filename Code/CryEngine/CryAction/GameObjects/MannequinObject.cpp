@@ -124,7 +124,7 @@ void CMannequinObject::OnScriptEvent(const char* eventName)
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CMannequinObject::ProcessEvent(SEntityEvent& evt)
+void CMannequinObject::ProcessEvent(const SEntityEvent& evt)
 {
 	switch (evt.event)
 	{

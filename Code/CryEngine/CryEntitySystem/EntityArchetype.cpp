@@ -18,7 +18,7 @@
 #include "ScriptProperties.h"
 #include <CryString/CryPath.h>
 #include "EntitySystem.h"
-#include "EntityAttributesProxy.h"
+#include "Components/EntityAttributesComponent.h"
 
 #define ENTITY_ARCHETYPES_LIBS_PATH "/Libs/EntityArchetypes/"
 

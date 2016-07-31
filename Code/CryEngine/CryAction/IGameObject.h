@@ -13,6 +13,7 @@
 #define GAME_OBJECT_SUPPORTS_CUSTOM_USER_DATA 1
 
 #include <CryEntitySystem/IComponent.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 #include <CryNetwork/SerializeFwd.h>
 #include "IActionMapManager.h"
@@ -804,17 +805,6 @@ struct IGameObjectExtension : public IComponent
 	virtual void PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) = 0;
 
 	// Summary
-	//   Builds a signature to describe the dynamic hierarchy of the parent Entity container
-	// Arguments:
-	//    signature - the object to serialize with, forming the signature
-	// Returns:
-	//    true - If the signature is thus far valid
-	// Note:
-	//    It's the responsibility of the proxy to identify its internal state which may complicate the hierarchy
-	//    of the parent Entity i.e., sub-proxies and which actually exist for this instantiation.
-	virtual bool GetEntityPoolSignature(TSerialize signature) = 0;
-
-	// Summary
 	//   Releases the resources used by the object
 	// Remarks
 	//   This function should also take care of freeing the instance once the
@@ -873,7 +863,7 @@ struct IGameObjectExtension : public IComponent
 	//   Processes entity specific events
 	// Parameters
 	//   event - entity event, see SEntityEvent for more information
-	virtual void ProcessEvent(SEntityEvent& event) = 0;
+	virtual void ProcessEvent(const SEntityEvent& event) = 0;
 
 	virtual void SetChannelId(uint16 id) = 0;
 	virtual void SetAuthority(bool auth) = 0;

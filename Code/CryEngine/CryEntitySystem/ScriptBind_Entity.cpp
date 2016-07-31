@@ -6,10 +6,10 @@
 #include "EntitySystem.h"
 #include "BreakableManager.h"
 
-#include "TriggerProxy.h"
-#include "EntityAudioProxy.h"
-#include "CameraProxy.h"
-#include "DynamicResponseProxy.h"
+#include "Components/TriggerComponent.h"
+#include "Components/EntityAudioComponent.h"
+#include "Components/CameraComponent.h"
+#include "Components/DynamicResponseComponent.h"
 
 #include <CrySystem/ISystem.h>
 #include <CrySystem/ILog.h>
@@ -556,14 +556,6 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 	//	ETY_FLAG_CASTSHADOWVOLUME         = 0x01000,
 	SCRIPT_REG_GLOBAL(ENTITY_FLAG_CASTSHADOW);
 	SCRIPT_REG_GLOBAL(ENTITY_FLAG_GOOD_OCCLUDER);
-
-	SCRIPT_REG_GLOBAL(ENTITY_UPDATE_NEVER);
-	SCRIPT_REG_GLOBAL(ENTITY_UPDATE_IN_RANGE);
-	SCRIPT_REG_GLOBAL(ENTITY_UPDATE_POT_VISIBLE);
-	SCRIPT_REG_GLOBAL(ENTITY_UPDATE_VISIBLE);
-	SCRIPT_REG_GLOBAL(ENTITY_UPDATE_PHYSICS);
-	SCRIPT_REG_GLOBAL(ENTITY_UPDATE_PHYSICS_VISIBLE);
-	SCRIPT_REG_GLOBAL(ENTITY_UPDATE_ALWAYS);
 
 	SCRIPT_REG_GLOBAL(PE_NONE);
 	SCRIPT_REG_GLOBAL(PE_STATIC);
@@ -4875,7 +4867,7 @@ int CScriptBind_Entity::IsActive(IFunctionHandler* pH)
 int CScriptBind_Entity::SetUpdatePolicy(IFunctionHandler* pH, int nUpdatePolicy)
 {
 	GET_ENTITY;
-	pEntity->SetUpdatePolicy((EEntityUpdatePolicy)nUpdatePolicy);
+	pEntity->SetUpdatePolicy(nUpdatePolicy);
 	return pH->EndFunction();
 }
 

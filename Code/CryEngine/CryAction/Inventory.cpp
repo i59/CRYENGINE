@@ -72,14 +72,6 @@ void CInventory::PostReloadExtension(IGameObject* pGameObject, const SEntitySpaw
 }
 
 //------------------------------------------------------------------------
-bool CInventory::GetEntityPoolSignature(TSerialize signature)
-{
-	signature.BeginGroup("Inventory");
-	signature.EndGroup();
-	return true;
-}
-
-//------------------------------------------------------------------------
 void CInventory::FullSerialize(TSerialize ser)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Inventory serialization");
@@ -481,7 +473,7 @@ void CInventory::SerializeInventoryForLevelChange(TSerialize ser)
 }
 
 //------------------------------------------------------------------------
-void CInventory::ProcessEvent(SEntityEvent& event)
+void CInventory::ProcessEvent(const SEntityEvent& event)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ACTION);
 

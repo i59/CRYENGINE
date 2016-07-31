@@ -7,84 +7,84 @@
 			"stdafx.h"
 		]
 	},
-	"CryEntitySystem_proxy_uber.cpp":
+	"CryEntitySystem_components_uber.cpp":
 	{
-		"Proxy/Script":
+		"Components/Script":
 		[
 			"EntityScript.cpp",
 			"ScriptBind_Entity.cpp",
 			"ScriptProperties.cpp",
-			"ScriptProxy.cpp",
+			"Components\\ScriptComponent.cpp",
 			"EntityScript.h",
 			"ScriptBind_Entity.h",
 			"ScriptProperties.h",
-			"ScriptProxy.h"
+			"Components\\ScriptComponent.h"
 		],
-		"Proxy/Physics":
+		"Components/Physics":
 		[
 			"PhysicsEventListener.cpp",
-			"PhysicsProxy.cpp",
-			"RopeProxy.cpp",
+			"Components\\PhysicsComponent.cpp",
+			"Components\\RopeComponent.cpp",
 			"PhysicsEventListener.h",
-			"PhysicsProxy.h",
-			"RopeProxy.h"
+			"Components\\PhysicsComponent.h",
+			"Components\\RopeComponent.h"
 		],
-		"Proxy/Render":
+		"Components/Render":
 		[
 			"EntityObject.cpp",
-			"RenderProxy.cpp",
+			"Components\\RenderComponent.cpp",
 			"EntityObject.h",
-			"RenderProxy.h"
+			"Components\\RenderComponent.h"
 		],
-		"Proxy/Area":
+		"Components/Area":
 		[	
-			"AreaProxy.cpp",
-			"AreaProxy.h"
+			"Components\\AreaComponent.cpp",
+			"Components\\AreaComponent.h"
 		],
-		"Proxy/FlowGraph":
+		"Components/FlowGraph":
 		[	
-			"FlowGraphProxy.cpp",
-			"FlowGraphProxy.h"
+			"Components\\FlowGraphComponent.cpp",
+			"Components\\FlowGraphComponent.h"
 		],
-		"Proxy/SubstitutionProxy":
+		"Components/SubstitutionProxy":
 		[
-			"SubstitutionProxy.cpp",
-			"SubstitutionProxy.h"
+			"Components\\SubstitutionComponent.cpp",
+			"Components\\SubstitutionComponent.h"
 		],	
-		"Proxy/TriggerProxy":
+		"Components/TriggerProxy":
 		[
-			"TriggerProxy.cpp",
-			"TriggerProxy.h"
+			"Components\\TriggerComponent.cpp",
+			"Components\\TriggerComponent.h"
 		],
-		"Proxy/CameraProxy":
+		"Components/CameraProxy":
 		[
-			"CameraProxy.cpp",
-			"CameraProxy.h"
+			"Components\\CameraComponent.cpp",
+			"Components\\CameraComponent.h"
 		],	
-		"Proxy/TrackView":
+		"Components/TrackView":
 		[
-			"EntityNodeProxy.cpp",
-			"EntityNodeProxy.h"
+			"Components\\EntityNodeComponent.cpp",
+			"Components\\EntityNodeComponent.h"
 		],
-		"Proxy/Audio":
+		"Components/Audio":
 		[
-			"EntityAudioProxy.cpp",
-			"EntityAudioProxy.h"
+			"Components\\EntityAudioComponent.cpp",
+			"Components\\EntityAudioComponent.h"
 		],
-		"Proxy/Attributes":
+		"Components/Attributes":
 		[
-			"EntityAttributesProxy.cpp",
-			"EntityAttributesProxy.h"
+			"Components\\EntityAttributesComponent.cpp",
+			"Components\\EntityAttributesComponent.h"
 		],
-		"Proxy/ClipVolume":
+		"Components/ClipVolume":
 		[
-			"ClipVolumeProxy.cpp",
-			"ClipVolumeProxy.h"
+			"Components\\ClipVolumeComponent.cpp",
+			"Components\\ClipVolumeComponent.h"
 		],
-		"Proxy/DynamicResponse":
+		"Components/DynamicResponse":
 		[
-			"DynamicResponseProxy.cpp",
-			"DynamicResponseProxy.h"
+			"Components\\DynamicResponseComponent.cpp",
+			"Components\\DynamicResponseComponent.h"
 		]
 	},
 	"CryEntitySystem_uber_0.cpp":

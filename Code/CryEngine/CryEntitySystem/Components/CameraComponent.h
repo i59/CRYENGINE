@@ -29,12 +29,10 @@ class CCameraComponent : public IEntityCameraComponent
 public:
 	// IEntityComponent
 	virtual void Initialize(IEntity &entity) override;
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void ProcessEvent(const SEntityEvent& event) override;
 	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 
 	virtual void Serialize(TSerialize ser) override {}
-
-	virtual bool GetSignature(TSerialize signature) override;
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{

@@ -787,11 +787,6 @@ public:
 		return false;
 	}
 
-	/*
-	   void OnEntityEvent( IEntity *pEntity,SEntityEvent &event )
-	   {
-	   }
-	 */
 	virtual void GetMemoryUsage(ICrySizer* s) const
 	{
 		s->Add(*this);

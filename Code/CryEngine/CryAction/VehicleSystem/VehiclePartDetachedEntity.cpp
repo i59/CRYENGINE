@@ -97,15 +97,6 @@ void CVehiclePartDetachedEntity::InitVehiclePart(IGameObject* pGameObject)
 }
 
 //------------------------------------------------------------------------
-bool CVehiclePartDetachedEntity::GetEntityPoolSignature(TSerialize signature)
-{
-	signature.BeginGroup("VehiclePartDetachedEntity");
-	signature.EndGroup();
-
-	return true;
-}
-
-//------------------------------------------------------------------------
 void CVehiclePartDetachedEntity::Update(SEntityUpdateContext& ctx, int slot)
 {
 	const float frameTime = ctx.fFrameTime;
@@ -122,7 +113,7 @@ void CVehiclePartDetachedEntity::Update(SEntityUpdateContext& ctx, int slot)
 }
 
 //------------------------------------------------------------------------
-void CVehiclePartDetachedEntity::ProcessEvent(SEntityEvent& event)
+void CVehiclePartDetachedEntity::ProcessEvent(const SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_RESET)
 	{

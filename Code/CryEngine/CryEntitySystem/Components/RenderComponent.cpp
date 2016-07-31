@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
-#include "RenderProxy.h"
+#include "RenderComponent.h"
 #include "Entity.h"
 #include <CryEntitySystem/IEntity.h>
 #include "EntityObject.h"
@@ -59,8 +59,6 @@ inline void CheckIfBBoxValid( const AABB &box,CEntity *pEntity )
 //////////////////////////////////////////////////////////////////////////
 CRenderComponent::CRenderComponent()
 {
-	m_pEntity = 0;
-	m_entityId = -1;
 	m_nFlags = 0;
 
 	m_localBBox.min.Set(0,0,0);
@@ -115,8 +113,7 @@ CRenderComponent::~CRenderComponent()
 //////////////////////////////////////////////////////////////////////////
 void CRenderComponent::Initialize(IEntity &entity)
 {
-	m_pEntity = &entity;
-	m_entityId = m_pEntity->GetId(); // Store so we can use it during Render() (when we shouldn't touch the entity itself).
+	IEntityComponent::Initialize(entity);
 
 	m_pMaterial = m_pEntity->GetMaterial();
 
@@ -138,7 +135,7 @@ CEntity *CRenderComponent::GetCEntity() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderComponent::PostInit()
+void CRenderComponent::PostInitialize()
 {
 	AddFlags(FLAG_POST_INIT);
 
@@ -155,8 +152,6 @@ void CRenderComponent::PostInit()
 //////////////////////////////////////////////////////////////////////////
 void CRenderComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
-	m_entityId = m_pEntity->GetId(); // Store so we can use it during Render() (when we shouldn't touch the entity itself).
-
 	m_nFlags = 0;
 
 	m_localBBox.min.Set(0,0,0);
@@ -192,7 +187,7 @@ void CRenderComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 	gsWaterLevel = GetI3DEngine()->GetWaterLevel();
 	m_fLastSeenTime = gEnv->pTimer->GetCurrTime();
 
-	PostInit();
+	PostInitialize();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -608,7 +603,7 @@ void CRenderComponent::GetWorldBounds(AABB& bbox)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderComponent::ProcessEvent(SEntityEvent& event)
+void CRenderComponent::ProcessEvent(const SEntityEvent& event)
 {
 	// Pass events to slots.
 	for (uint32 i = 0,num = m_slots.size(); i < num; i++)
@@ -679,9 +674,6 @@ void CRenderComponent::ProcessEvent(SEntityEvent& event)
     for (size_t i=0, end=m_queuedGeometryChanges.size(); i<end; ++i)
       SetSlotGeometry(m_queuedGeometryChanges[i].first, m_queuedGeometryChanges[i].second);
     m_queuedGeometryChanges.clear(); 
-
-    // Note: at some point we might want disable this controllably. 
-    // m_pEntity->PrePhysicsActivate( false );
 
     break; 
 	}
@@ -772,6 +764,12 @@ void CRenderComponent::OnReset()
   m_nVisionParams = 0;
 	m_nHUDSilhouettesParams = 0;
 	m_pLayerEffectParams = 0;
+
+	// [marco] needed when going in and out of game mode in the editor
+	SetLastSeenTime(gEnv->pTimer->GetCurrTime());
+	ICharacterInstance* pCharacterInstance = GetCharacter(0);
+	if (pCharacterInstance)
+		pCharacterInstance->SetPlaybackScale(1.0f);
 }
 
 //////////////////////////////////////////////////////////////////
@@ -1987,14 +1985,6 @@ void CRenderComponent::SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool 
 bool CRenderComponent::NeedSerialize()
 {
 	return (m_nFlags&FLAG_HAS_PARTICLES) != 0 && GetMaterialLayers() != 0;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CRenderComponent::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("RenderComponent");
-	signature.EndGroup();
-	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

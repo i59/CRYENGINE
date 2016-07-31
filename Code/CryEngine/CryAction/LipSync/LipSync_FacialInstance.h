@@ -28,7 +28,6 @@ public:
 	// ~ILipSyncProvider
 
 	void FullSerialize(TSerialize ser);
-	void GetEntityPoolSignature(TSerialize signature);
 
 private:
 	void LipSyncWithSound(const AudioControlId audioTriggerId, bool bStop = false);
@@ -47,7 +46,6 @@ public:
 	virtual void                 PostInitClient(int channelId) override;
 	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override;
 	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override;
-	virtual bool                 GetEntityPoolSignature(TSerialize signature) override;
 	virtual void                 Release() override;
 	virtual void                 FullSerialize(TSerialize ser) override;
 	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int pflags) override;
@@ -56,7 +54,7 @@ public:
 	virtual ISerializableInfoPtr GetSpawnInfo() override;
 	virtual void                 Update(SEntityUpdateContext& ctx, int updateSlot) override;
 	virtual void                 HandleEvent(const SGameObjectEvent& event) override;
-	virtual void                 ProcessEvent(SEntityEvent& event) override;
+	virtual void                 ProcessEvent(const SEntityEvent& event) override;
 	virtual void                 SetChannelId(uint16 id) override;
 	virtual void                 SetAuthority(bool auth) override;
 	virtual void                 PostUpdate(float frameTime) override;

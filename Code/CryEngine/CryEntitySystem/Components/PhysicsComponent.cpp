@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
-#include "PhysicsProxy.h"
+#include "PhysicsComponent.h"
 #include "Entity.h"
 #include "EntityObject.h"
 #include "EntitySystem.h"
@@ -207,7 +207,7 @@ CEntity* GetAdam(CEntity* pAdam, Matrix34& mtx)
 	return pAdam;
 }
 
-void CPhysicsComponent::ProcessEvent(SEntityEvent& event)
+void CPhysicsComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -494,14 +494,6 @@ bool CPhysicsComponent::NeedSerialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-bool CPhysicsComponent::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("PhysicalProxy");
-	signature.EndGroup();
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CPhysicsComponent::Serialize(TSerialize ser)
 {
 	if (ser.BeginOptionalGroup("PhysicsProxy", (ser.GetSerializationTarget() == eST_Network ? ((m_nFlags & FLAG_DISABLE_ENT_SERIALIZATION) == 0) : NeedSerialize())))
@@ -577,7 +569,7 @@ void CPhysicsComponent::SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CPhysicsComponent::OnEntityXForm(SEntityEvent& event)
+void CPhysicsComponent::OnEntityXForm(const SEntityEvent& event)
 {
 	if (!CheckFlags(FLAG_IGNORE_XFORM_EVENT))
 	{

@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
-#include "ScriptProxy.h"
+#include "ScriptComponent.h"
 #include "EntityScript.h"
 #include "Entity.h"
 #include "ScriptProperties.h"
@@ -56,7 +56,7 @@ void CScriptComponent::InitializeScript(IEntityScript *pScript, IScriptTable *pP
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptComponent::PostInit()
+void CScriptComponent::PostInitialize()
 {
 	// Call Init.
 	CallInitEvent(false);
@@ -198,7 +198,7 @@ void CScriptComponent::Update(SEntityUpdateContext& ctx)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptComponent::ProcessEvent(SEntityEvent& event)
+void CScriptComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -697,21 +697,6 @@ void CScriptComponent::SerializeProperties(TSerialize ser)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-bool CScriptComponent::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("ScriptProxy");
-	{
-		if (m_pThis->HaveValue("OnGetPoolSignature"))
-		{
-			SmartScriptTable persistTable(m_pThis->GetScriptSystem());
-			Script::CallMethod(m_pThis, "OnGetPoolSignature", persistTable);
-			signature.Value("ScriptData", persistTable.GetPtr());
-		}
-	}
-	signature.EndGroup();
-	return true;
-}
 
 //////////////////////////////////////////////////////////////////////////
 void CScriptComponent::Serialize(TSerialize ser)

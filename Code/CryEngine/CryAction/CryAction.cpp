@@ -2638,6 +2638,7 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 
 		if (m_pGameObjectSystem)
 			m_pGameObjectSystem->PostUpdate(delta);
+		gEnv->pEntitySystem->PostUpdate(delta);
 
 		return;
 	}
@@ -2714,6 +2715,7 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 		gEnv->pFlashUI->Update(deltaUI);
 
 	m_pGameObjectSystem->PostUpdate(delta);
+	gEnv->pEntitySystem->PostUpdate(delta);
 
 	if (m_pSegmentedWorld)
 		m_pSegmentedWorld->PostUpdate();

@@ -132,17 +132,6 @@ void CLipSyncProvider_TransitionQueue::FullSerialize(TSerialize ser)
 	}
 }
 
-void CLipSyncProvider_TransitionQueue::GetEntityPoolSignature(TSerialize signature)
-{
-	signature.BeginGroup("LipSyncProvider_TransitionQueue");
-
-	signature.Value("m_nCharacterSlot", m_nCharacterSlot);
-	signature.Value("m_nAnimLayer", m_nAnimLayer);
-	signature.Value("m_sDefaultAnimName", m_sDefaultAnimName);
-
-	signature.EndGroup();
-}
-
 void CLipSyncProvider_TransitionQueue::RequestLipSync(IEntityAudioComponent* pProxy, const AudioControlId audioTriggerId, const ELipSyncMethod lipSyncMethod)
 {
 	CRY_ASSERT(pProxy);
@@ -440,17 +429,6 @@ void CLipSync_TransitionQueue::PostReloadExtension(IGameObject* pGameObject, con
 	InjectLipSyncProvider();
 }
 
-bool CLipSync_TransitionQueue::GetEntityPoolSignature(TSerialize signature)
-{
-	signature.BeginGroup("LipSync_TransitionQueue");
-	if (m_pLipSyncProvider)
-	{
-		m_pLipSyncProvider->GetEntityPoolSignature(signature);
-	}
-	signature.EndGroup();
-	return true;
-}
-
 void CLipSync_TransitionQueue::Release()
 {
 	IEntity* pEntity = GetEntity();
@@ -507,7 +485,7 @@ void CLipSync_TransitionQueue::HandleEvent(const SGameObjectEvent& event)
 {
 }
 
-void CLipSync_TransitionQueue::ProcessEvent(SEntityEvent& event)
+void CLipSync_TransitionQueue::ProcessEvent(const SEntityEvent& event)
 {
 }
 

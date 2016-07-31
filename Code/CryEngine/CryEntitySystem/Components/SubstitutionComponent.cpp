@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
-#include "SubstitutionProxy.h"
+#include "SubstitutionComponent.h"
 #include "Entity.h"
 #include <CryNetwork/ISerialize.h>
 
@@ -57,14 +57,6 @@ bool CSubstitutionComponent::NeedSerialize()
 {
 	return m_pSubstitute != 0;
 };
-
-//////////////////////////////////////////////////////////////////////////
-bool CSubstitutionComponent::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("SubstitutionProxy");
-	signature.EndGroup();
-	return true;
-}
 
 //////////////////////////////////////////////////////////////////////////
 void CSubstitutionComponent::Serialize(TSerialize ser)

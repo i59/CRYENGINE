@@ -33,14 +33,6 @@ bool CRuntimeAreaObject::ReloadExtension(IGameObject* pGameObject, const SEntity
 	return false;
 }
 
-//////////////////////////////////////////////////////////////////////////
-bool CRuntimeAreaObject::GetEntityPoolSignature(TSerialize signature)
-{
-	CRY_ASSERT_MESSAGE(false, "CRuntimeAreaObject::GetEntityPoolSignature not implemented");
-
-	return true;
-}
-
 ///////////////////////////////////////////////////////////////////////////
 void CRuntimeAreaObject::Release()
 {
@@ -63,7 +55,7 @@ bool CRuntimeAreaObject::NetSerialize(TSerialize ser, EEntityAspects aspect, uin
 }
 
 ///////////////////////////////////////////////////////////////////////////
-void CRuntimeAreaObject::ProcessEvent(SEntityEvent& entityEvent)
+void CRuntimeAreaObject::ProcessEvent(const SEntityEvent& entityEvent)
 {
 	switch (entityEvent.event)
 	{

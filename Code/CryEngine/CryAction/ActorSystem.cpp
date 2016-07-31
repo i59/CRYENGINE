@@ -442,7 +442,7 @@ void CActorSystem::OnReused(IEntity* pEntity, SEntitySpawnParams& params)
 }
 
 //------------------------------------------------------------------------
-void CActorSystem::OnEvent(IEntity* pEntity, SEntityEvent& event)
+void CActorSystem::OnEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	// nothing (but needed to implement IEntitySystemSink)
 }

@@ -125,7 +125,7 @@ bool CAIProxyManager::OnRemove(IEntity* pEntity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAIProxyManager::OnEvent(IEntity* pEntity, SEntityEvent& event)
+void CAIProxyManager::OnEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 
 }

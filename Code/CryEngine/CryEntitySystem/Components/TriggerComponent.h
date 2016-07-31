@@ -32,7 +32,7 @@ public:
 
 	// IEntityComponent
 	virtual void Initialize(IEntity &entity) override;
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void ProcessEvent(const SEntityEvent& event) override;
 
 	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 	virtual void Update(SEntityUpdateContext& ctx) override;
@@ -40,8 +40,6 @@ public:
 	virtual void Serialize(TSerialize ser) override;
 
 	virtual bool NeedSerialize() override;
-
-	virtual bool GetSignature(TSerialize signature) override;
 	// ~IEntityComponent
 
 	//////////////////////////////////////////////////////////////////////////

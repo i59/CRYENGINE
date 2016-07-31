@@ -1418,7 +1418,7 @@ void CGameContext::OnReused(IEntity* pEntity, SEntitySpawnParams& params)
 		pGameObject->BindToNetwork(eBTNM_NowInitialized);
 }
 
-void CGameContext::OnEvent(IEntity* pEntity, SEntityEvent& event)
+void CGameContext::OnEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	struct SGetEntId
 	{

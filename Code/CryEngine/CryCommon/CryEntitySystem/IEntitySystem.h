@@ -104,6 +104,8 @@
 #include <CryMath/Cry_Geo.h>
 #include <CrySystem/XML/IXml.h>
 
+#include <CryAudio/IAudioInterfacesCommonData.h>
+
 // Forward declarations.
 struct ISystem;
 struct IEntitySystem;
@@ -313,7 +315,7 @@ struct IEntitySystemSink
 	//! Called in response to an entity event.
 	//! \param pEntity Entity that is being removed. This entity is still fully valid.
 	//! \param event
-	virtual void OnEvent(IEntity* pEntity, SEntityEvent& event) = 0;
+	virtual void OnEvent(IEntity* pEntity, const SEntityEvent& event) = 0;
 
 	//! Collect memory informations
 	//! \param pSizer Sizer class used to collect the memory informations.
@@ -345,7 +347,7 @@ struct IEntityEventListener
 {
 	// <interfuscator:shuffle>
 	virtual ~IEntityEventListener(){}
-	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event) = 0;
+	virtual void OnEntityEvent(IEntity* pEntity, const SEntityEvent& event) = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -408,6 +410,9 @@ struct IEntitySystem
 
 	//! Updates entity system and all entities. This function executes once a frame.
 	virtual void Update() = 0;
+
+	// Called every frame after rendering
+	virtual void PostUpdate(float frameTime) = 0;
 
 	//! Resets whole entity system, and destroy all entities.
 	virtual void Reset() = 0;

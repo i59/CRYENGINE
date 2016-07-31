@@ -117,6 +117,7 @@ public:
 	virtual void                  RegisterCharactersForRendering() override;
 	virtual void                  Release() override;
 	virtual void                  Update() override;
+	virtual void				  PostUpdate(float frameTime) override;
 	virtual void                  DeletePendingEntities() override;
 	virtual void                  PrePhysicsUpdate() override;
 	virtual void                  Reset() override;
@@ -237,7 +238,7 @@ public:
 	void ActivateEntity(CEntity* pEntity, bool bActivate);
 	void ActivatePrePhysicsUpdateForEntity(CEntity* pEntity, bool bActivate);
 	bool IsPrePhysicsActive(CEntity* pEntity);
-	void OnEntityEvent(CEntity* pEntity, SEntityEvent& event);
+	void OnEntityEvent(CEntity* pEntity, const SEntityEvent& event);
 
 	// Access to class that binds script to entity functions.
 	// Used by Script proxy.

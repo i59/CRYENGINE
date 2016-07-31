@@ -23,6 +23,8 @@
 
 #include <CryScriptSystem/IScriptSystem.h>
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 CAnimSequence::CAnimSequence(IMovieSystem* pMovieSystem, uint32 id)
 {
 	m_lastGenId = 1;

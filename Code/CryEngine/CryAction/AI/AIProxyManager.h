@@ -47,7 +47,7 @@ public:
 	virtual void OnSpawn(IEntity* pEntity, SEntitySpawnParams& params);
 	virtual bool OnRemove(IEntity* pEntity);
 	virtual void OnReused(IEntity* pEntity, SEntitySpawnParams& params);
-	virtual void OnEvent(IEntity* pEntity, SEntityEvent& event);
+	virtual void OnEvent(IEntity* pEntity, const SEntityEvent& event);
 	//~IEntitySystemSink
 
 private:

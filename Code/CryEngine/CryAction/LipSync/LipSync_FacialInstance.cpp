@@ -72,12 +72,6 @@ void CLipSyncProvider_FacialInstance::FullSerialize(TSerialize ser)
 	ser.EndGroup();
 }
 
-void CLipSyncProvider_FacialInstance::GetEntityPoolSignature(TSerialize signature)
-{
-	signature.BeginGroup("LipSyncProvider_FacialInstance");
-	signature.EndGroup();
-}
-
 void CLipSyncProvider_FacialInstance::LipSyncWithSound(const AudioControlId audioTriggerId, bool bStop /*= false*/)
 {
 	if (IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId))
@@ -146,17 +140,6 @@ void CLipSync_FacialInstance::PostReloadExtension(IGameObject* pGameObject, cons
 	InjectLipSyncProvider();
 }
 
-bool CLipSync_FacialInstance::GetEntityPoolSignature(TSerialize signature)
-{
-	signature.BeginGroup("LipSync_FacialInstance");
-	if (m_pLipSyncProvider)
-	{
-		m_pLipSyncProvider->GetEntityPoolSignature(signature);
-	}
-	signature.EndGroup();
-	return true;
-}
-
 void CLipSync_FacialInstance::Release()
 {
 	IEntity* pEntity = GetEntity();
@@ -213,7 +196,7 @@ void CLipSync_FacialInstance::HandleEvent(const SGameObjectEvent& event)
 {
 }
 
-void CLipSync_FacialInstance::ProcessEvent(SEntityEvent& event)
+void CLipSync_FacialInstance::ProcessEvent(const SEntityEvent& event)
 {
 }
 

@@ -177,8 +177,8 @@ public:
 	};
 
 	//IEntityEvent
-	virtual void                   ProcessEvent(SEntityEvent& entityEvent);
 	virtual ComponentEventPriority GetEventPriority(const int eventID) const;
+	virtual void                   ProcessEvent(const SEntityEvent& entityEvent);
 	//~IEntityEvent
 
 	// IVehicle
@@ -189,7 +189,6 @@ public:
 	virtual void Reset(bool enterGame);
 	virtual bool ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params);
 	virtual void PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) {}
-	virtual bool GetEntityPoolSignature(TSerialize signature);
 	virtual void Release()                                                                       { delete this; }
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const;
 

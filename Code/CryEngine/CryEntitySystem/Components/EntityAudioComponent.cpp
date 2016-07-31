@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "EntityAudioProxy.h"
+#include "EntityAudioComponent.h"
 #include <CryAudio/IAudioSystem.h>
 #include <CryAnimation/ICryAnimation.h>
 #include "Entity.h"
@@ -29,7 +29,7 @@ CEntityAudioComponent::~CEntityAudioComponent()
 //////////////////////////////////////////////////////////////////////////
 void CEntityAudioComponent::Initialize(IEntity &entity)
 {
-	m_pEntity = &entity;
+	IEntityComponent::Initialize(entity);
 	assert(m_mapAuxAudioProxies.empty());
 
 	if ((m_pEntity->GetFlagsExtended() & ENTITY_FLAG_EXTENDED_AUDIO_LISTENER) > 0)
@@ -120,7 +120,7 @@ void CEntityAudioComponent::OnListenerMoveNear(Vec3 const& closestPointToArea)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityAudioComponent::ProcessEvent(SEntityEvent& event)
+void CEntityAudioComponent::ProcessEvent(const SEntityEvent& event)
 {
 	if (m_pEntity != nullptr)
 	{
@@ -245,13 +245,6 @@ void CEntityAudioComponent::ProcessEvent(SEntityEvent& event)
 			}
 		}
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CEntityAudioComponent::GetSignature(TSerialize signature)
-{
-	// EntityAudioProxy is not relevant to signature as it is always created again if needed
-	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

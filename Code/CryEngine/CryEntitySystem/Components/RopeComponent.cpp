@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
-#include "RopeProxy.h"
+#include "RopeComponent.h"
 #include "Entity.h"
 #include "EntityObject.h"
 #include "EntitySystem.h"
@@ -39,7 +39,8 @@ CRopeComponent::~CRopeComponent()
 //////////////////////////////////////////////////////////////////////////
 void CRopeComponent::Initialize(IEntity &entity)
 {
-	m_pEntity = &entity;
+	IEntityComponent::Initialize(entity);
+
 	m_pRopeRenderNode = (IRopeRenderNode*)gEnv->p3DEngine->CreateRenderNode(eERType_Rope);
 	m_pRopeRenderNode->SetEntityOwner(m_pEntity->GetId());
 	m_nSegmentsOrg = -1;
@@ -66,7 +67,7 @@ void CRopeComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRopeComponent::ProcessEvent(SEntityEvent& event)
+void CRopeComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -132,14 +133,6 @@ void CRopeComponent::PreserveParams()
 		m_nSegmentsOrg = params.nNumSegments;
 		m_texTileVOrg = params.fTextureTileV;
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CRopeComponent::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("RopeProxy");
-	signature.EndGroup();
-	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

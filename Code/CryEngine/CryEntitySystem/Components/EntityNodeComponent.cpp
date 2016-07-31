@@ -12,12 +12,12 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
-#include "EntityNodeProxy.h"
+#include "EntityNodeComponent.h"
 #include <CryAnimation/CryCharAnimationParams.h>
 #include <CryAction/IMaterialEffects.h>
 #include <CryAnimation/ICryAnimation.h>
 
-void CEntityNodeComponent::ProcessEvent(SEntityEvent& event)
+void CEntityNodeComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{

@@ -28,7 +28,6 @@ public:
 	virtual void                 PostInitClient(int channelId)                                                   {};
 	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params);
 	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) {}
-	virtual bool                 GetEntityPoolSignature(TSerialize signature);
 	virtual void                 Release()                                                                       { delete this; }
 
 	virtual void                 FullSerialize(TSerialize ser);
@@ -38,7 +37,7 @@ public:
 	virtual ISerializableInfoPtr GetSpawnInfo()                                                                { return 0; }
 	virtual void                 Update(SEntityUpdateContext& ctx, int slot);
 	virtual void                 HandleEvent(const SGameObjectEvent& event);
-	virtual void                 ProcessEvent(SEntityEvent& event);
+	virtual void                 ProcessEvent(const SEntityEvent& event);
 	virtual void                 SetChannelId(uint16 id)                 {};
 	virtual void                 SetAuthority(bool auth)                 {}
 	virtual void                 PostUpdate(float frameTime)             { CRY_ASSERT(false); }

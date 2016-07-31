@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
-#include <CryNetwork/SerializeFwd.h>
+#include <CryNetwork/ISerialize.h>
 #include <CryAudio/IAudioSystem.h>
 
 #include <CryEntitySystem/IComponent.h>
@@ -10,6 +10,8 @@
 #include <CryCore/BitMask.h>
 
 #include <CryExtension/ICryUnknown.h>
+
+#include <CryMemory/CrySizer.h>
 
 struct SEntitySpawnParams;
 struct SEntityEvent;
@@ -38,26 +40,42 @@ struct IEntityComponent
 	virtual void Initialize(IEntity &entity)
 	{
 		m_pEntity = &entity;
+		m_entityId = entity.GetId();
 	}
 
-	virtual void PostInit() {}
+	virtual void PostInitialize() {}
 
-	virtual void ProcessEvent(SEntityEvent &event) {}
+	virtual void ProcessEvent(const SEntityEvent& event) {}
+
 	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) {}
 	virtual void Update(SEntityUpdateContext& ctx) {}
+	virtual void PostUpdate(float frameTime) {}
 
 	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) {}
-	virtual void Serialize(TSerialize ser) = 0;
+	virtual void Serialize(TSerialize ser) {}
 
 	virtual bool NeedSerialize() { return false; }
-	virtual bool GetSignature(TSerialize signature) = 0;
-
+	
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const {}
 
-	IEntity *GetEntity() const { return m_pEntity; }
-	
+	inline IEntity *GetEntity() const { return m_pEntity; }
+	inline EntityId GetEntityId() const { return m_entityId; }
+
+	// Template function used to query a component by entity id
+	template <typename T>
+	static T *QueryComponent(EntityId id)
+	{
+		if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity(id))
+		{
+			return pEntity->QueryComponent<T>();
+		}
+
+		return nullptr;
+	}
+
 protected:
 	IEntity *m_pEntity;
+	EntityId m_entityId;
 };
 
 #define DECLARE_COMPONENT(name, iidHigh, iidLow) \
@@ -68,50 +86,6 @@ protected:
 	}
 
 // TODO: Check if we should move out default components below to another file
-
-//! Flags the can be set on each of the entity object slots.
-enum EEntitySlotFlags
-{
-	ENTITY_SLOT_RENDER = 0x0001, //!< Draw this slot.
-	ENTITY_SLOT_RENDER_NEAREST = 0x0002, //!< Draw this slot as nearest. [Rendered in camera space].
-	ENTITY_SLOT_RENDER_WITH_CUSTOM_CAMERA = 0x0004, //!< Draw this slot using custom camera passed as a Public ShaderParameter to the entity.
-	ENTITY_SLOT_IGNORE_PHYSICS = 0x0008, //!< This slot will ignore physics events sent to it.
-	ENTITY_SLOT_BREAK_AS_ENTITY = 0x0010,
-	ENTITY_SLOT_RENDER_AFTER_POSTPROCESSING = 0x0020,
-	ENTITY_SLOT_BREAK_AS_ENTITY_MP = 0x0040, //!< In MP this an entity that shouldn't fade or participate in network breakage.
-};
-
-//! Description of the contents of the entity slot.
-struct SEntitySlotInfo
-{
-	//! Slot flags.
-	int nFlags;
-
-	//! Index of parent slot, (-1 if no parent).
-	int nParentSlot;
-
-	//! Hide mask used by breakable object to indicate what index of the CStatObj sub-object is hidden.
-	hidemask nSubObjHideMask;
-
-	//! Slot local transformation matrix.
-	const Matrix34* pLocalTM;
-
-	//! Slot world transformation matrix.
-	const Matrix34* pWorldTM;
-
-	// Objects that can bound to the slot.
-	EntityId                     entityId;
-	struct IStatObj*             pStatObj;
-	struct ICharacterInstance*   pCharacter;
-	struct IParticleEmitter*     pParticleEmitter;
-	struct ILightSource*         pLight;
-	struct IRenderNode*          pChildRenderNode;
-#if defined(USE_GEOM_CACHES)
-	struct IGeomCacheRenderNode* pGeomCacheRenderNode;
-#endif
-	//! Custom Material used for the slot.
-	IMaterial* pMaterial;
-};
 
 struct IShaderParamCallback;
 DECLARE_SHARED_POINTERS(IShaderParamCallback);
@@ -274,89 +248,6 @@ struct IEntityRenderComponent : public IEntityComponent
 	// </interfuscator:shuffle>
 };
 
-//! Parameters passed to IEntity::Physicalize function.
-struct SEntityPhysicalizeParams
-{
-	//////////////////////////////////////////////////////////////////////////
-	SEntityPhysicalizeParams() : type(0), density(-1), mass(-1), nSlot(-1), nFlagsOR(0), nFlagsAND(UINT_MAX),
-		pAttachToEntity(NULL), nAttachToPart(-1), fStiffnessScale(0), bCopyJointVelocities(false),
-		pParticle(NULL), pBuoyancy(NULL), pPlayerDimensions(NULL), pPlayerDynamics(NULL), pCar(NULL), pAreaDef(NULL), nLod(0), szPropsOverride(0) {};
-	//////////////////////////////////////////////////////////////////////////
-
-	//! Physicalization type must be one of pe_type enums.
-	int type;
-
-	//! Index of object slot. -1 if all slots should be used.
-	int nSlot;
-
-	//! Only one either density or mass must be set, parameter set to 0 is ignored.
-	float density;
-	float mass;
-
-	//! Optional physical flag.
-	int nFlagsAND;
-
-	//! Optional physical flag.
-	int nFlagsOR;
-
-	//! When physicalizing geometry can specify to use physics from different LOD.
-	//! Used for characters that have ragdoll physics in Lod1.
-	int nLod;
-
-	//! Physical entity to attach this physics object (Only for Soft physical entity).
-	IPhysicalEntity* pAttachToEntity;
-
-	//! Part ID in entity to attach to (Only for Soft physical entity).
-	int nAttachToPart;
-
-	//! Used for character physicalization (Scale of force in character joint's springs).
-	float fStiffnessScale;
-
-	//! Copy joints velocities when converting a character to ragdoll.
-	bool                         bCopyJointVelocities;
-
-	struct pe_params_particle*   pParticle;
-	struct pe_params_buoyancy*   pBuoyancy;
-	struct pe_player_dimensions* pPlayerDimensions;
-	struct pe_player_dynamics*   pPlayerDynamics;
-	struct pe_params_car*        pCar;
-
-	//! This parameters are only used when type == PE_AREA.
-	struct AreaDefinition
-	{
-		enum EAreaType
-		{
-			AREA_SPHERE,            //!< Physical area will be sphere.
-			AREA_BOX,               //!< Physical area will be box.
-			AREA_GEOMETRY,          //!< Physical area will use geometry from the specified slot.
-			AREA_SHAPE,             //!< Physical area will points to specify 2D shape.
-			AREA_CYLINDER,          //!< Physical area will be a cylinder.
-			AREA_SPLINE,            //!< Physical area will be a spline-tube.
-		};
-
-		EAreaType areaType;
-		float     fRadius;        //!< Must be set when using AREA_SPHERE or AREA_CYLINDER area type or an AREA_SPLINE.
-		Vec3      boxmin, boxmax; //!< Min,Max of bounding box, must be set when using AREA_BOX area type.
-		Vec3*     pPoints;        //!< Must be set when using AREA_SHAPE area type or an AREA_SPLINE.
-		int       nNumPoints;     //!< Number of points in pPoints array.
-		float     zmin, zmax;     //!< Min/Max of points.
-		Vec3      center;
-		Vec3      axis;
-
-		//! pGravityParams must be a valid pointer to the area gravity params structure.
-		struct pe_params_area* pGravityParams;
-
-		AreaDefinition() : areaType(AREA_SPHERE), fRadius(0), boxmin(0, 0, 0), boxmax(0, 0, 0),
-			pPoints(NULL), nNumPoints(0), pGravityParams(NULL), zmin(0), zmax(0), center(0, 0, 0), axis(0, 0, 0) {}
-	};
-
-	//! When physicalizing with type == PE_AREA this must be a valid pointer to the AreaDefinition structure.
-	AreaDefinition* pAreaDef;
-
-	//! An optional string with text properties overrides for CGF nodes.
-	const char* szPropsOverride;
-};
-
 //! Physical proxy interface.
 struct IEntityPhysicsComponent : public IEntityComponent
 {
@@ -472,6 +363,14 @@ struct IEntityScriptComponent : public IEntityComponent
 	virtual void ChangeScript(IEntityScript* pScript, IScriptTable *pScriptTable) = 0;
 	// </interfuscator:shuffle>
 };
+
+inline IScriptTable* IEntity::GetScriptTable() const
+{
+	if (auto *pScriptComponent = QueryComponent<IEntityScriptComponent>())
+		return pScriptComponent->GetScriptTable();
+
+	return nullptr;
+}
 
 //! Proximity trigger proxy interface.
 struct IEntityTriggerComponent : public IEntityComponent

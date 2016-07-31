@@ -28,7 +28,7 @@ public:
 	virtual ~CFlowGraphComponent();
 
 	// IEntityComponent
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void ProcessEvent(const SEntityEvent& event) override;
 	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 
 	virtual void Update(SEntityUpdateContext& ctx) override;
@@ -37,7 +37,6 @@ public:
 	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) override;
 
 	virtual bool NeedSerialize() override;
-	virtual bool GetSignature(TSerialize signature) override;
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{

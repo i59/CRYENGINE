@@ -15,6 +15,8 @@
 #define __PhysicsProxy_h__
 #pragma once
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 // forward declarations.
 struct SEntityEvent;
 struct IPhysicalEntity;
@@ -59,7 +61,7 @@ public:
 	~CPhysicsComponent();
 
 	// IEntityComponent
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void ProcessEvent(const SEntityEvent& event) override;
 
 	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 	virtual void Update(SEntityUpdateContext& ctx) override;
@@ -68,8 +70,6 @@ public:
 	virtual void Serialize(TSerialize ser) override;
 
 	virtual bool NeedSerialize() override;
-
-	virtual bool GetSignature(TSerialize signature) override;
 	// ~IEntityComponent
 
 	CEntity *GetCEntity() const;
@@ -134,7 +134,7 @@ public:
 
 protected:
 	IPhysicalWorld* PhysicalWorld() const { return gEnv->pPhysicalWorld; }
-	void            OnEntityXForm(SEntityEvent& event);
+	void            OnEntityXForm(const SEntityEvent& event);
 	void            OnChangedPhysics(bool bEnabled);
 	void            DestroyPhysicalEntity(bool bDestroyCharacters = true, int iMode = 0);
 
@@ -188,7 +188,5 @@ protected:
 	Colliders* m_pColliders;
 	float      m_timeLastSync;
 };
-
-DECLARE_COMPONENT_POINTERS(CPhysicsComponent);
 
 #endif // __PhysicsProxy_h__

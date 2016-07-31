@@ -1022,14 +1022,6 @@ bool CVehicle::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParam
 	return false;
 }
 
-//------------------------------------------------------------------------
-bool CVehicle::GetEntityPoolSignature(TSerialize signature)
-{
-	CRY_ASSERT_MESSAGE(false, "CVehicle::GetEntityPoolSignature not implemented");
-
-	return true;
-}
-
 #if ENABLE_VEHICLE_DEBUG
 //------------------------------------------------------------------------
 void CVehicle::DumpParts() const
@@ -1232,7 +1224,7 @@ TVehicleSoundEventId CVehicle::AddSoundEvent(SVehicleSoundInfo& info)
 }
 
 //------------------------------------------------------------------------
-void CVehicle::ProcessEvent(SEntityEvent& entityEvent)
+void CVehicle::ProcessEvent(const SEntityEvent& entityEvent)
 {
 	switch (entityEvent.event)
 	{

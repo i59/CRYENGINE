@@ -60,7 +60,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityEventListener
-	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event);
+	virtual void OnEntityEvent(IEntity* pEntity, const SEntityEvent& event);
 
 	void         RegisterEvents();
 	virtual void UnregisterEvents();
@@ -428,7 +428,7 @@ public:
 	virtual EForceMethod GetForceMethod(IFlowNode::SActivationInfo* pActInfo) const;
 	virtual void         PreExecute(SActivationInfo* pActInfo);
 
-	void                 OnEntityEvent(IEntity* pEntity, SEntityEvent& event);
+	void                 OnEntityEvent(IEntity* pEntity, const SEntityEvent& event);
 
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo);
 
@@ -474,7 +474,7 @@ public:
 	virtual EForceMethod GetForceMethod(IFlowNode::SActivationInfo* pActInfo) const;
 	virtual void         PreExecute(SActivationInfo* pActInfo);
 
-	void                 OnEntityEvent(IEntity* pEntity, SEntityEvent& event);
+	void                 OnEntityEvent(IEntity* pEntity, const SEntityEvent& event);
 
 	virtual IFlowNodePtr Clone(SActivationInfo* pActInfo);
 	virtual void         Serialize(SActivationInfo*, TSerialize ser);
@@ -680,7 +680,7 @@ public:
 
 	//////////////////////////////////////////////////////////////////////////
 	// IEntityEventListener
-	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event);
+	virtual void OnEntityEvent(IEntity* pEntity, const SEntityEvent& event);
 
 protected:
 	virtual void OnCancelPortActivated(IPipeUser* pPipeUser, SActivationInfo* pActInfo);
@@ -1049,7 +1049,7 @@ public:
 	virtual void         GetMemoryUsage(ICrySizer* s) const { s->Add(*this); }
 
 	// IEntityEventListener
-	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event);
+	virtual void OnEntityEvent(IEntity* pEntity, const SEntityEvent& event);
 
 private:
 	EntityId m_entityID;

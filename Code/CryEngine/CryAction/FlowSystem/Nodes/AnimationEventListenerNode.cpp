@@ -107,7 +107,7 @@ public:
 	};
 
 	// Overriding IEntityEventListener::OnEntityEvent
-	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& entityEvent)
+	virtual void OnEntityEvent(IEntity* pEntity, const SEntityEvent& entityEvent)
 	{
 		if (!m_enabled)
 			return;

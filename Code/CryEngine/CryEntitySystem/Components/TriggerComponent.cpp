@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
-#include "TriggerProxy.h"
+#include "TriggerComponent.h"
 #include <CryNetwork/ISerialize.h>
 #include "ProximityTriggerSystem.h"
 
@@ -33,7 +33,7 @@ CTriggerComponent::~CTriggerComponent()
 //////////////////////////////////////////////////////////////////////////
 void CTriggerComponent::Initialize(IEntity &entity)
 {
-	m_pEntity = &entity;
+	IEntityComponent::Initialize(entity);
 
 	m_pProximityTrigger = GetTriggerSystem()->CreateTrigger();
 	m_pProximityTrigger->id = m_pEntity->GetId();
@@ -79,7 +79,7 @@ void CTriggerComponent::Update(SEntityUpdateContext& ctx)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTriggerComponent::ProcessEvent(SEntityEvent& event)
+void CTriggerComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -109,14 +109,6 @@ bool CTriggerComponent::NeedSerialize()
 {
 	return true;
 };
-
-//////////////////////////////////////////////////////////////////////////
-bool CTriggerComponent::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("TriggerProxy");
-	signature.EndGroup();
-	return true;
-}
 
 //////////////////////////////////////////////////////////////////////////
 void CTriggerComponent::Serialize(TSerialize ser)

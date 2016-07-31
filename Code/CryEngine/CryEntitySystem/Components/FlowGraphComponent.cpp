@@ -12,7 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
-#include "FlowGraphProxy.h"
+#include "FlowGraphComponent.h"
 #include "Entity.h"
 #include <CryFlowGraph/IFlowSystem.h>
 #include <CryNetwork/ISerialize.h>
@@ -46,7 +46,7 @@ IFlowGraph* CFlowGraphComponent::GetFlowGraph()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CFlowGraphComponent::ProcessEvent(SEntityEvent& event)
+void CFlowGraphComponent::ProcessEvent(const SEntityEvent& event)
 {
 	// Assumes only 1 current listener can be deleted as a result of the event.
 	Listeners::iterator next;
@@ -179,14 +179,6 @@ bool CFlowGraphComponent::NeedSerialize()
 {
 	return m_pFlowGraph != 0;
 };
-
-//////////////////////////////////////////////////////////////////////////
-bool CFlowGraphComponent::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("FlowGraphProxy");
-	signature.EndGroup();
-	return true;
-}
 
 //////////////////////////////////////////////////////////////////////////
 void CFlowGraphComponent::Serialize(TSerialize ser)

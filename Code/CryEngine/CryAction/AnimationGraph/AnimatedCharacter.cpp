@@ -310,9 +310,11 @@ void CAnimatedCharacter::PostInit(IGameObject* pGameObject)
 {
 	AC::RegisterEvents(*this, *pGameObject);
 
-	m_pComponentPrepareCharForUpdate = ComponentCreateAndRegister<CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate>(CAnimatedCharacterComponent_Base::SComponentInitializerAnimChar(GetEntity(), this));
-	ComponentCreateAndRegister<CAnimatedCharacterComponent_GenerateMoveRequest>(CAnimatedCharacterComponent_Base::SComponentInitializerAnimChar(GetEntity(), this));
-	ComponentCreateAndRegister<CAnimatedCharacterComponent_StartAnimProc>(CAnimatedCharacterComponent_Base::SComponentInitializerAnimChar(GetEntity(), this));
+	m_pComponentPrepareCharForUpdate = &GetEntity()->AcquireComponent<CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate>();
+	m_pComponentPrepareCharForUpdate->SetAnimatedCharacter(this);
+
+	GetEntity()->AcquireComponent<CAnimatedCharacterComponent_GenerateMoveRequest>().SetAnimatedCharacter(this);
+	GetEntity()->AcquireComponent<CAnimatedCharacterComponent_StartAnimProc>().SetAnimatedCharacter(this);
 
 	m_proxiesInitialized = true;
 
@@ -409,13 +411,6 @@ bool CAnimatedCharacter::LoadAnimationGraph(IGameObject* pGameObject)
 	// Reset all internal variables to prepare for this new graph
 	ResetVars();
 
-	return true;
-}
-
-bool CAnimatedCharacter::GetEntityPoolSignature(TSerialize signature)
-{
-	signature.BeginGroup("AnimatedCharacter");
-	signature.EndGroup();
 	return true;
 }
 
@@ -1100,7 +1095,7 @@ void CAnimatedCharacter::UpdateCharacterPtrs()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAnimatedCharacter::ProcessEvent(SEntityEvent& event)
+void CAnimatedCharacter::ProcessEvent(const SEntityEvent& event)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ACTION);
 

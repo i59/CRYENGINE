@@ -18,7 +18,7 @@
 #include <CrySystem/ITimer.h>
 #include "BreakableManager.h"
 
-#include "RenderProxy.h"
+#include "Components/RenderComponent.h"
 
 template<class T> struct triplet
 {

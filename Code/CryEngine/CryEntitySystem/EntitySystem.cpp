@@ -22,7 +22,7 @@
 #include "ScriptBind_Entity.h"
 #include "PhysicsEventListener.h"
 #include "AreaManager.h"
-#include "AreaProxy.h"
+#include "Components/AreaComponent.h"
 #include "BreakableManager.h"
 #include "EntityArchetype.h"
 #include "PartitionGrid.h"
@@ -1262,6 +1262,17 @@ void CEntitySystem::Update()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CEntitySystem::PostUpdate(float frameTime)
+{
+	for (int i = 0, numActive = m_tempActiveEntities.size(); i < numActive; i++)
+	{
+		CEntity* pEntity = GetEntityFromID(m_tempActiveEntities[i]);
+
+		pEntity->PostUpdate(frameTime);
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CEntitySystem::DebugDrawEntityUsage()
 {
 	static float fLastUpdate = 0.0f;
@@ -2238,7 +2249,7 @@ bool CEntitySystem::IsPrePhysicsActive(CEntity* pEntity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntitySystem::OnEntityEvent(CEntity* pEntity, SEntityEvent& event)
+void CEntitySystem::OnEntityEvent(CEntity* pEntity, const SEntityEvent& event)
 {
 	EntitySystemOnEventSinks::const_iterator oeIt = m_onEventSinks.begin();
 	EntitySystemOnEventSinks::const_iterator oeEnd = m_onEventSinks.end();

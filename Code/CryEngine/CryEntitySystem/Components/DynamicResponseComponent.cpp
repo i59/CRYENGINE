@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "DynamicResponseProxy.h"
+#include "DynamicResponseComponent.h"
 #include <CryDynamicResponseSystem/IDynamicResponseSystem.h>
 #include <CryNetwork/ISerialize.h>
 
@@ -19,7 +19,7 @@ CDynamicResponseComponent::~CDynamicResponseComponent()
 //////////////////////////////////////////////////////////////////////////
 void CDynamicResponseComponent::Initialize(IEntity &entity)
 {
-	m_pEntity = &entity;
+	IEntityComponent::Initialize(entity);
 
 	const char* szEntityName = m_pEntity->GetName();
 	m_pResponseActor = gEnv->pDynamicResponseSystem->GetResponseActor(szEntityName);
@@ -36,21 +36,13 @@ void CDynamicResponseComponent::Initialize(IEntity &entity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CDynamicResponseComponent::ProcessEvent(SEntityEvent& event)
+void CDynamicResponseComponent::ProcessEvent(const SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_RESET)
 	{
 		SET_DRS_USER_SCOPED("DrsProxy Reset Event");
 		m_pResponseActor->GetLocalVariables()->SetVariableValue("Name", m_pResponseActor->GetName());
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CDynamicResponseComponent::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("DynamicResponseProxy");
-	signature.EndGroup();
-	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

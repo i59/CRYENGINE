@@ -3,7 +3,10 @@
 #pragma once
 
 #include "IComponent.h"
-#include "IEntityComponent.h"
+
+#include <CryExtension/ICryUnknown.h>
+
+#include <CryCore/BitMask.h>
 
 // Forward declarations.
 struct IPhysicalEntity;
@@ -27,6 +30,8 @@ struct IGeomCacheRenderNode;
 struct ICharacterInstance;
 struct IParticleEmitter;
 struct IStatObj;
+
+struct IEntityComponent;
 
 //////////////////////////////////////////////////////////////////////////
 struct IGameObject;
@@ -444,15 +449,13 @@ struct SEntityEvent
 };
 
 //! Updates policy defines in which cases to call entity update function every frame.
-enum EEntityUpdatePolicy
+enum EEntityUpdatePolicy : uint8
 {
-	ENTITY_UPDATE_NEVER,           //!< Never update entity every frame.
-	ENTITY_UPDATE_IN_RANGE,        //!< Only update entity if it is in specified range from active camera.
-	ENTITY_UPDATE_POT_VISIBLE,     //!< Only update entity if it is potentially visible.
-	ENTITY_UPDATE_VISIBLE,         //!< Only update entity if it is visible.
-	ENTITY_UPDATE_PHYSICS,         //!< Only update entity if it is need to be updated due to physics.
-	ENTITY_UPDATE_PHYSICS_VISIBLE, //!< Only update entity if it is need to be updated due to physics or if it is visible.
-	ENTITY_UPDATE_ALWAYS,          //!< Always update entity every frame.
+	EEntityUpdatePolicy_Never = 0,           //!< Never update entity every frame.
+	EEntityUpdatePolicy_Visible = 1 << 0,    //!< Only update entity if it is visible.
+	EEntityUpdatePolicy_InRange = 1 << 1,        //!< Only update entity if it is in specified range from active camera.
+
+	EEntityUpdatePolicy_Always = 0xFF,          //!< Always update entity every frame.
 };
 
 //! Flags can be set on entity with SetFlags/GetFlags method.
@@ -550,6 +553,133 @@ struct SChildAttachParams
 
 	int         m_nAttachFlags;
 	const char* m_target;
+};
+
+//! Parameters passed to IEntity::Physicalize function.
+struct SEntityPhysicalizeParams
+{
+	//////////////////////////////////////////////////////////////////////////
+	SEntityPhysicalizeParams() : type(0), density(-1), mass(-1), nSlot(-1), nFlagsOR(0), nFlagsAND(UINT_MAX),
+		pAttachToEntity(NULL), nAttachToPart(-1), fStiffnessScale(0), bCopyJointVelocities(false),
+		pParticle(NULL), pBuoyancy(NULL), pPlayerDimensions(NULL), pPlayerDynamics(NULL), pCar(NULL), pAreaDef(NULL), nLod(0), szPropsOverride(0) {};
+	//////////////////////////////////////////////////////////////////////////
+
+	//! Physicalization type must be one of pe_type enums.
+	int type;
+
+	//! Index of object slot. -1 if all slots should be used.
+	int nSlot;
+
+	//! Only one either density or mass must be set, parameter set to 0 is ignored.
+	float density;
+	float mass;
+
+	//! Optional physical flag.
+	int nFlagsAND;
+
+	//! Optional physical flag.
+	int nFlagsOR;
+
+	//! When physicalizing geometry can specify to use physics from different LOD.
+	//! Used for characters that have ragdoll physics in Lod1.
+	int nLod;
+
+	//! Physical entity to attach this physics object (Only for Soft physical entity).
+	IPhysicalEntity* pAttachToEntity;
+
+	//! Part ID in entity to attach to (Only for Soft physical entity).
+	int nAttachToPart;
+
+	//! Used for character physicalization (Scale of force in character joint's springs).
+	float fStiffnessScale;
+
+	//! Copy joints velocities when converting a character to ragdoll.
+	bool                         bCopyJointVelocities;
+
+	struct pe_params_particle*   pParticle;
+	struct pe_params_buoyancy*   pBuoyancy;
+	struct pe_player_dimensions* pPlayerDimensions;
+	struct pe_player_dynamics*   pPlayerDynamics;
+	struct pe_params_car*        pCar;
+
+	//! This parameters are only used when type == PE_AREA.
+	struct AreaDefinition
+	{
+		enum EAreaType
+		{
+			AREA_SPHERE,            //!< Physical area will be sphere.
+			AREA_BOX,               //!< Physical area will be box.
+			AREA_GEOMETRY,          //!< Physical area will use geometry from the specified slot.
+			AREA_SHAPE,             //!< Physical area will points to specify 2D shape.
+			AREA_CYLINDER,          //!< Physical area will be a cylinder.
+			AREA_SPLINE,            //!< Physical area will be a spline-tube.
+		};
+
+		EAreaType areaType;
+		float     fRadius;        //!< Must be set when using AREA_SPHERE or AREA_CYLINDER area type or an AREA_SPLINE.
+		Vec3      boxmin, boxmax; //!< Min,Max of bounding box, must be set when using AREA_BOX area type.
+		Vec3*     pPoints;        //!< Must be set when using AREA_SHAPE area type or an AREA_SPLINE.
+		int       nNumPoints;     //!< Number of points in pPoints array.
+		float     zmin, zmax;     //!< Min/Max of points.
+		Vec3      center;
+		Vec3      axis;
+
+		//! pGravityParams must be a valid pointer to the area gravity params structure.
+		struct pe_params_area* pGravityParams;
+
+		AreaDefinition() : areaType(AREA_SPHERE), fRadius(0), boxmin(0, 0, 0), boxmax(0, 0, 0),
+			pPoints(NULL), nNumPoints(0), pGravityParams(NULL), zmin(0), zmax(0), center(0, 0, 0), axis(0, 0, 0) {}
+	};
+
+	//! When physicalizing with type == PE_AREA this must be a valid pointer to the AreaDefinition structure.
+	AreaDefinition* pAreaDef;
+
+	//! An optional string with text properties overrides for CGF nodes.
+	const char* szPropsOverride;
+};
+
+//! Flags the can be set on each of the entity object slots.
+enum EEntitySlotFlags
+{
+	ENTITY_SLOT_RENDER = 0x0001, //!< Draw this slot.
+	ENTITY_SLOT_RENDER_NEAREST = 0x0002, //!< Draw this slot as nearest. [Rendered in camera space].
+	ENTITY_SLOT_RENDER_WITH_CUSTOM_CAMERA = 0x0004, //!< Draw this slot using custom camera passed as a Public ShaderParameter to the entity.
+	ENTITY_SLOT_IGNORE_PHYSICS = 0x0008, //!< This slot will ignore physics events sent to it.
+	ENTITY_SLOT_BREAK_AS_ENTITY = 0x0010,
+	ENTITY_SLOT_RENDER_AFTER_POSTPROCESSING = 0x0020,
+	ENTITY_SLOT_BREAK_AS_ENTITY_MP = 0x0040, //!< In MP this an entity that shouldn't fade or participate in network breakage.
+};
+
+//! Description of the contents of the entity slot.
+struct SEntitySlotInfo
+{
+	//! Slot flags.
+	int nFlags;
+
+	//! Index of parent slot, (-1 if no parent).
+	int nParentSlot;
+
+	//! Hide mask used by breakable object to indicate what index of the CStatObj sub-object is hidden.
+	hidemask nSubObjHideMask;
+
+	//! Slot local transformation matrix.
+	const Matrix34* pLocalTM;
+
+	//! Slot world transformation matrix.
+	const Matrix34* pWorldTM;
+
+	// Objects that can bound to the slot.
+	EntityId                     entityId;
+	struct IStatObj*             pStatObj;
+	struct ICharacterInstance*   pCharacter;
+	struct IParticleEmitter*     pParticleEmitter;
+	struct ILightSource*         pLight;
+	struct IRenderNode*          pChildRenderNode;
+#if defined(USE_GEOM_CACHES)
+	struct IGeomCacheRenderNode* pGeomCacheRenderNode;
+#endif
+	//! Custom Material used for the slot.
+	IMaterial* pMaterial;
 };
 
 //! Interface to entity object.
@@ -773,12 +903,6 @@ struct IEntity
 
 	//////////////////////////////////////////////////////////////////////////
 
-	//! Sends event to the entity.
-	//! \param event Event description (event id, parameters).
-	virtual bool SendEvent(SEntityEvent& event) = 0;
-
-	//////////////////////////////////////////////////////////////////////////
-
 	//! Starts the entity timer.
 	//! Entity timers are owned by entity, every entity can have it`s own independent timers,
 	//! so TimerId must not be unique across multiple entities.
@@ -823,11 +947,11 @@ struct IEntity
 	//! again will deactivate it.
 	//! Or entity can become active every time that it becomes visible, and deactivated when goes out of view.
 	//! There are multiple such predefined update policies exist, consider EEntityUpdatePolicy enum.
-	//! \param eUpdatePolicy - Update policy, one of EEntityUpdatePolicy enums.
-	virtual void SetUpdatePolicy(EEntityUpdatePolicy eUpdatePolicy) = 0;
+	//! \param eUpdatePolicy - Update policy flags from the EEntityUpdatePolicy enums.
+	virtual void SetUpdatePolicy(unsigned int eUpdatePolicy) = 0;
 
 	//! Retrieves the entity update policy.
-	virtual EEntityUpdatePolicy GetUpdatePolicy() const = 0;
+	virtual unsigned int GetUpdatePolicy() const = 0;
 
 	// Query a component, return pointer if available, otherwise nullptr
 	template <typename T>
@@ -858,6 +982,9 @@ struct IEntity
 	//! \param pComponent The target component.
 	//! \param flags IComponent contains the relevent flags to control registration behaviour.
 	virtual void RegisterComponent(IComponentPtr pComponent, const int flags) = 0;
+	//! Sends event to the entity and its components.
+	//! \param event Event description (event id, parameters).
+	virtual bool SendEvent(const SEntityEvent& event) = 0;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Physics.
@@ -875,12 +1002,12 @@ struct IEntity
 
 	// Creates a new physics component
 	// Use Physicalize if you want a mesh loaded, this only creates an instance of CPhysicsComponent
-	virtual IEntityPhysicsComponent &CreatePhysicsComponent() = 0;
-	virtual IEntityTriggerComponent &CreateTriggerComponent() = 0;
-	virtual IEntityAudioComponent &CreateAudioComponent() = 0;
-	virtual IEntitySubstitutionComponent &CreatSubstitutionComponent() = 0;
-	virtual IEntityAreaComponent &CreateAreaComponent() = 0;
-	virtual IEntityDynamicResponseComponent &CreateDynamicResponseComponent() = 0;
+	virtual struct IEntityPhysicsComponent &CreatePhysicsComponent() = 0;
+	virtual struct IEntityTriggerComponent &CreateTriggerComponent() = 0;
+	virtual struct IEntityAudioComponent &CreateAudioComponent() = 0;
+	virtual struct IEntitySubstitutionComponent &CreatSubstitutionComponent() = 0;
+	virtual struct IEntityAreaComponent &CreateAreaComponent() = 0;
+	virtual struct IEntityDynamicResponseComponent &CreateDynamicResponseComponent() = 0;
 	virtual void CreateEntityNodeComponent() = 0;
 
 	// Custom entity material.
@@ -1027,13 +1154,7 @@ struct IEntity
 	virtual void InvalidateTM(int nWhyFlags = 0, bool bRecalcPhyBounds = false) = 0;
 
 	//! Easy Script table access.
-	IScriptTable* GetScriptTable() const
-	{
-		if (auto *pScriptComponent = QueryComponent<IEntityScriptComponent>())
-			return pScriptComponent->GetScriptTable();
-
-		return nullptr;
-	}
+	inline IScriptTable* GetScriptTable() const;
 
 	//! Enable/Disable physics by flag.
 	virtual void EnablePhysics(bool enable) = 0;

@@ -109,7 +109,7 @@ private:
 	virtual void OnSpawn(IEntity* pEntity, SEntitySpawnParams& params) override;
 	virtual bool OnRemove(IEntity* pEntity) override;
 	virtual void OnReused(IEntity* pEntity, SEntitySpawnParams& params) override;
-	virtual void OnEvent(IEntity* pEntity, SEntityEvent& event) override;
+	virtual void OnEvent(IEntity* pEntity, const SEntityEvent& event) override;
 	//////////////////////////////////////////////////////////////////////////
 
 private:

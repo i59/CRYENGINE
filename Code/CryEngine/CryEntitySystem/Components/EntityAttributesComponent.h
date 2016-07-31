@@ -25,8 +25,7 @@ public:
 	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) override;
 
 	virtual bool NeedSerialize() override;
-	virtual bool GetSignature(TSerialize signature) override;
-
+	
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;
 	// ~IEntityComponent
 

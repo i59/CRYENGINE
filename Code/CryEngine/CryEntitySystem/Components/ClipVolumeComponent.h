@@ -23,12 +23,10 @@ public:
 	// IEntityComponent
 	virtual void Initialize(IEntity &entity) override;
 	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void ProcessEvent(const SEntityEvent& event) override;
 
 	virtual void Serialize(TSerialize ser) override {}
 	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) override;
-
-	virtual bool GetSignature(TSerialize signature) override;
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;
 	// ~IEntityComponent

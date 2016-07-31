@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 
-#include "ClipVolumeProxy.h"
+#include "ClipVolumeComponent.h"
 #include <Cry3DEngine/CGF/CGFContent.h>
 
 //////////////////////////////////////////////////////////////////////////
@@ -32,7 +32,7 @@ void CClipVolumeComponent::Reset()
 	m_GeometryFileName = "";
 }
 
-void CClipVolumeComponent::ProcessEvent(SEntityEvent& event)
+void CClipVolumeComponent::ProcessEvent(const SEntityEvent& event)
 {
 	if (m_pEntity != NULL)
 	{
@@ -86,7 +86,8 @@ void CClipVolumeComponent::SetProperties(bool bIgnoresOutdoorAO)
 
 void CClipVolumeComponent::Initialize(IEntity &entity)
 {
-	m_pEntity = &entity;
+	IEntityComponent::Initialize(entity);
+
 	m_pClipVolume = gEnv->p3DEngine->CreateClipVolume();
 
 	// Doesn't look like anything is sending this data?
@@ -178,13 +179,6 @@ bool CClipVolumeComponent::LoadFromFile(const char* szFilePath)
 	}
 
 	return m_pRenderMesh && m_pBspTree;
-}
-
-bool CClipVolumeComponent::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("ClipVolume");
-	signature.EndGroup();
-	return true;
 }
 
 void CClipVolumeComponent::GetMemoryUsage(ICrySizer* pSizer) const

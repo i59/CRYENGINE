@@ -13,6 +13,8 @@
 
 #include <CrySystem/IConsole.h>
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 #define s_nodeParamsInitialized s_nodeParamsInitializedScene
 #define s_nodeParams            s_nodeParamsSene
 #define AddSupportedParam       AddSupportedParamScene

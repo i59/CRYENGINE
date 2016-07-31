@@ -298,7 +298,7 @@ template<bool TBlocking> void CFlowNode_AIBase<TBlocking >::OnGoalPipeEvent(IPip
 
 //
 //-------------------------------------------------------------------------------------------------------------
-template<bool TBlocking> void CFlowNode_AIBase<TBlocking >::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
+template<bool TBlocking> void CFlowNode_AIBase<TBlocking >::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -1723,7 +1723,7 @@ CFlowNode_AIVehicleStickPath::EForceMethod CFlowNode_AIVehicleStickPath::GetForc
 	return static_cast<EForceMethod>(GetPortInt(pActInfo, 9));   // Replace this number with an enum value
 }
 
-void CFlowNode_AIVehicleStickPath::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
+void CFlowNode_AIVehicleStickPath::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_SCRIPT_EVENT)
 	{
@@ -1912,7 +1912,7 @@ CFlowNode_AIVehicleChaseTarget::EForceMethod CFlowNode_AIVehicleChaseTarget::Get
 	return static_cast<EForceMethod>(GetPortInt(pActInfo, 7));   // Replace this number with an enum value
 }
 
-void CFlowNode_AIVehicleChaseTarget::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
+void CFlowNode_AIVehicleChaseTarget::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_SCRIPT_EVENT)
 	{
@@ -2880,7 +2880,7 @@ void CFlowNode_AIAnim::DestroyedState(IAnimationGraphState*)
 	m_bStarted = false;
 }
 
-void CFlowNode_AIAnim::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
+void CFlowNode_AIAnim::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	TBase::OnEntityEvent(pEntity, event);
 
@@ -4327,7 +4327,7 @@ void CFlowNode_AIGoToEx::ProcessEvent(EFlowEvent event, SActivationInfo* pActInf
 	}
 }
 
-void CFlowNode_AIGoToEx::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
+void CFlowNode_AIGoToEx::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_SCRIPT_EVENT)
 	{

@@ -24,8 +24,9 @@
 
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryParticleSystem/ParticleParams.h>
+
 #include <CryAction/IMaterialEffects.h>
-#include "RopeProxy.h"
+#include "Components/RopeComponent.h"
 
 //////////////////////////////////////////////////////////////////////////
 CBreakableManager::CBreakableManager(CEntitySystem* pEntitySystem)
@@ -1613,26 +1614,24 @@ void CBreakableManager::ApplyPartBreakToClonedObjectFromEvent(const SRenderNodeC
 	}
 }
 
-struct CTimeoutKillProxy : IComponent
+struct CTimeoutKillComponent : IEntityComponent
 {
-	virtual void ProcessEvent(SEntityEvent& event)
+	DECLARE_COMPONENT("TimeoutKillComponent", 0xAF2B043C2ABD46E4, 0x89C1E7BBC57311D9)
+
+	virtual void ProcessEvent(const SEntityEvent& event) override
 	{
 		if (event.event == ENTITY_EVENT_TIMER || event.event == ENTITY_EVENT_NOT_SEEN_TIMEOUT)
 		{
 			gEnv->pEntitySystem->RemoveEntity((EntityId)event.nParam[2]);
 		}
 	}
-	virtual ComponentEventPriority GetEventPriority(const int eventID) const { return 0; }
-	virtual void                   Initialize(const SComponentInitializer& ci)
+	virtual void Initialize(IEntity &entity) override
 	{
-		RegisterEvent(ENTITY_EVENT_TIMER, IComponent::EComponentFlags_Enable);
-		RegisterEvent(ENTITY_EVENT_NOT_SEEN_TIMEOUT, IComponent::EComponentFlags_Enable);
-		ci.m_pEntity->AddFlags(ENTITY_FLAG_NO_SAVE);
-	}
-	virtual void Release() {}
-};
+		IEntityComponent::Initialize(entity);
 
-DECLARE_COMPONENT_POINTERS(CTimeoutKillProxy);
+		m_pEntity->AddFlags(ENTITY_FLAG_NO_SAVE);
+	}
+};
 
 void SetEntityLifetime(IEntity* pEntity, const char* props, bool visible)
 {
@@ -1649,9 +1648,8 @@ void SetEntityLifetime(IEntity* pEntity, const char* props, bool visible)
 	}
 	if (timeout > 0 || timeoutInvis >= 0)
 	{
-		std::shared_ptr<CTimeoutKillProxy> pTimeout = ComponentCreate_DeleteWithRelease<CTimeoutKillProxy>();
-		pEntity->RegisterComponent(pTimeout, IComponent::EComponentFlags_Enable | IComponent::EComponentFlags_LazyRegistration);
-		pTimeout->Initialize(IComponent::SComponentInitializer(pEntity));
+		auto &timeoutComponent = pEntity->AcquireComponent<CTimeoutKillComponent>();
+
 		if (timeout > 0)
 			pEntity->SetTimer(0, (int)(timeout * 1000));
 		if (timeoutInvis >= 0)

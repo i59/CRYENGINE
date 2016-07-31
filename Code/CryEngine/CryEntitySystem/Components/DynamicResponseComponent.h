@@ -17,12 +17,11 @@ public:
 
 	// IEntityComponent
 	virtual void Initialize(IEntity &entity) override;
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void ProcessEvent(const SEntityEvent& event) override;
 
 	virtual void Serialize(TSerialize ser) override {}
 
 	virtual bool NeedSerialize() override { return true; }
-	virtual bool GetSignature(TSerialize signature) override;
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{

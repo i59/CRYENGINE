@@ -1,7 +1,7 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "stdafx.h"
-#include "AreaProxy.h"
+#include "AreaComponent.h"
 #include "Entity.h"
 #include <CryNetwork/ISerialize.h>
 
@@ -37,7 +37,7 @@ CAreaComponent::~CAreaComponent()
 //////////////////////////////////////////////////////////////////////////
 void CAreaComponent::Initialize(IEntity &entity)
 {
-	m_pEntity = &entity;
+	IEntityComponent::Initialize(entity);
 
 	m_pArea = static_cast<CAreaManager*>(g_pIEntitySystem->GetAreaManager())->CreateArea();
 	m_pArea->SetEntityID(m_pEntity->GetId());
@@ -166,7 +166,7 @@ void CAreaComponent::OnEnable(bool bIsEnable, bool bIsCallScript)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAreaComponent::ProcessEvent(SEntityEvent& event)
+void CAreaComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -616,14 +616,6 @@ void CAreaComponent::ReadPolygonsForAreaSolid(CCryFile& file, int numberOfPolygo
 		if (pVertices != pStaticVertices)
 			delete[] pVertices;
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CAreaComponent::GetSignature(TSerialize signature)
-{
-	signature.BeginGroup("AreaProxy");
-	signature.EndGroup();
-	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

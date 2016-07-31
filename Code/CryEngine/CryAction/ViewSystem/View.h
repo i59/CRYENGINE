@@ -128,7 +128,7 @@ public:
 	// ~IView
 
 	// IEntityEventListener
-	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event);
+	virtual void OnEntityEvent(IEntity* pEntity, const SEntityEvent& event);
 	// ~IEntityEventListener
 
 	void     Serialize(TSerialize ser);

@@ -24,11 +24,9 @@ public:
 	DECLARE_COMPONENT("EntityNodeComponent", 0x3592CE70D61B47FF, 0xBCC75AA894E236F7)
 
 	// IEntityComponent
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void ProcessEvent(const SEntityEvent& event) override;
 
 	virtual void Serialize(TSerialize ser) override {}
-
-	virtual bool GetSignature(TSerialize signature) override { return true; }
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{

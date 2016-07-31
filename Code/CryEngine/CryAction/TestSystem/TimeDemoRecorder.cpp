@@ -2145,7 +2145,7 @@ void CTimeDemoRecorder::OnReused(IEntity* pEntity, SEntitySpawnParams& params)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTimeDemoRecorder::OnEvent(IEntity* pEntity, SEntityEvent& event)
+void CTimeDemoRecorder::OnEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	if (m_bRecording)
 	{

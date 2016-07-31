@@ -13,7 +13,7 @@
 
 #include "stdafx.h"
 #include "ProximityTriggerSystem.h"
-#include "TriggerProxy.h"
+#include "Components/TriggerComponent.h"
 
 #include "RadixSort.h"
 

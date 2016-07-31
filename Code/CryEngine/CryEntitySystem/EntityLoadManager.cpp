@@ -18,10 +18,10 @@
 #include "Entity.h"
 #include "EntityLayer.h"
 
-#include "AreaProxy.h"
-#include "ClipVolumeProxy.h"
-#include "FlowGraphProxy.h"
-#include "RopeProxy.h"
+#include "Components/AreaComponent.h"
+#include "Components/ClipVolumeComponent.h"
+#include "Components/FlowGraphComponent.h"
+#include "Components/RopeComponent.h"
 
 #include <CryNetwork/INetwork.h>
 

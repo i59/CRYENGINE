@@ -21,10 +21,10 @@
 //////////////////////////////////////////////////////////////////////////
 // These headers cannot be replaced with forward references.
 // They are needed for correct up casting from IEntityComponent to real component class.
-	#include "RenderProxy.h"
-	#include "PhysicsProxy.h"
-	#include "ScriptProxy.h"
-	#include "SubstitutionProxy.h"
+#include "Components/RenderComponent.h"
+#include "Components/PhysicsComponent.h"
+#include "Components/ScriptComponent.h"
+#include "Components/SubstitutionComponent.h"
 //////////////////////////////////////////////////////////////////////////
 
 // forward declarations.
@@ -61,6 +61,8 @@ public:
 	void PrePhysicsUpdate(float fFrameTime);
 	// Called by EntitySystem every frame for each active entity.
 	void Update(SEntityUpdateContext& ctx);
+	// Called by EntitySystem at the end of each frame for each active entity.
+	void PostUpdate(float frameTime);
 	// Called by EntitySystem before entity is destroyed.
 	void ShutDown(bool bRemoveAI = true, bool bRemoveProxies = true);
 
@@ -149,9 +151,6 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void Serialize(TSerialize ser, int nFlags) override;
 
-	virtual bool SendEvent(SEntityEvent& event) override;
-	//////////////////////////////////////////////////////////////////////////
-
 	virtual void SetTimer(int nTimerId, int nMilliSeconds) override;
 	virtual void KillTimer(int nTimerId) override;
 
@@ -173,13 +172,14 @@ public:
 	void UpdateAIObject();
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void                SetUpdatePolicy(EEntityUpdatePolicy eUpdatePolicy) override;
-	virtual EEntityUpdatePolicy GetUpdatePolicy() const override { return (EEntityUpdatePolicy)m_eUpdatePolicy; }
+	virtual void                SetUpdatePolicy(unsigned int eUpdatePolicy) override;
+	virtual unsigned int GetUpdatePolicy() const override { return m_updatePolicy; }
 
 	virtual void RegisterEntityComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent) override;
 	virtual IEntityComponent *GetComponentByTypeId(const CryInterfaceID &interfaceID) const override;
 
 	virtual void            RegisterComponent(IComponentPtr pComponentPtr, const int flags) override;
+	virtual bool SendEvent(const SEntityEvent& event) override;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Physics.
@@ -287,9 +287,6 @@ public:
 	// Get fast access to the slot, only used internally by entity components.
 	class CEntityObject* GetSlot(int nSlot) const;
 
-	// Specializations for the EntityPool
-	bool                  GetSignature(TSerialize& signature);
-
 	// For internal use.
 	CEntitySystem* GetCEntitySystem() const { return g_pIEntitySystem; }
 
@@ -343,7 +340,7 @@ protected:
 	void AllocBindings();
 	void DeallocBindings();
 	void OnRellocate(int nWhyFlags);
-	void LogEvent(SEntityEvent& event, CTimeValue dt);
+	void LogEvent(const SEntityEvent& event, CTimeValue dt);
 	//////////////////////////////////////////////////////////////////////////
 
 private:
@@ -401,8 +398,10 @@ private:
 	                                                // Usually used for Physical Triggers.
 	                                                // When update counter is set, and entity is activated, it will automatically
 	                                                // deactivate after this counter reaches zero
-	unsigned int m_eUpdatePolicy        : 4;        // Update policy defines in which cases to call
+	unsigned int m_updatePolicy;					// Update policy defines in which cases to call
 	                                                // entity update function every frame.
+	bool m_bWasUpdatedLastFrame;
+
 	unsigned int m_bInvisible           : 1;        // Set if this entity is invisible.
 	unsigned int m_bNotInheritXform     : 1;        // Inherit or not transformation from parent.
 	unsigned int m_bInShutDown          : 1;        // Entity is being shut down.

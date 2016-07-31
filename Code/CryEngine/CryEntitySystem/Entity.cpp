@@ -16,17 +16,22 @@
 #include "AffineParts.h"
 #include "EntitySystem.h"
 #include <CryEntitySystem/IEntityClass.h>
-#include "EntityAudioProxy.h"
-#include "AreaProxy.h"
-#include "FlowGraphProxy.h"
+
+#include "Components/EntityAudioComponent.h"
+#include "Components/AreaComponent.h"
+#include "Components/FlowGraphComponent.h"
+#include "Components/TriggerComponent.h"
+#include "Components/EntityNodeComponent.h"
+#include "Components/CameraComponent.h"
+#include "Components/RopeComponent.h"
+#include "Components/EntityAttributesComponent.h"
+#include "Components/ClipVolumeComponent.h"
+#include "Components/DynamicResponseComponent.h"
+
 #include <CryNetwork/ISerialize.h>
-#include "TriggerProxy.h"
-#include "EntityNodeProxy.h"
 #include "PartitionGrid.h"
 #include "ProximityTriggerSystem.h"
-#include "CameraProxy.h"
 #include "EntityObject.h"
-#include "RopeProxy.h"
 #include <CryAISystem/IAISystem.h>
 #include <CryAISystem/IAgent.h>
 #include <CryAISystem/IAIActorProxy.h>
@@ -38,10 +43,7 @@
 #include "GeomCacheAttachmentManager.h"
 #include "CharacterBoneAttachmentManager.h"
 #include <CryString/StringUtils.h>
-#include "EntityAttributesProxy.h"
-#include "ClipVolumeProxy.h"
-#include "DynamicResponseProxy.h"
-
+#include "ComponentEventDistributer.h"
 // enable this to check nan's on position updates... useful for debugging some weird crashes
 #define ENABLE_NAN_CHECK
 
@@ -90,7 +92,9 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	m_pGridLocation = 0;
 	m_pProximityEntity = 0;
 
-	m_eUpdatePolicy = ENTITY_UPDATE_NEVER;
+	m_updatePolicy = (uint)EEntityUpdatePolicy_Never;
+	m_bWasUpdatedLastFrame = false;
+
 	m_pBinds = NULL;
 	m_aiObjectID = INVALID_AIOBJECTID;
 
@@ -230,8 +234,6 @@ bool CEntity::ReloadEntity(SEntityLoadParams& loadParams)
 		m_bNotInheritXform = 0;
 		m_bDirtyForwardDir = true; // Forward dir cache is initially invalid
 
-		//m_eUpdatePolicy = ENTITY_UPDATE_NEVER;
-
 		//////////////////////////////////////////////////////////////////////////
 		// Initialize basic parameters.
 		//////////////////////////////////////////////////////////////////////////
@@ -303,7 +305,7 @@ void CEntity::SetFlags(uint32 flags)
 };
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntity::SendEvent(SEntityEvent& event)
+bool CEntity::SendEvent(const SEntityEvent& event)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 
@@ -469,7 +471,7 @@ bool CEntity::Init(SEntitySpawnParams& params)
 
 	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 	{
-		it->second->PostInit();
+		it->second->PostInitialize();
 	}
 
 	m_bInitialized = true;
@@ -485,10 +487,38 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 	if (m_bHidden && !CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN))
 		return;
 
-	// Update all our components
-	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+	if (m_updatePolicy != 0)
 	{
-		it->second->Update(ctx);
+		bool bUpdate = (m_updatePolicy & EEntityUpdatePolicy_Always) != 0;
+		if (!bUpdate)
+		{
+			AABB worldBounds;
+			GetWorldBounds(worldBounds);
+
+			auto &viewCamera = gEnv->pSystem->GetViewCamera();
+
+			if ((m_updatePolicy & EEntityUpdatePolicy_InRange) != 0
+				&& worldBounds.GetDistance(viewCamera.GetPosition()) < 150.f)
+			{
+				bUpdate = true;
+			}
+			else if ((m_updatePolicy & EEntityUpdatePolicy_Visible) != 0
+				&& viewCamera.IsAABBVisible_FH(worldBounds))
+			{
+				bUpdate = true;
+			}
+		}
+
+		if (bUpdate)
+		{
+			// Update all our components
+			for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+			{
+				it->second->Update(ctx);
+			}
+
+			m_bWasUpdatedLastFrame = true;
+		}
 	}
 
 	//	UpdateAIObject();
@@ -499,6 +529,19 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 		{
 			SetUpdateStatus();
 		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::PostUpdate(float frameTime)
+{
+	// Skip PostUpdate if Update was skipped too
+	if (!m_bWasUpdatedLastFrame)
+		return;
+
+	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+	{
+		it->second->PostUpdate(frameTime);
 	}
 }
 
@@ -1196,9 +1239,9 @@ void CEntity::Invisible(bool bInvisible)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::SetUpdatePolicy(EEntityUpdatePolicy eUpdatePolicy)
+void CEntity::SetUpdatePolicy(unsigned int eUpdatePolicy)
 {
-	m_eUpdatePolicy = eUpdatePolicy;
+	m_updatePolicy = eUpdatePolicy;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1214,18 +1257,6 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bFromInit)
 	{
 		it->second->SerializeXML(node, bLoading, bFromInit);
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CEntity::GetSignature(TSerialize& signature)
-{
-	bool bSignature = true;
-	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
-	{
-		bSignature &= it->second->GetSignature(signature);
-	}
-
-	return bSignature;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1524,6 +1555,8 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 		if (auto *pScriptComponent = static_cast<CScriptComponent *>(QueryComponent<IEntityScriptComponent>()))
 			pScriptComponent->SerializeProperties(ser);
 	}
+
+	ser.Value("updateState", m_updatePolicy);
 
 	m_bDirtyForwardDir = true;
 
@@ -2465,7 +2498,7 @@ struct SEventName
 };
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::LogEvent(SEntityEvent& event, CTimeValue dt)
+void CEntity::LogEvent(const SEntityEvent& event, CTimeValue dt)
 {
 	static int s_LastLoggedFrame = 0;
 

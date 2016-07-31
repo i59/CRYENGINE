@@ -2,7 +2,7 @@
 
 #include "stdafx.h"
 
-#include "EntityAttributesProxy.h"
+#include "EntityAttributesComponent.h"
 
 #include <CrySerialization/IArchive.h>
 #include <CrySerialization/IArchiveHost.h>
@@ -10,6 +10,8 @@
 //////////////////////////////////////////////////////////////////////////
 void CEntityAttributesComponent::Initialize(IEntity &entity)
 {
+	IEntityComponent::Initialize(entity);
+
 	if (m_attributes.empty())
 	{
 		if (IEntityArchetype* pArchetype = m_pEntity->GetArchetype())
@@ -63,12 +65,6 @@ void CEntityAttributesComponent::Serialize(TSerialize serialize) {}
 bool CEntityAttributesComponent::NeedSerialize()
 {
 	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CEntityAttributesComponent::GetSignature(TSerialize signature)
-{
-	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////

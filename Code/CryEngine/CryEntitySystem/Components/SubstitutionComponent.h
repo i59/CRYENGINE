@@ -30,7 +30,6 @@ public:
 
 	virtual void Serialize(TSerialize ser) override;
 	virtual bool NeedSerialize() override;
-	virtual bool GetSignature(TSerialize signature) override;
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{

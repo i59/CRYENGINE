@@ -5,24 +5,11 @@
 #ifndef __AnimatedCharacterComponents_h__
 	#define __AnimatedCharacterComponents_h__
 
-	#include <CryEntitySystem/IComponent.h>
-
 class CAnimatedCharacter;
-class CAnimatedCharacterComponent_Base : public IComponent
+class CAnimatedCharacterComponent_Base : public IEntityComponent
 {
 public:
-	struct SComponentInitializerAnimChar : public SComponentInitializer
-	{
-		SComponentInitializerAnimChar(IEntity* piEntity, CAnimatedCharacter* pAnimChar)
-			: SComponentInitializer(piEntity)
-			, m_pAnimCharacter(pAnimChar)
-		{
-		}
-
-		CAnimatedCharacter* m_pAnimCharacter;
-	};
-
-	virtual void Initialize(const SComponentInitializer& init);
+	void SetAnimatedCharacter(CAnimatedCharacter *pAnimCharacter);
 
 protected:
 
@@ -30,24 +17,21 @@ protected:
 
 	explicit CAnimatedCharacterComponent_Base();
 
-	virtual void ProcessEvent(SEntityEvent& event);
+	virtual void ProcessEvent(const SEntityEvent& event) override;
 	virtual void OnPrePhysicsUpdate(float elapseTime) = 0;
 
 	CAnimatedCharacter* m_pAnimCharacter;
-	IEntity*            m_piEntity;
 };
 
 class CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate : public CAnimatedCharacterComponent_Base
 {
 public:
+	DECLARE_COMPONENT("CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate", 0x8EBC751B53D34DE4, 0x94CA9644D6D851A5)
+
 	CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate();
 
 	ILINE void QueueRotation(const Quat& rotation) { m_queuedRotation = rotation; m_hasQueuedRotation = true; }
 	ILINE void ClearQueuedRotation()               { m_hasQueuedRotation = false; }
-
-protected:
-
-	virtual IComponent::ComponentEventPriority GetEventPriority(const int eventID) const;
 
 private:
 	Quat m_queuedRotation;
@@ -55,21 +39,23 @@ private:
 	virtual void OnPrePhysicsUpdate(float elapsedTime);
 };
 
-DECLARE_COMPONENT_POINTERS(CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate);
-
 class CAnimatedCharacterComponent_StartAnimProc : public CAnimatedCharacterComponent_Base
 {
+public:
+	DECLARE_COMPONENT("CAnimatedCharacterComponent_StartAnimProc", 0x24978C604D744CAE, 0xBCE1836773423372)
+
 protected:
 
-	virtual ComponentEventPriority GetEventPriority(const int eventID) const;
 	virtual void                   OnPrePhysicsUpdate(float elapsedTime);
 };
 
 class CAnimatedCharacterComponent_GenerateMoveRequest : public CAnimatedCharacterComponent_Base
 {
+public:
+	DECLARE_COMPONENT("CAnimatedCharacterComponent_GenerateMoveRequest", 0x7619F10FD914487E, 0x90F3C423D46D6AA5)
+
 protected:
 
-	virtual IComponent::ComponentEventPriority GetEventPriority(const int eventID) const;
 	virtual void                               OnPrePhysicsUpdate(float elapsedTime);
 };
 
