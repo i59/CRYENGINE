@@ -2,14 +2,15 @@
 
 #pragma once
 
-class CMovementExtension : public CGameObjectExtensionHelper<CMovementExtension, ISimpleExtension>
+class CMovementExtension : public IEntityComponent
 {
 public:
-	// ISimpleExtension
-	virtual void PostInit(IGameObject* pGameObject) override;
+	DECLARE_COMPONENT("Movement", 0x636D790420F347B4, 0xB7F8760D0CCF26EE)
+
+	// IEntityComponent
+	virtual void PostInitialize() override;
 	virtual void PostUpdate(float frameTime) override;
-	virtual void Release() override;
-	// ~ISimpleExtension
+	// ~IEntityComponent
 
 	CMovementExtension();
 	virtual ~CMovementExtension();

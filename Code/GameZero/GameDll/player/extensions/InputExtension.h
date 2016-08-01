@@ -2,14 +2,23 @@
 
 #pragma once
 
-class CInputExtension : public CGameObjectExtensionHelper<CInputExtension, ISimpleExtension>, IActionListener, ISystemEventListener
+#include <IActionMapManager.h>
+
+#include <CryAction/IGameObject.h>
+
+class CInputExtension 
+	: public IEntityComponent
+	, IActionListener
+	, ISystemEventListener
 {
 public:
-	// ISimpleExtension
-	virtual void PostInit(IGameObject* pGameObject) override;
-	virtual void FullSerialize(TSerialize ser) override;
-	virtual void Release() override;
-	// ~ISimpleExtension
+	DECLARE_COMPONENT("Input", 0x170A915CF2BC42E6, 0x8C04F77DC0AF97D6)
+
+	// IEntityComponent
+	virtual void PostInitialize() override;
+
+	virtual bool NeedSerialize() { return true; }
+	// ~IEntityComponent
 
 	// IActionListener
 	virtual void OnAction(const ActionId& action, int activationMode, float value) override;
@@ -21,6 +30,10 @@ public:
 
 	CInputExtension();
 	virtual ~CInputExtension();
+
+	Quat GetViewRotation();
+	Vec3 GetDeltaMovement() { return m_vDeltaMovement; }
+	bool IsBoosting() { return m_bBoost; }
 
 private:
 	bool OnActionMoveForward(EntityId entityId, const ActionId& actionId, int activationMode, float value);

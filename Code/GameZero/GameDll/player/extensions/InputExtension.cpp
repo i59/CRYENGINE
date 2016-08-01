@@ -15,11 +15,8 @@ CInputExtension::CInputExtension()
 
 CInputExtension::~CInputExtension()
 {
-}
-
-void CInputExtension::Release()
-{
-	GetGameObject()->ReleaseActions(this);
+	if(auto *pGameObject = GetEntity()->QueryComponent<IGameObject>())
+		pGameObject->ReleaseActions(this);
 
 	if (gEnv->IsEditor())
 	{
@@ -28,11 +25,9 @@ void CInputExtension::Release()
 
 	gEnv->pConsole->UnregisterVariable("gamezero_mouse_sensitivity", true);
 	gEnv->pConsole->UnregisterVariable("gamezero_controller_sensitivity", true);
-
-	ISimpleExtension::Release();
 }
 
-void CInputExtension::PostInit(IGameObject* pGameObject)
+void CInputExtension::PostInitialize()
 {
 	RegisterInputHandler();
 
@@ -45,7 +40,8 @@ void CInputExtension::PostInit(IGameObject* pGameObject)
 		pActionMapManager->Enable(true);
 	}
 
-	pGameObject->CaptureActions(this);
+	auto &gameObject = GetEntity()->AcquireExternalComponent<IGameObject>();
+	gameObject.CaptureActions(this);
 
 	if (gEnv->IsEditor())
 	{
@@ -198,26 +194,19 @@ bool CInputExtension::OnActionBoost(EntityId entityId, const ActionId& actionId,
 	return false;
 }
 
-void CInputExtension::FullSerialize(TSerialize ser)
+Quat CInputExtension::GetViewRotation()
 {
-	if (ser.GetSerializationTarget() == eST_Script)
+	if (m_bUseControllerRotation)
 	{
-		if (m_bUseControllerRotation)
-		{
-			Ang3 worldAngles = GetEntity()->GetWorldAngles();
-			worldAngles += m_rotation;
-			worldAngles.y = 0.0f;
-			worldAngles.x = clamp_tpl(worldAngles.x, -static_cast<float>(g_PI) * 0.5f, static_cast<float>(g_PI) * 0.5f);
-			ser.Value("rotation", worldAngles);
-		}
-		else
-		{
-			ser.Value("rotation", m_rotation);
-		}
+		Ang3 worldAngles = GetEntity()->GetWorldAngles();
+		worldAngles += m_rotation;
+		worldAngles.y = 0.0f;
+		worldAngles.x = clamp_tpl(worldAngles.x, -static_cast<float>(g_PI) * 0.5f, static_cast<float>(g_PI) * 0.5f);
 
-		ser.Value("deltaMovement", m_vDeltaMovement);
-		ser.Value("boost", m_bBoost);
+		return Quat(worldAngles);
 	}
+
+	return Quat(m_rotation);
 }
 
 void CInputExtension::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)

@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "GameRules.h"
-#include <GameObjects/GameObject.h>
 
 CGameRules::CGameRules()
 {
@@ -13,16 +12,9 @@ CGameRules::~CGameRules()
 	gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->SetCurrentGameRules(nullptr);
 }
 
-bool CGameRules::Init(IGameObject* pGameObject)
+void CGameRules::PostInitialize()
 {
-	SetGameObject(pGameObject);
-
-	if (!pGameObject->BindToNetwork())
-		return false;
-
 	gEnv->pGame->GetIGameFramework()->GetIGameRulesSystem()->SetCurrentGameRules(this);
-
-	return true;
 }
 
 bool CGameRules::OnClientConnect(int channelId, bool isReset)
@@ -56,11 +48,10 @@ bool CGameRules::OnClientConnect(int channelId, bool isReset)
 
 	if (IEntity *pPlayerEntity = pEntitySystem->SpawnEntity(params, false))
 	{
-		if (auto *pPlayerGameObject = pPlayerEntity->QueryComponent<IGameObject>())
-		{
-			// always set the channel id before initializing the entity
-			pPlayerGameObject->SetChannelId(channelId);
-		}
+		auto &playerGameObject = pPlayerEntity->AcquireExternalComponent<IGameObject>();
+
+		// always set the channel id before initializing the entity
+		playerGameObject.SetChannelId(channelId);
 
 		return pEntitySystem->InitEntity(pPlayerEntity, params);
 	}

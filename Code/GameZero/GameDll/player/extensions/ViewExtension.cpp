@@ -12,22 +12,19 @@ CViewExtension::CViewExtension()
 
 CViewExtension::~CViewExtension()
 {
-}
-
-void CViewExtension::Release()
-{
-	GetGameObject()->ReleaseView(this);
+	if(auto *pGameObject = GetEntity()->QueryComponent<IGameObject>())
+		pGameObject->ReleaseView(this);
 
 	gEnv->pGame->GetIGameFramework()->GetIViewSystem()->RemoveView(m_viewId);
 	gEnv->pConsole->UnregisterVariable("gamezero_cam_fov", true);
-
-	ISimpleExtension::Release();
 }
 
-void CViewExtension::PostInit(IGameObject* pGameObject)
+void CViewExtension::PostInitialize()
 {
 	CreateView();
-	pGameObject->CaptureView(this);
+
+	auto &gameObject = GetEntity()->AcquireExternalComponent<IGameObject>();
+	gameObject.CaptureView(this);
 
 	REGISTER_CVAR2("gamezero_cam_fov", &m_camFOV, 60.0f, VF_NULL, "Camera FOV.");
 }
@@ -37,7 +34,9 @@ void CViewExtension::CreateView()
 	IViewSystem* pViewSystem = gEnv->pGame->GetIGameFramework()->GetIViewSystem();
 	IView* pView = pViewSystem->CreateView();
 
-	pView->LinkTo(GetGameObject());
+	if (auto *pGameObject = GetEntity()->QueryComponent<IGameObject>())
+		pView->LinkTo(pGameObject);
+
 	pViewSystem->SetActiveView(pView);
 
 	m_viewId = pViewSystem->GetViewId(pView);

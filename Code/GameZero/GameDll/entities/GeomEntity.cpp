@@ -13,20 +13,14 @@ CGeomEntity::~CGeomEntity()
 {
 }
 
-bool CGeomEntity::Init(IGameObject* pGameObject)
+void CGeomEntity::Initialize(IEntity &entity)
 {
-	SetGameObject(pGameObject);
-	return true;
-}
+	IEntityComponent::Initialize(entity);
 
-void CGeomEntity::PostInit(IGameObject* pGameObject)
-{
 	Reset();
-}
 
-void CGeomEntity::Release()
-{
-	ISimpleExtension::Release();
+	EnableEvent(ENTITY_EVENT_EDITOR_PROPERTY_CHANGED, 0, true);
+	EnableEvent(ENTITY_EVENT_RESET, 0, true);
 }
 
 bool CGeomEntity::RegisterProperties(SEntityScriptProperties& tables, CGameEntityNodeFactory* pNodeFactory)
@@ -56,7 +50,7 @@ bool CGeomEntity::RegisterProperties(SEntityScriptProperties& tables, CGameEntit
 	return true;
 }
 
-void CGeomEntity::ProcessEvent(SEntityEvent& event)
+void CGeomEntity::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -83,12 +77,12 @@ void CGeomEntity::Reset()
 
 void CGeomEntity::OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivationInfo* pActInfo, const class CFlowGameEntityNode* pNode)
 {
-	if (CGeomEntity* pGeomEntity = QueryExtension(entityId))
+	if (auto* pGeomEntity = QueryComponent<CGeomEntity>(entityId))
 	{
 		if (IsPortActive(pActInfo, eInputPorts_LoadGeometry))
 		{
 			pGeomEntity->GetEntity()->LoadGeometry(0, GetPortString(pActInfo, eInputPorts_LoadGeometry));
-			ActivateOutputPort(entityId, eOutputPorts_Done, TFlowInputData(true));
+			pGeomEntity->ActivateFlowNodeOutputPort(eOutputPorts_Done, TFlowInputData(true));
 		}
 	}
 }

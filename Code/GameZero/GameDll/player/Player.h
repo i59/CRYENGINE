@@ -2,18 +2,17 @@
 
 #pragma once
 
-class CPlayer : public CGameObjectExtensionHelper<CPlayer, ISimpleExtension>
+#include <CryEntitySystem/IEntityComponent.h>
+
+class CPlayer : public IEntityComponent
 {
 public:
+	DECLARE_COMPONENT("Player", 0x0B742BAF041E4801, 0x882B3EAF73ED5DC9)
+
 	CPlayer();
 	virtual ~CPlayer();
 
-	//ISimpleExtension
-	virtual bool Init(IGameObject* pGameObject) override;
-	virtual void PostInit(IGameObject* pGameObject) override;
-	virtual void Release() override;
-	//~ISimpleExtension
-
-private:
-	std::vector<string> m_extensions;
+	// IEntityComponent
+	virtual void Initialize(IEntity &entity) override;
+	// ~IEntityComponent
 };

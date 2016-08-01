@@ -3,6 +3,10 @@
 #include "StdAfx.h"
 #include "Player.h"
 
+#include "extensions/InputExtension.h"
+#include "extensions/MovementExtension.h"
+#include "extensions/ViewExtension.h"
+
 CPlayer::CPlayer()
 {
 }
@@ -11,30 +15,14 @@ CPlayer::~CPlayer()
 {
 }
 
-bool CPlayer::Init(IGameObject* pGameObject)
+void CPlayer::Initialize(IEntity &entity)
 {
-	SetGameObject(pGameObject);
-	return pGameObject->BindToNetwork();
-}
+	IEntityComponent::Initialize(entity);
 
-void CPlayer::PostInit(IGameObject* pGameObject)
-{
-	m_extensions.push_back("ViewExtension");
-	m_extensions.push_back("InputExtension");
-	m_extensions.push_back("MovementExtension");
+	auto &gameObject = GetEntity()->AcquireExternalComponent<IGameObject>();
+	gameObject.BindToNetwork();
 
-	for (auto& extension : m_extensions)
-	{
-		pGameObject->AcquireExtension(extension.c_str());
-	}
-}
-
-void CPlayer::Release()
-{
-	for (auto& extension : m_extensions)
-	{
-		GetGameObject()->ReleaseExtension(extension.c_str());
-	}
-
-	ISimpleExtension::Release();
+	GetEntity()->AcquireComponent<CViewExtension>();
+	GetEntity()->AcquireComponent<CMovementExtension>();
+	GetEntity()->AcquireComponent<CInputExtension>();
 }

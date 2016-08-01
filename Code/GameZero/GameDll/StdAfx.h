@@ -10,6 +10,5 @@
 #include <CrySystem/ISystem.h>
 #include <Cry3DEngine/I3DEngine.h>
 #include <CryNetwork/ISerialize.h>
-#include "player/extensions/ISimpleExtension.h"
 
 #include <CrySystem/Profilers/FrameProfiler/FrameProfiler_JobSystem.h>  // to be removed

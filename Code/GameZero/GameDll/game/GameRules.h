@@ -4,35 +4,19 @@
 
 #include <IGameRulesSystem.h>
 
-class CGameRules : public CGameObjectExtensionHelper<CGameRules, IGameRules, 1>
+class CGameRules : public IGameRules
 {
 public:
 	CGameRules();
 	virtual ~CGameRules();
 
-	//IGameObjectExtension
-	virtual bool                 Init(IGameObject* pGameObject) override;
-	virtual void                 PostInit(IGameObject* pGameObject) override                                              {}
-	virtual void                 InitClient(int channelId) override                                                       {}
-	virtual void                 PostInitClient(int channelId) override                                                   {}
-	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override     { return false; }
-	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) override {}
-	virtual bool                 GetEntityPoolSignature(TSerialize signature) override                                    { return false; }
-	virtual void                 Release() override                                                                       {};
-	virtual void                 FullSerialize(TSerialize ser) override                                                   {}
-	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override   { return true; }
-	virtual void                 PostSerialize() override                                                                 {}
-	virtual void                 SerializeSpawnInfo(TSerialize ser) override                                              {}
-	virtual ISerializableInfoPtr GetSpawnInfo() override                                                                  { return nullptr; }
-	virtual void                 Update(SEntityUpdateContext& ctx, int updateSlot) override                               {}
-	virtual void                 HandleEvent(const SGameObjectEvent&) override                                            {}
-	virtual void                 ProcessEvent(SEntityEvent&) override                                                     {}
-	virtual void                 SetChannelId(uint16 id) override                                                         {}
-	virtual void                 SetAuthority(bool auth) override                                                         {}
-	virtual void                 PostUpdate(float frameTime) override                                                     {}
-	virtual void                 PostRemoteSpawn() override                                                               {}
-	virtual void                 GetMemoryUsage(ICrySizer* s) const override;
-	//~IGameObjectExtension
+	DECLARE_COMPONENT("GameRules", 0xFDD4393DDA43468F, 0x87BD6AC352616E67)
+
+	// IEntityComponent
+	virtual void        PostInitialize() override;
+
+	virtual void        GetMemoryUsage(ICrySizer* s) const override;
+	// ~IEntityComponent
 
 	//IGameRules
 	virtual bool        ShouldKeepClient(int channelId, EDisconnectionCause cause, const char* desc) const override                                                                                                         { return true; }
@@ -55,7 +39,6 @@ public:
 	virtual EntityId    SetChannelForMigratingPlayer(const char* name, uint16 channelID) override                                                                                                                           { return INVALID_ENTITYID; }
 	virtual void        StoreMigratingPlayer(IActor* pActor) override                                                                                                                                                       {}
 	virtual bool        IsTimeLimited() const override                                                                                                                                                                      { return false; }
-	virtual bool        OnCollision(const SGameCollision& event) override                                                                                                                                                   { return false; }
 	virtual void        OnEntityReused(IEntity* pEntity, SEntitySpawnParams& params, EntityId prevId) override                                                                                                              {}
 	virtual void        ClientHit(const HitInfo& hitInfo) override                                                                                                                                                          {}
 	virtual void        ServerHit(const HitInfo& hitInfo) override                                                                                                                                                          {}
@@ -73,7 +56,6 @@ public:
 	virtual void        AddHitListener(IHitListener* pHitListener) override                                                                                                                                                 {}
 	virtual void        RemoveHitListener(IHitListener* pHitListener) override                                                                                                                                              {}
 	virtual void        ShowStatus() override                                                                                                                                                                               {}
-	virtual void        OnCollision_NotifyAI(const EventPhys* pEvent) override                                                                                                                                              {}
 	virtual bool        CanEnterVehicle(EntityId playerId) override                                                                                                                                                         { return true; }
 	virtual const char* GetTeamName(int teamId) const override                                                                                                                                                              { return nullptr; }
 	//~IGameRules

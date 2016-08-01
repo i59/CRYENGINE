@@ -237,7 +237,7 @@ void CFlowGameEntityNode::ProcessEvent(EFlowEvent event, SActivationInfo* pActIn
 	}
 }
 
-void CFlowGameEntityNode::OnEntityEvent(IEntity* pEntity, SEntityEvent& event)
+void CFlowGameEntityNode::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	if (!m_pGraph->IsEnabled() || m_pGraph->IsSuspended() || !m_pGraph->IsActive())
 		return;

@@ -5,18 +5,21 @@
 struct SEntityScriptProperties;
 class CGameEntityNodeFactory;
 
-class CGeomEntity : public CGameObjectExtensionHelper<CGeomEntity, ISimpleExtension>
+#include <CryEntitySystem/IEntityComponent.h>
+
+class CGeomEntity : public IEntityComponent
 {
 public:
+	DECLARE_COMPONENT("GeomEntity", 0xD74C68AEF4FF4124, 0xA820AF368889238B)
+
 	CGeomEntity();
 	virtual ~CGeomEntity();
 
-	//ISimpleExtension
-	virtual bool Init(IGameObject* pGameObject) override;
-	virtual void PostInit(IGameObject* pGameObject) override;
-	virtual void Release() override;
-	virtual void ProcessEvent(SEntityEvent& event) override;
-	//~ISimpleExtension
+	// IEntityComponent
+	virtual void Initialize(IEntity &entity) override;
+
+	virtual void ProcessEvent(const SEntityEvent& event) override;
+	// ~IEntityComponent
 
 	static bool RegisterProperties(SEntityScriptProperties& tables, CGameEntityNodeFactory* pNodeFactory);
 

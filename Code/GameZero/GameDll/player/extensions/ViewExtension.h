@@ -2,13 +2,18 @@
 
 #pragma once
 
-class CViewExtension : public CGameObjectExtensionHelper<CViewExtension, ISimpleExtension>, IGameObjectView
+#include <CryAction/IGameObject.h>
+
+class CViewExtension 
+	: public IEntityComponent
+	, IGameObjectView
 {
 public:
-	// ISimpleExtension
-	virtual void PostInit(IGameObject* pGameObject) override;
-	virtual void Release() override;
-	// ~ISimpleExtension
+	DECLARE_COMPONENT("View", 0x70C06CFAF79B4053, 0x98B3C955A409D9C0)
+
+	// IEntityComponent
+	virtual void PostInitialize() override;
+	// ~IEntityComponent
 
 	// IGameObjectView
 	virtual void UpdateView(SViewParams& params) override;

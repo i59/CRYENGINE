@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "MovementExtension.h"
 
+#include "player/extensions/InputExtension.h"
+
 CMovementExtension::CMovementExtension()
 	: m_movementSpeed(0.0f)
 	, m_boostMultiplier(0.0f)
@@ -11,40 +13,28 @@ CMovementExtension::CMovementExtension()
 
 CMovementExtension::~CMovementExtension()
 {
-}
-
-void CMovementExtension::Release()
-{
 	gEnv->pConsole->UnregisterVariable("gamezero_pl_movementSpeed", true);
 	gEnv->pConsole->UnregisterVariable("gamezero_pl_boostMultiplier", true);
-
-	ISimpleExtension::Release();
 }
 
-void CMovementExtension::PostInit(IGameObject* pGameObject)
+void CMovementExtension::PostInitialize()
 {
-	pGameObject->EnablePostUpdates(this);
-
 	REGISTER_CVAR2("gamezero_pl_movementSpeed", &m_movementSpeed, 20.0f, VF_NULL, "Player movement speed.");
 	REGISTER_CVAR2("gamezero_pl_boostMultiplier", &m_boostMultiplier, 2.0f, VF_NULL, "Player boost multiplier.");
+
+	GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Always);
 }
 
 void CMovementExtension::PostUpdate(float frameTime)
 {
-	SmartScriptTable inputParams(gEnv->pScriptSystem);
-	if (GetGameObject()->GetExtensionParams("InputExtension", inputParams))
+	if (auto *pInputExtension = GetEntity()->QueryComponent<CInputExtension>())
 	{
-		Ang3 rotation(ZERO);
-		inputParams->GetValue("rotation", rotation);
+		Quat viewRotation = pInputExtension->GetViewRotation();
 
-		Quat viewRotation(rotation);
 		GetEntity()->SetRotation(viewRotation.GetNormalized());
 
-		Vec3 vDeltaMovement(ZERO);
-		inputParams->GetValue("deltaMovement", vDeltaMovement);
-
-		bool bBoost = false;
-		inputParams->GetValue("boost", bBoost);
+		Vec3 vDeltaMovement = pInputExtension->GetDeltaMovement();
+		bool bBoost = pInputExtension->IsBoosting();
 
 		const float boostMultiplier = bBoost ? m_boostMultiplier : 1.0f;
 

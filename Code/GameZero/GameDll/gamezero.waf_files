@@ -56,7 +56,6 @@
 			"player/extensions/ViewExtension.cpp",
 			"player/extensions/InputExtension.cpp",
 			"player/extensions/MovementExtension.cpp",
-			"player/extensions/ISimpleExtension.h",
 			"player/extensions/ViewExtension.h",
 			"player/extensions/InputExtension.h",
 			"player/extensions/MovementExtension.h"

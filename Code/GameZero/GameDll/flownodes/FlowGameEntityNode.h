@@ -4,7 +4,8 @@
 
 #include "FlowBaseNode.h"
 
-struct IEntityClass;
+#include <CryEntitySystem/IEntityClass.h>
+#include <CryEntitySystem/IEntitySystem.h>
 
 typedef void (* FlowNodeInputFunction)(EntityId id, const TFlowInputData& data);
 typedef void (* FlowNodeOnActivateFunction)(EntityId id, IFlowNode::SActivationInfo* pActInfo, const class CFlowGameEntityNode* pNode);
@@ -71,7 +72,7 @@ public:
 	}
 
 	//IEntityEventListener
-	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event) override;
+	virtual void OnEntityEvent(IEntity* pEntity, const SEntityEvent& event) override;
 	//~IEntityEventListener
 
 protected:
