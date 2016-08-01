@@ -4,6 +4,7 @@
 #include "SerializeXMLReader.h"
 #include <CrySystem/ISystem.h>
 #include <CryEntitySystem/IEntitySystem.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 #define TAG_SCRIPT_VALUE "v"
 #define TAG_SCRIPT_TYPE  "t"

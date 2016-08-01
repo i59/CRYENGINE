@@ -93,7 +93,7 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	m_pProximityEntity = 0;
 
 	m_updatePolicy = (uint)EEntityUpdatePolicy_Never;
-	m_bWasUpdatedLastFrame = false;
+	m_lastConditionalUpdateFlags = 0;
 
 	m_pBinds = NULL;
 	m_aiObjectID = INVALID_AIOBJECTID;
@@ -156,7 +156,6 @@ CEntity::~CEntity()
 	assert(m_nKeepAliveCounter == 0);
 
 	// Components could still be referring to m_szName, so clear them before it gets destroyed
-	m_components.clear();
 	m_entityComponentMap.clear();
 }
 
@@ -305,162 +304,6 @@ void CEntity::SetFlags(uint32 flags)
 };
 
 //////////////////////////////////////////////////////////////////////////
-bool CEntity::SendEvent(const SEntityEvent& event)
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-
-	CTimeValue t0;
-	if (CVar::es_DebugEvents)
-	{
-		t0 = gEnv->pTimer->GetAsyncTime();
-	}
-
-	if (CVar::es_DisableTriggers)
-	{
-		static IEntityClass* pProximityTriggerClass = NULL;
-		static IEntityClass* pAreaTriggerClass = NULL;
-
-		if (pProximityTriggerClass == NULL || pAreaTriggerClass == NULL)
-		{
-			IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
-
-			if (pEntitySystem != NULL)
-			{
-				IEntityClassRegistry* pClassRegistry = pEntitySystem->GetClassRegistry();
-
-				if (pClassRegistry != NULL)
-				{
-					pProximityTriggerClass = pClassRegistry->FindClass("ProximityTrigger");
-					pAreaTriggerClass = pClassRegistry->FindClass("AreaTrigger");
-				}
-			}
-		}
-
-		IEntityClass* pEntityClass = GetClass();
-		if (pEntityClass == pProximityTriggerClass || pEntityClass == pAreaTriggerClass)
-		{
-			if (event.event == ENTITY_EVENT_ENTERAREA || event.event == ENTITY_EVENT_LEAVEAREA)
-			{
-				return true;
-			}
-		}
-	}
-
-	// AI object position must be updated first so proxies could eventually use it (as CSmartObjects does)
-	switch (event.event)
-	{
-	case ENTITY_EVENT_XFORM:
-		if (!m_bGarbage)
-		{
-			UpdateAIObject();
-		}
-		break;
-	case ENTITY_EVENT_ENTERAREA:
-	case ENTITY_EVENT_HIDE:
-	case ENTITY_EVENT_UNHIDE:
-		{
-			if (!m_bGarbage)
-			{
-				// Notify audio proxies before script proxies!
-				if (auto *pAudioComponent = QueryComponent<IEntityAudioComponent>())
-				{
-					pAudioComponent->ProcessEvent(event);
-				}
-			}
-
-			break;
-		}
-	case ENTITY_EVENT_RESET:
-		{
-			// Activate entity if was deactivated:
-			if (m_bGarbage)
-			{
-				m_bGarbage = false;
-				// If entity was deleted in game, ressurect it.
-				SEntityEvent entevnt;
-				entevnt.event = ENTITY_EVENT_INIT;
-				SendEvent(entevnt);
-			}
-
-			//CryLogAlways( "%s became visible",GetEntityTextDescription() );
-			// [marco] needed when going in and out of game mode in the editor
-			if (auto *pRenderComponent = static_cast<CRenderComponent *>(QueryComponent<IEntityRenderComponent>()))
-			{
-				pRenderComponent->SetLastSeenTime(gEnv->pTimer->GetCurrTime());
-				ICharacterInstance* pCharacterInstance = pRenderComponent->GetCharacter(0);
-				if (pCharacterInstance)
-					pCharacterInstance->SetPlaybackScale(1.0f);
-			}
-			break;
-		}
-	case ENTITY_EVENT_INIT:
-		m_bGarbage = false;
-		break;
-
-	case ENTITY_EVENT_ANIM_EVENT:
-		{
-			// If the event is a sound event, make sure we have a sound proxy.
-			const AnimEventInstance* pAnimEvent = reinterpret_cast<const AnimEventInstance*>(event.nParam[0]);
-			const char* eventName = (pAnimEvent ? pAnimEvent->m_EventName : 0);
-			if (eventName && stricmp(eventName, "sound") == 0)
-			{
-				AcquireComponent<CEntityAudioComponent>();
-			}
-		}
-		break;
-
-	case ENTITY_EVENT_DONE:
-		// When deleting should detach all children.
-		{
-			//g_pIEntitySystem->RemoveTimerEvent(GetId(), -1);
-			DeallocBindings();
-			IPhysicalEntity* pPhysics = GetPhysics();
-			if (pPhysics && pPhysics->GetForeignData(PHYS_FOREIGN_ID_ENTITY))
-			{
-				pe_params_foreign_data pfd;
-				pfd.pForeignData = 0;
-				pfd.iForeignData = -1;
-				pPhysics->SetParams(&pfd, 1);
-			}
-		}
-		break;
-
-	case ENTITY_EVENT_PRE_SERIALIZE:
-		//filter out event if not using save/load
-		if (!g_pIEntitySystem->ShouldSerializedEntity(this))
-			return true;
-		break;
-	}
-
-	if (!m_bGarbage)
-	{
-		// Broadcast event to proxies.
-		uint32 nWhyFlags = (uint32)event.nParam[0];
-
-		for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
-		{
-			it->second->ProcessEvent(event);
-		}
-
-		// Give entity system a chance to check the event, and notify other listeners.
-		if (event.event != ENTITY_EVENT_XFORM || !(nWhyFlags & ENTITY_XFORM_NO_SEND_TO_ENTITY_SYSTEM))
-			g_pIEntitySystem->OnEntityEvent(this, event);
-
-#ifndef _RELEASE
-		if (CVar::es_DebugEvents)
-		{
-			CTimeValue t1 = gEnv->pTimer->GetAsyncTime();
-			LogEvent(event, t1 - t0);
-		}
-#endif
-
-		return true;
-	}
-
-	return false;
-}
-
-//////////////////////////////////////////////////////////////////////////
 bool CEntity::Init(SEntitySpawnParams& params)
 {
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Entity, 0, "Init: %s", params.sName ? params.sName : "(noname)");
@@ -489,35 +332,35 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 
 	if (m_updatePolicy != 0)
 	{
-		bool bUpdate = (m_updatePolicy & EEntityUpdatePolicy_Always) != 0;
-		if (!bUpdate)
+		if (m_updatePolicy != EEntityUpdatePolicy_Always)
 		{
 			AABB worldBounds;
 			GetWorldBounds(worldBounds);
 
 			auto &viewCamera = gEnv->pSystem->GetViewCamera();
+			m_lastConditionalUpdateFlags = 0;
 
 			if ((m_updatePolicy & EEntityUpdatePolicy_InRange) != 0
 				&& worldBounds.GetDistance(viewCamera.GetPosition()) < 150.f)
 			{
-				bUpdate = true;
+				m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_InRange;
 			}
-			else if ((m_updatePolicy & EEntityUpdatePolicy_Visible) != 0
+			if ((m_updatePolicy & EEntityUpdatePolicy_Visible) != 0
 				&& viewCamera.IsAABBVisible_FH(worldBounds))
 			{
-				bUpdate = true;
+				m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_Visible;
 			}
 		}
+		else
+			m_lastConditionalUpdateFlags = EEntityUpdatePolicy_Always;
 
-		if (bUpdate)
+		if ((m_updatePolicy & m_lastConditionalUpdateFlags) != 0)
 		{
 			// Update all our components
 			for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 			{
 				it->second->Update(ctx);
 			}
-
-			m_bWasUpdatedLastFrame = true;
 		}
 	}
 
@@ -536,29 +379,13 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 void CEntity::PostUpdate(float frameTime)
 {
 	// Skip PostUpdate if Update was skipped too
-	if (!m_bWasUpdatedLastFrame)
+	if (m_lastConditionalUpdateFlags == 0)
 		return;
 
 	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 	{
 		it->second->PostUpdate(frameTime);
 	}
-}
-
-void CEntity::PrePhysicsUpdate(float fFrameTime)
-{
-	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
-
-	SEntityEvent evt(ENTITY_EVENT_PREPHYSICSUPDATE);
-	evt.fParam[0] = fFrameTime;
-
-	if (auto *pRenderComponent = QueryComponent<IEntityRenderComponent>())
-		pRenderComponent->ProcessEvent(evt);
-}
-
-bool CEntity::IsPrePhysicsActive()
-{
-	return g_pIEntitySystem->IsPrePhysicsActive(this);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1147,12 +974,6 @@ void CEntity::Activate(bool bActive)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::PrePhysicsActivate(bool bActive)
-{
-	g_pIEntitySystem->ActivatePrePhysicsUpdateForEntity(this, bActive);
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEntity::SetTimer(int nTimerId, int nMilliSeconds)
 {
 	KillTimer(nTimerId);
@@ -1242,6 +1063,8 @@ void CEntity::Invisible(bool bInvisible)
 void CEntity::SetUpdatePolicy(unsigned int eUpdatePolicy)
 {
 	m_updatePolicy = eUpdatePolicy;
+
+	SetUpdateStatus();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1293,31 +1116,142 @@ void CEntity::RegisterComponent(const CryInterfaceID &interfaceID, IEntityCompon
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::RegisterComponent(IComponentPtr pComponentPtr, const int flagsOriginal)
+void CEntity::EnableEvent(bool bEnable, IEntityComponent &component, EEntityEvent event, uint32 priority)
 {
-	int flags = flagsOriginal;
-	// Workaround: Can only be lazy while EntityPool is disabled.
-	// This is because the Remapping logic in ComponentEventDistributor
-	// doesn't handle the remapping of entity ids when such remapping happens
-	// before the registration of the component.
-	static ICVar* s_pCVar = gEnv->pConsole->GetCVar("es_EnablePoolUse");
-	if (s_pCVar && s_pCVar->GetIVal() != 0)
-	{
-		flags &= ~IComponent::EComponentFlags_LazyRegistration;
-	}
+	g_pIEntitySystem->GetEventDistributor()->EnableEvent(component, event, priority, bEnable);
+}
 
-	if ((flags& IComponent::EComponentFlags_Enable) != 0)
+//////////////////////////////////////////////////////////////////////////
+bool CEntity::SendEvent(const SEntityEvent& event)
+{
+	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
+
+#ifndef _RELEASE
+	CTimeValue t0;
+	if (CVar::es_DebugEvents)
 	{
-		if ((flags& IComponent::EComponentFlags_LazyRegistration) == 0)
+		t0 = gEnv->pTimer->GetAsyncTime();
+	}
+#endif
+
+	switch (event.event)
+	{
+	case ENTITY_EVENT_ENTERAREA:
+	case ENTITY_EVENT_LEAVEAREA:
 		{
-			m_components.insert(pComponentPtr);
+			if (CVar::es_DisableTriggers)
+			{
+				static IEntityClass* pProximityTriggerClass = NULL;
+				static IEntityClass* pAreaTriggerClass = NULL;
+
+				if (pProximityTriggerClass == NULL || pAreaTriggerClass == NULL)
+				{
+					IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
+
+					if (pEntitySystem != NULL)
+					{
+						IEntityClassRegistry* pClassRegistry = pEntitySystem->GetClassRegistry();
+
+						if (pClassRegistry != NULL)
+						{
+							pProximityTriggerClass = pClassRegistry->FindClass("ProximityTrigger");
+							pAreaTriggerClass = pClassRegistry->FindClass("AreaTrigger");
+						}
+					}
+				}
+
+				IEntityClass* pEntityClass = GetClass();
+				if (pEntityClass == pProximityTriggerClass || pEntityClass == pAreaTriggerClass)
+				{
+					return true;
+				}
+			}
+		}
+		break;
+	case ENTITY_EVENT_XFORM:
+		if (!m_bGarbage)
+		{
+			UpdateAIObject();
+		}
+		break;
+	case ENTITY_EVENT_RESET:
+	{
+		// Activate entity if was deactivated:
+		if (m_bGarbage)
+		{
+			m_bGarbage = false;
+			// If entity was deleted in game, ressurect it.
+			SEntityEvent entevnt;
+			entevnt.event = ENTITY_EVENT_INIT;
+			SendEvent(entevnt);
 		}
 	}
-	else
+	case ENTITY_EVENT_INIT:
+		m_bGarbage = false;
+		break;
+
+	case ENTITY_EVENT_ANIM_EVENT:
 	{
-		m_components.erase(pComponentPtr);
+		// If the event is a sound event, make sure we have a sound proxy.
+		const AnimEventInstance* pAnimEvent = reinterpret_cast<const AnimEventInstance*>(event.nParam[0]);
+		const char* eventName = (pAnimEvent ? pAnimEvent->m_EventName : 0);
+		if (eventName && stricmp(eventName, "sound") == 0)
+		{
+			AcquireComponent<CEntityAudioComponent>();
+		}
 	}
-	static_cast<CEntitySystem*>(gEnv->pEntitySystem)->ComponentRegister(GetId(), pComponentPtr, flags);
+	break;
+
+	case ENTITY_EVENT_DONE:
+		// When deleting should detach all children.
+	{
+		//g_pIEntitySystem->RemoveTimerEvent(GetId(), -1);
+		DeallocBindings();
+		IPhysicalEntity* pPhysics = GetPhysics();
+		if (pPhysics && pPhysics->GetForeignData(PHYS_FOREIGN_ID_ENTITY))
+		{
+			pe_params_foreign_data pfd;
+			pfd.pForeignData = 0;
+			pfd.iForeignData = -1;
+			pPhysics->SetParams(&pfd, 1);
+		}
+	}
+	break;
+
+	case ENTITY_EVENT_PRE_SERIALIZE:
+		//filter out event if not using save/load
+		if (!g_pIEntitySystem->ShouldSerializedEntity(this))
+			return true;
+		break;
+	}
+
+	if (!m_bGarbage)
+	{
+		// Broadcast event to proxies.
+		uint32 nWhyFlags = (uint32)event.nParam[0];
+
+		g_pIEntitySystem->GetEventDistributor()->SendEventToEntity(*this, event);
+
+		// TODO: Move IAIObject to component system so it goes through the distributor above
+		if (IAIObject* aiObject = GetAI())
+			aiObject->EntityEvent(event);
+
+		// Give entity system a chance to check the event, and notify other listeners.
+		if (event.event != ENTITY_EVENT_XFORM || !(nWhyFlags & ENTITY_XFORM_NO_SEND_TO_ENTITY_SYSTEM))
+			g_pIEntitySystem->OnEntityEvent(this, event);
+
+#ifndef _RELEASE
+		if (CVar::es_DebugEvents)
+		{
+			CTimeValue t1 = gEnv->pTimer->GetAsyncTime();
+			LogEvent(event, t1 - t0);
+		}
+#endif
+
+		return true;
+	}
+
+	return false;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1590,48 +1524,6 @@ void CEntity::EnablePhysics(bool enable)
 	{
 		pPhysicsComponent->EnablePhysics(enable);
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-IEntityPhysicsComponent &CEntity::CreatePhysicsComponent()
-{
-	return AcquireComponent<CPhysicsComponent>();
-}
-
-//////////////////////////////////////////////////////////////////////////
-IEntityTriggerComponent &CEntity::CreateTriggerComponent()
-{
-	return AcquireComponent<CTriggerComponent>();
-}
-
-//////////////////////////////////////////////////////////////////////////
-IEntityAudioComponent &CEntity::CreateAudioComponent()
-{
-	return AcquireComponent<CEntityAudioComponent>();
-}
-
-//////////////////////////////////////////////////////////////////////////
-IEntitySubstitutionComponent &CEntity::CreatSubstitutionComponent()
-{
-	return AcquireComponent<CSubstitutionComponent>();
-}
-
-//////////////////////////////////////////////////////////////////////////
-IEntityAreaComponent &CEntity::CreateAreaComponent()
-{
-	return AcquireComponent<CAreaComponent>();
-}
-
-//////////////////////////////////////////////////////////////////////////
-IEntityDynamicResponseComponent &CEntity::CreateDynamicResponseComponent()
-{
-	return AcquireComponent<CDynamicResponseComponent>();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntity::CreateEntityNodeComponent()
-{
-	AcquireComponent<CEntityNodeComponent>();
 }
 
 //////////////////////////////////////////////////////////////////////////

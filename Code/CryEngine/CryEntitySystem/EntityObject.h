@@ -144,7 +144,7 @@ public:
 	// XForm slot.
 	void OnXForm(CEntity* pEntity);
 
-	void OnEntityEvent(CEntity* pEntity, SEntityEvent const& event);
+	void OnEntityEvent(CEntity* pEntity, const SEntityEvent& event);
 
 	void OnNotSeenTimeout();
 

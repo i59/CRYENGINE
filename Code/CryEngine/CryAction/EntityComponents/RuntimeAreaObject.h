@@ -30,6 +30,7 @@ public:
 	virtual ~CRuntimeAreaObject() override;
 
 	// IEntityComponent
+	virtual void PostInitialize() override;
 	virtual void ProcessEvent(const SEntityEvent& event) override;
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;

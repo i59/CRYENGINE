@@ -20,8 +20,6 @@ CAnimatedCharacterComponent_Base::CAnimatedCharacterComponent_Base()
 void CAnimatedCharacterComponent_Base::SetAnimatedCharacter(CAnimatedCharacter *pAnimCharacter)
 {
 	m_pAnimCharacter = pAnimCharacter;
-
-	GetEntity()->PrePhysicsActivate(true);
 }
 
 //////////////////////////////////////////////////////////////////////////

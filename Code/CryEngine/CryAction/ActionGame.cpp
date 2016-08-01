@@ -1648,45 +1648,6 @@ IHostMigrationEventListener::EHostMigrationReturn CActionGame::OnReset(SHostMigr
 	return IHostMigrationEventListener::Listener_Done;
 }
 /////////////////////////////////////////////////////////////////////////////
-
-void CActionGame::AddGlobalPhysicsCallback(int event, void (* proc)(const EventPhys*, void*), void* userdata)
-{
-	int idx = (event & (0xff << 8)) != 0;
-	if (event & eEPE_OnCollisionLogged || event & eEPE_OnCollisionImmediate)
-		m_globalPhysicsCallbacks.collision[idx].insert(TGlobalPhysicsCallbackSet::value_type(proc, userdata));
-
-	if (event & eEPE_OnPostStepLogged || event & eEPE_OnPostStepImmediate)
-		m_globalPhysicsCallbacks.postStep[idx].insert(TGlobalPhysicsCallbackSet::value_type(proc, userdata));
-
-	if (event & eEPE_OnStateChangeLogged || event & eEPE_OnStateChangeImmediate)
-		m_globalPhysicsCallbacks.stateChange[idx].insert(TGlobalPhysicsCallbackSet::value_type(proc, userdata));
-
-	if (event & eEPE_OnCreateEntityPartLogged || event & eEPE_OnCreateEntityPartImmediate)
-		m_globalPhysicsCallbacks.createEntityPart[idx].insert(TGlobalPhysicsCallbackSet::value_type(proc, userdata));
-
-	if (event & eEPE_OnUpdateMeshLogged || event & eEPE_OnUpdateMeshImmediate)
-		m_globalPhysicsCallbacks.updateMesh[idx].insert(TGlobalPhysicsCallbackSet::value_type(proc, userdata));
-}
-
-void CActionGame::RemoveGlobalPhysicsCallback(int event, void (* proc)(const EventPhys*, void*), void* userdata)
-{
-	int idx = (event & (0xff << 8)) != 0;
-	if (event & eEPE_OnCollisionLogged || event & eEPE_OnCollisionImmediate)
-		m_globalPhysicsCallbacks.collision[idx].erase(TGlobalPhysicsCallbackSet::value_type(proc, userdata));
-
-	if (event & eEPE_OnPostStepLogged || event & eEPE_OnPostStepImmediate)
-		m_globalPhysicsCallbacks.postStep[idx].erase(TGlobalPhysicsCallbackSet::value_type(proc, userdata));
-
-	if (event & eEPE_OnStateChangeLogged || event & eEPE_OnStateChangeImmediate)
-		m_globalPhysicsCallbacks.stateChange[idx].erase(TGlobalPhysicsCallbackSet::value_type(proc, userdata));
-
-	if (event & eEPE_OnCreateEntityPartLogged || event & eEPE_OnCreateEntityPartImmediate)
-		m_globalPhysicsCallbacks.createEntityPart[idx].erase(TGlobalPhysicsCallbackSet::value_type(proc, userdata));
-
-	if (event & eEPE_OnUpdateMeshLogged || event & eEPE_OnUpdateMeshImmediate)
-		m_globalPhysicsCallbacks.updateMesh[idx].erase(TGlobalPhysicsCallbackSet::value_type(proc, userdata));
-}
-
 void CActionGame::EnablePhysicsEvents(bool enable)
 {
 	IPhysicalWorld* pPhysicalWorld = gEnv->pPhysicalWorld;
@@ -1705,8 +1666,6 @@ void CActionGame::EnablePhysicsEvents(bool enable)
 		pPhysicalWorld->AddEventClient(EventPhysUpdateMesh::id, OnUpdateMeshLogged, 1, 0.1f);
 		pPhysicalWorld->AddEventClient(EventPhysRemoveEntityParts::id, OnRemovePhysicalEntityPartsLogged, 1, 2.0f);
 		pPhysicalWorld->AddEventClient(EventPhysCollision::id, OnCollisionImmediate, 0);
-		pPhysicalWorld->AddEventClient(EventPhysPostStep::id, OnPostStepImmediate, 0);
-		pPhysicalWorld->AddEventClient(EventPhysStateChange::id, OnStateChangeImmediate, 0);
 		pPhysicalWorld->AddEventClient(EventPhysCreateEntityPart::id, OnCreatePhysicalEntityImmediate, 0, 10.0f);
 		pPhysicalWorld->AddEventClient(EventPhysUpdateMesh::id, OnUpdateMeshImmediate, 0, 10.0f);
 		pPhysicalWorld->AddEventClient(EventPhysEntityDeleted::id, OnPhysEntityDeleted, 0);
@@ -1721,8 +1680,6 @@ void CActionGame::EnablePhysicsEvents(bool enable)
 		pPhysicalWorld->RemoveEventClient(EventPhysUpdateMesh::id, OnUpdateMeshLogged, 1);
 		pPhysicalWorld->RemoveEventClient(EventPhysRemoveEntityParts::id, OnRemovePhysicalEntityPartsLogged, 1);
 		pPhysicalWorld->RemoveEventClient(EventPhysCollision::id, OnCollisionImmediate, 0);
-		pPhysicalWorld->RemoveEventClient(EventPhysPostStep::id, OnPostStepImmediate, 0);
-		pPhysicalWorld->RemoveEventClient(EventPhysStateChange::id, OnStateChangeImmediate, 0);
 		pPhysicalWorld->RemoveEventClient(EventPhysCreateEntityPart::id, OnCreatePhysicalEntityImmediate, 0);
 		pPhysicalWorld->RemoveEventClient(EventPhysUpdateMesh::id, OnUpdateMeshImmediate, 0);
 		pPhysicalWorld->RemoveEventClient(EventPhysEntityDeleted::id, OnPhysEntityDeleted, 0);
@@ -1804,71 +1761,6 @@ int CActionGame::OnBBoxOverlap(const EventPhys* pEvent)
 int CActionGame::OnCollisionLogged(const EventPhys* pEvent)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
-
-	for (TGlobalPhysicsCallbackSet::const_iterator it = s_this->m_globalPhysicsCallbacks.collision[0].begin();
-	     it != s_this->m_globalPhysicsCallbacks.collision[0].end();
-	     ++it)
-	{
-		it->first(pEvent, it->second);
-	}
-
-	const EventPhysCollision* pCollision = static_cast<const EventPhysCollision*>(pEvent);
-	IGameRules::SGameCollision gameCollision;
-	memset(&gameCollision, 0, sizeof(IGameRules::SGameCollision));
-	gameCollision.pCollision = pCollision;
-	if (pCollision->iForeignData[0] == PHYS_FOREIGN_ID_ENTITY)
-	{
-		//gameCollision.pSrcEntity = gEnv->pEntitySystem->GetEntityFromPhysics(gameCollision.pCollision->pEntity[0]);
-		gameCollision.pSrcEntity = (IEntity*)pCollision->pForeignData[0];
-		gameCollision.pSrc = gameCollision.pSrcEntity->QueryComponent<IGameObject>();
-	}
-	if (pCollision->iForeignData[1] == PHYS_FOREIGN_ID_ENTITY)
-	{
-		//gameCollision.pTrgEntity = gEnv->pEntitySystem->GetEntityFromPhysics(gameCollision.pCollision->pEntity[1]);
-		gameCollision.pTrgEntity = (IEntity*)pCollision->pForeignData[1];
-		gameCollision.pTrg = gameCollision.pTrgEntity->QueryComponent<IGameObject>();
-	}
-
-	SGameObjectEvent event(eGFE_OnCollision, eGOEF_ToExtensions | eGOEF_ToGameObject | eGOEF_LoggedPhysicsEvent);
-	event.ptr = (void*)pCollision;
-	if (gameCollision.pSrc && gameCollision.pSrc->WantsPhysicsEvent(eEPE_OnCollisionLogged))
-		gameCollision.pSrc->SendEvent(event);
-	if (gameCollision.pTrg && gameCollision.pTrg->WantsPhysicsEvent(eEPE_OnCollisionLogged))
-		gameCollision.pTrg->SendEvent(event);
-
-	if (gameCollision.pSrc)
-	{
-		IRenderNode* pNode = NULL;
-		if (pCollision->iForeignData[1] == PHYS_FOREIGN_ID_ENTITY)
-		{
-			IEntity* pTarget = (IEntity*)pCollision->pForeignData[1];
-			if (pTarget)
-			{
-				if (auto *pRenderComponent = pTarget->QueryComponent<IEntityRenderComponent>())
-					pNode = pRenderComponent->GetRenderNode();
-			}
-		}
-		else if (pCollision->iForeignData[1] == PHYS_FOREIGN_ID_STATIC)
-			pNode = (IRenderNode*)pCollision->pForeignData[1];
-		/*else
-		   if (pCollision->iForeignData[1] == PHYS_FOREIGN_ID_FOLIAGE)
-		   {
-		   CStatObjFoliage *pFolliage = (CStatObjFoliage*)pCollision->pForeignData[1];
-		   if (pFolliage)
-		    pNode = pFolliage->m_pVegInst;
-		   }*/
-		if (pNode)
-			gEnv->p3DEngine->SelectEntity(pNode);
-	}
-
-	IGameRules* pGameRules = s_this->m_pGameContext->GetFramework()->GetIGameRulesSystem()->GetCurrentGameRules();
-	if (pGameRules)
-	{
-		if (!pGameRules->OnCollision(gameCollision))
-			return 0;
-
-		pGameRules->OnCollision_NotifyAI(pEvent);
-	}
 
 	OnCollisionLogged_Breakable(pEvent);
 	OnCollisionLogged_MaterialFX(pEvent);
@@ -2525,7 +2417,7 @@ ForceObjUpdate:
 						pBrush->GetPhysics()->RemoveGeometry(pp.partid);
 			}
 
-			if (pEntityTrg && pStatObjNew)
+			/*if (pEntityTrg && pStatObjNew)
 			{
 				if (auto *pGameObject = pEntityTrg->QueryComponent<IGameObject>())
 				{
@@ -2534,7 +2426,7 @@ ForceObjUpdate:
 					evt.param = pStatObjNew;
 					pGameObject->SendEvent(evt);
 				}
-			}
+			}*/
 		}
 		if (pStatObjAux)
 		{
@@ -3216,27 +3108,6 @@ int CActionGame::OnPostStepLogged(const EventPhys* pEvent)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
 
-	for (TGlobalPhysicsCallbackSet::const_iterator it = s_this->m_globalPhysicsCallbacks.postStep[0].begin();
-	     it != s_this->m_globalPhysicsCallbacks.postStep[0].end();
-	     ++it)
-	{
-		it->first(pEvent, it->second);
-	}
-
-	const EventPhysPostStep* pPostStep = static_cast<const EventPhysPostStep*>(pEvent);
-	if (auto *pEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pPostStep->pEntity))
-	{
-		if (auto *pGameObject = pEntity->QueryComponent<IGameObject>())
-		{
-			if (pGameObject->WantsPhysicsEvent(eEPE_OnPostStepLogged))
-			{
-				SGameObjectEvent event(eGFE_OnPostStep, eGOEF_ToExtensions | eGOEF_ToGameObject | eGOEF_LoggedPhysicsEvent);
-				event.ptr = (void*)pPostStep;
-				pGameObject->SendEvent(event);
-			}
-		}
-	}
-
 	OnPostStepLogged_MaterialFX(pEvent);
 
 	return 1;
@@ -3322,33 +3193,6 @@ int CActionGame::OnStateChangeLogged(const EventPhys* pEvent)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
 
-	for (TGlobalPhysicsCallbackSet::const_iterator it = s_this->m_globalPhysicsCallbacks.stateChange[0].begin();
-	     it != s_this->m_globalPhysicsCallbacks.stateChange[0].end();
-	     ++it)
-	{
-		it->first(pEvent, it->second);
-	}
-
-	const EventPhysStateChange* pStateChange = static_cast<const EventPhysStateChange*>(pEvent);
-	if (IEntity *pSourceEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pStateChange->pEntity))
-	{
-		if (auto *pSourceGameObject = pSourceEntity->QueryComponent<IGameObject>())
-		{
-			if (!gEnv->bServer && pStateChange->iSimClass[1] > 1 && pStateChange->iSimClass[0] <= 1 && Get()->m_pNetContext)
-			{
-				//CryLogAlways("[0] = %d, [1] = %d", pStateChange->iSimClass[0], pStateChange->iSimClass[1]);
-				Get()->m_pNetContext->RequestRemoteUpdate(pSourceGameObject->GetEntityId(), eEA_Physics);
-			}
-
-			if (pSourceGameObject->WantsPhysicsEvent(eEPE_OnStateChangeLogged))
-			{
-				SGameObjectEvent event(eGFE_OnStateChange, eGOEF_ToExtensions | eGOEF_ToGameObject | eGOEF_LoggedPhysicsEvent);
-				event.ptr = (void*)pStateChange;
-				pSourceGameObject->SendEvent(event);
-			}
-		}
-	}
-
 	OnStateChangeLogged_MaterialFX(pEvent);
 
 	return 1;
@@ -3378,13 +3222,6 @@ void CActionGame::OnStateChangeLogged_MaterialFX(const EventPhys* pEvent)
 
 int CActionGame::OnCreatePhysicalEntityLogged(const EventPhys* pEvent)
 {
-	for (TGlobalPhysicsCallbackSet::const_iterator it = s_this->m_globalPhysicsCallbacks.createEntityPart[0].begin();
-	     it != s_this->m_globalPhysicsCallbacks.createEntityPart[0].end();
-	     ++it)
-	{
-		it->first(pEvent, it->second);
-	}
-
 	const EventPhysCreateEntityPart* pCEvent = (const EventPhysCreateEntityPart*) pEvent;
 	IEntity* pEntity = GetEntity(pCEvent->iForeignData, pCEvent->pForeignData);
 
@@ -3579,9 +3416,9 @@ int CActionGame::ReuseBrokenTrees(const EventPhysCollision* pCEvent, float size,
 				pentClone = gEnv->pEntitySystem->SpawnEntity(esp, true);
 				if (epp.type == PE_STATIC)
 				{
-					pentClone->CreatePhysicsComponent().AssignPhysicalEntity(pPhysEntClone = pVeg->GetPhysics());
+					pentClone->AcquireExternalComponent<IEntityPhysicsComponent>().AssignPhysicalEntity(pPhysEntClone = pVeg->GetPhysics());
 
-					auto &substitutionComponent = pentClone->CreatSubstitutionComponent();
+					auto &substitutionComponent = pentClone->AcquireExternalComponent<IEntitySubstitutionComponent>();
 					substitutionComponent.SetSubstitute(pVeg);
 
 					pVeg->SetPhysics(0);
@@ -3675,13 +3512,6 @@ int CActionGame::ReuseBrokenTrees(const EventPhysCollision* pCEvent, float size,
 
 int CActionGame::OnUpdateMeshLogged(const EventPhys* pEvent)
 {
-	for (TGlobalPhysicsCallbackSet::const_iterator it = s_this->m_globalPhysicsCallbacks.updateMesh[0].begin();
-	     it != s_this->m_globalPhysicsCallbacks.updateMesh[0].end();
-	     ++it)
-	{
-		it->first(pEvent, it->second);
-	}
-
 	const EventPhysUpdateMesh* pepum = (const EventPhysUpdateMesh*) pEvent;
 
 	if (pepum->iForeignData == PHYS_FOREIGN_ID_STATIC && pepum->pEntity->GetiForeignData() == PHYS_FOREIGN_ID_ENTITY)
@@ -4147,13 +3977,6 @@ void CActionGame::RemoveEntFromBreakageReuse(IPhysicalEntity* pEntity, int bRemo
 
 int CActionGame::OnRemovePhysicalEntityPartsLogged(const EventPhys* pEvent)
 {
-	for (TGlobalPhysicsCallbackSet::const_iterator it = s_this->m_globalPhysicsCallbacks.updateMesh[1].begin();
-	     it != s_this->m_globalPhysicsCallbacks.updateMesh[1].end();
-	     ++it)
-	{
-		it->first(pEvent, it->second);
-	}
-
 	const EventPhysRemoveEntityParts* pREvent = (EventPhysRemoveEntityParts*)pEvent;
 	IEntity* pEntity;
 	IStatObj* pStatObj;
@@ -4191,29 +4014,7 @@ int CActionGame::OnCollisionImmediate(const EventPhys* pEvent)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ACTION);
 
-	for (TGlobalPhysicsCallbackSet::const_iterator it = s_this->m_globalPhysicsCallbacks.collision[1].begin();
-	     it != s_this->m_globalPhysicsCallbacks.collision[1].end();
-	     ++it)
-	{
-		it->first(pEvent, it->second);
-	}
-
 	const EventPhysCollision* pCollision = static_cast<const EventPhysCollision*>(pEvent);
-	
-	SGameObjectEvent event(eGFE_OnCollision, eGOEF_ToExtensions | eGOEF_ToGameObject);
-	event.ptr = (void*)pCollision;
-
-	for (uint8 i = 0; i < 2; i++)
-	{
-		if (auto *pEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pCollision->pEntity[i]))
-		{
-			if (auto *pGameObject = pEntity->QueryComponent<IGameObject>())
-			{
-				if (pGameObject->WantsPhysicsEvent(eEPE_OnCollisionImmediate))
-					pGameObject->SendEvent(event);
-			}
-		}
-	}
 
 	ISurfaceTypeManager* pSurfaceTypeManager = gEnv->p3DEngine->GetMaterialManager()->GetSurfaceTypeManager();
 	ISurfaceType* pMat = pSurfaceTypeManager->GetSurfaceType(pCollision->idmat[1]);
@@ -4244,75 +4045,8 @@ int CActionGame::OnCollisionImmediate(const EventPhys* pEvent)
 	return 1;
 }
 
-int CActionGame::OnPostStepImmediate(const EventPhys* pEvent)
-{
-	for (TGlobalPhysicsCallbackSet::const_iterator it = s_this->m_globalPhysicsCallbacks.postStep[1].begin();
-	     it != s_this->m_globalPhysicsCallbacks.postStep[1].end();
-	     ++it)
-	{
-		it->first(pEvent, it->second);
-	}
-
-	const EventPhysPostStep* pPostStep = static_cast<const EventPhysPostStep*>(pEvent);
-
-	if (auto *pEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pPostStep->pEntity))
-	{
-		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
-		{
-			// we cannot delete the gameobject while the event is processed
-			pGameObject->AcquireMutex();
-
-			// Test that the physics proxy is still enabled.
-			if (pGameObject->WantsPhysicsEvent(eEPE_OnPostStepImmediate))
-			{
-				SGameObjectEvent event(eGFE_OnPostStep, eGOEF_ToExtensions | eGOEF_ToGameObject);
-				event.ptr = (void*)pEvent;
-
-				pGameObject->SendEvent(event);
-			}
-			pGameObject->ReleaseMutex();
-		}
-	}
-
-	return 1;
-}
-
-int CActionGame::OnStateChangeImmediate(const EventPhys* pEvent)
-{
-	for (TGlobalPhysicsCallbackSet::const_iterator it = s_this->m_globalPhysicsCallbacks.stateChange[1].begin();
-	     it != s_this->m_globalPhysicsCallbacks.stateChange[1].end();
-	     ++it)
-	{
-		it->first(pEvent, it->second);
-	}
-
-	const EventPhysStateChange* pStateChange = static_cast<const EventPhysStateChange*>(pEvent);
-	
-	if (auto *pEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pStateChange->pEntity))
-	{
-		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
-		{
-			if (pGameObject->WantsPhysicsEvent(eEPE_OnStateChangeImmediate))
-			{
-				SGameObjectEvent event(eGFE_OnStateChange, eGOEF_ToExtensions | eGOEF_ToGameObject);
-				event.ptr = (void*)pStateChange;
-				pGameObject->SendEvent(event);
-			}
-		}
-	}
-
-	return 1;
-}
-
 int CActionGame::OnCreatePhysicalEntityImmediate(const EventPhys* pEvent)
 {
-	for (TGlobalPhysicsCallbackSet::const_iterator it = s_this->m_globalPhysicsCallbacks.createEntityPart[1].begin();
-	     it != s_this->m_globalPhysicsCallbacks.createEntityPart[1].end();
-	     ++it)
-	{
-		it->first(pEvent, it->second);
-	}
-
 	EventPhysCreateEntityPart* pepcep = (EventPhysCreateEntityPart*)pEvent;
 	if (pepcep->iForeignData == PHYS_FOREIGN_ID_ENTITY && pepcep->pEntity != pepcep->pEntNew)
 		gEnv->pPhysicalWorld->SetPhysicalEntityId(pepcep->pEntNew, s_this->UpdateEntityIdForBrokenPart(((IEntity*)pepcep->pForeignData)->GetId()) & 0xFFFF);

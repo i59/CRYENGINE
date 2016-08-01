@@ -90,8 +90,7 @@ EEntityType GetEntityType(EntityId id)
 				IActorSystem* pActorSystem = gEnv->pGame->GetIGameFramework()->GetIActorSystem();
 				if (pActorSystem)
 				{
-					IActor* pActor = pActorSystem->GetActor(id);
-					if (pActor)
+					if (pActorSystem->GetActor(id) != nullptr)
 					{
 						type |= eET_Actor;
 					}
@@ -101,7 +100,7 @@ EEntityType GetEntityType(EntityId id)
 				IVehicleSystem* pVehicleSystem = gEnv->pGame->GetIGameFramework()->GetIVehicleSystem();
 				if (pVehicleSystem)
 				{
-					if (pVehicleSystem->IsVehicleClass(className))
+					if (pVehicleSystem->GetVehicle(id) != nullptr)
 					{
 						type |= eET_Vehicle;
 					}

@@ -17,7 +17,6 @@
 
 #pragma once
 
-#include <CryEntitySystem/IComponent.h>
 #include <CryGame/IGameStartup.h> // <> required for Interfuscator
 #include <CryGame/IGameFrameworkExtension.h>
 #include <CryMath/Cry_Color.h>
@@ -47,16 +46,10 @@ struct IGameVolumes;
 	#define BreakLogAlways(...) ((void)0)
 #endif
 
-//! Generic factory creation.
-//! This macro is used to register new game object extension classes.
-#define REGISTER_FACTORY(host, name, impl, isAI)              \
-  (host)->RegisterFactory((name), (impl*)0, (isAI), (impl*)0) \
-
-
-#define DECLARE_GAMEOBJECT_FACTORY(impl)                                           \
+#define DECLARE_FACTORY(impl)                                           \
   public:                                                                          \
     virtual void RegisterFactory(const char* name, impl * (*)(), bool isAI) = 0;   \
-    template<class T> void RegisterFactory(const char* name, impl*, bool isAI, T*) \
+    template<class T> void RegisterFactory(const char* name, impl *pDummy) \
     {                                                                              \
       struct Factory                                                               \
       {                                                                            \
@@ -65,46 +58,11 @@ struct IGameVolumes;
           return new T();                                                          \
         }                                                                          \
       };                                                                           \
-      RegisterFactory(name, Factory::Create, isAI);                                \
+      RegisterFactory(name, Factory::Create, false);                                \
     }
 
-//! Game object extensions need more information than the generic interface can provide.
-struct IGameObjectExtension;
-DECLARE_COMPONENT_POINTERS(IGameObjectExtension);
-
-struct IGameObjectExtensionCreatorBase
-{
-	// <interfuscator:shuffle>
-	virtual ~IGameObjectExtensionCreatorBase(){}
-	virtual IGameObjectExtensionPtr Create() = 0;
-	virtual void                    GetGameObjectExtensionRMIData(void** ppRMI, size_t* nCount) = 0;
-	// </interfuscator:shuffle>
-
-	void GetMemoryUsage(ICrySizer* pSizer) const { /*LATER*/ }
-};
-
-#define DECLARE_GAMEOBJECTEXTENSION_FACTORY(name)                                       \
-  struct I ## name ## Creator : public IGameObjectExtensionCreatorBase                  \
-  {                                                                                     \
-  };                                                                                    \
-  template<class T>                                                                     \
-  struct C ## name ## Creator : public I ## name ## Creator                             \
-  {                                                                                     \
-    IGameObjectExtensionPtr Create()                                                    \
-    {                                                                                   \
-      return ComponentCreate_DeleteWithRelease<T>();                                    \
-    }                                                                                   \
-    void GetGameObjectExtensionRMIData(void** ppRMI, size_t * nCount)                   \
-    {                                                                                   \
-      T::GetGameObjectExtensionRMIData(ppRMI, nCount);                                  \
-    }                                                                                   \
-  };                                                                                    \
-  virtual void RegisterFactory(const char* name, I ## name ## Creator*, bool isAI) = 0; \
-  template<class T> void RegisterFactory(const char* name, I ## name*, bool isAI, T*)   \
-  {                                                                                     \
-    static C ## name ## Creator<T> creator;                                             \
-    RegisterFactory(name, &creator, isAI);                                              \
-  }
+#define REGISTER_FACTORY(pFW, name, impl, bIsAI) pFW->RegisterFactory<impl>(name, (impl *)nullptr)
+	
 
 struct ISystem;
 struct IUIDraw;
@@ -125,14 +83,10 @@ struct IGameRulesSystem;
 struct IFlowSystem;
 struct IGameTokenSystem;
 struct IEffectSystem;
-struct IGameObject;
-struct IGameObjectExtension;
-struct IGameObjectSystem;
 struct IGameplayRecorder;
 struct IAnimationStateNodeFactory;
 struct ISaveGame;
 struct ILoadGame;
-struct IGameObject;
 struct IMaterialEffects;
 struct INetChannel;
 struct IPlayerProfileManager;
@@ -401,33 +355,6 @@ enum EEntityEventPriority
 	EEntityEventPriority_Client = 100   //!< Special variable for the client to tag onto priorities when needed.
 };
 
-//! When you add stuff here, you must also update in CCryAction::Init.
-enum EGameFrameworkEvent
-{
-	eGFE_PauseGame,
-	eGFE_ResumeGame,
-	eGFE_OnCollision,
-	eGFE_OnPostStep,
-	eGFE_OnStateChange,
-	eGFE_ResetAnimationGraphs,
-	eGFE_OnBreakable2d,
-	eGFE_OnBecomeVisible,
-	eGFE_PreShatter,
-	eGFE_BecomeLocalPlayer,
-	eGFE_DisablePhysics,
-	eGFE_EnablePhysics,
-	eGFE_ScriptEvent,
-	eGFE_StoodOnChange,
-	eGFE_QueueRagdollCreation,  //!< Queue the ragdoll for creation so the engine can do it at the best time.
-	eGFE_QueueBlendFromRagdoll, //!< Queue the blend from ragdoll event (i.e. standup).
-	eGFE_RagdollPhysicalized,   //!< Dispatched when the queued ragdoll is physicalized.
-	eGFE_RagdollUnPhysicalized, //!< Dispatched when the queued ragdoll is unphysicalized (i.e. Stoodup).
-	eGFE_EnableBlendRagdoll,    //!< Enable blend with ragdoll mode (will blend with the currently active animation).
-	eGFE_DisableBlendRagdoll,   //!< Disable blend with ragdoll (will blend out the ragdoll with the currently active animation).
-
-	eGFE_Last
-};
-
 //! All events game should be aware of need to be added here.
 enum EActionEvent
 {
@@ -510,11 +437,8 @@ struct IBreakEventListener
 //! Interface which exposes the CryAction subsystems.
 struct IGameFramework
 {
-	DECLARE_GAMEOBJECT_FACTORY(ISaveGame);
-	DECLARE_GAMEOBJECT_FACTORY(ILoadGame);
-	DECLARE_GAMEOBJECTEXTENSION_FACTORY(Item);
-	DECLARE_GAMEOBJECTEXTENSION_FACTORY(Vehicle);
-	DECLARE_GAMEOBJECTEXTENSION_FACTORY(GameObjectExtension);
+	DECLARE_FACTORY(ISaveGame);
+	DECLARE_FACTORY(ILoadGame);
 
 	typedef uint32                   TimerID;
 	typedef Functor2<void*, TimerID> TimerCallback;
@@ -584,10 +508,6 @@ struct IGameFramework
 	virtual IUIDraw*    GetIUIDraw() = 0;
 
 	virtual IMannequin& GetMannequinInterface() = 0;
-
-	//! Returns a pointer to the IGameObjectSystem interface.
-	//! \return Pointer to IGameObjectSystem interface.
-	virtual IGameObjectSystem* GetIGameObjectSystem() = 0;
 
 	//! Returns a pointer to the ILevelSystem interface.
 	//! \return Pointer to ILevelSystem interface.

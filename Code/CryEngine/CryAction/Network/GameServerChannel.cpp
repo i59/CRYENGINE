@@ -150,8 +150,7 @@ void CGameServerChannel::DefineProtocol(IProtocolBuilder* pBuilder)
 {
 	pBuilder->AddMessageSink(this, CGameClientChannel::GetProtocolDef(), CGameServerChannel::GetProtocolDef());
 	CCryAction* cca = CCryAction::GetCryAction();
-	if (cca->GetIGameObjectSystem())
-		cca->GetIGameObjectSystem()->DefineProtocol(true, pBuilder);
+	cca->DefineProtocol(true, pBuilder);
 	if (cca->GetGameContext())
 		cca->GetGameContext()->DefineContextProtocols(pBuilder, true);
 }

@@ -22,7 +22,6 @@
 #include "ScriptBind_Entity.h"
 #include "PhysicsEventListener.h"
 #include "AreaManager.h"
-#include "Components/AreaComponent.h"
 #include "BreakableManager.h"
 #include "EntityArchetype.h"
 #include "PartitionGrid.h"
@@ -39,6 +38,21 @@
 #include "CharacterBoneAttachmentManager.h"
 #include <CryCore/TypeInfo_impl.h>  // CRY_ARRAY_COUNT
 #include "BSPTree3D.h"
+
+#include "Components/AreaComponent.h"
+#include "Components/EntityAttributesComponent.h"
+#include "Components/EntityAudioComponent.h"
+#include "Components/CameraComponent.h"
+#include "Components/ClipVolumeComponent.h"
+#include "Components/DynamicResponseComponent.h"
+#include "Components/FlowgraphComponent.h"
+#include "Components/PhysicsComponent.h"
+#include "Components/RopeComponent.h"
+#include "Components/RenderComponent.h"
+#include "Components/ScriptComponent.h"
+#include "Components/SubstitutionComponent.h"
+#include "Components/EntityNodeComponent.h"
+#include "Components/TriggerComponent.h"
 
 #include <CryRenderer/IRenderer.h>
 #include <Cry3DEngine/I3DEngine.h>
@@ -274,7 +288,7 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 	m_pAreaManager = new CAreaManager(this);
 	m_pBreakableManager = new CBreakableManager(this);
 	m_pEntityArchetypeManager = new CEntityArchetypeManager;
-	m_pEventDistributer = new CComponentEventDistributer(CVar::pUpdateType->GetIVal());
+	m_pEventDistributor = new CComponentEventDistributor();
 
 	m_pEntityLoadManager = new CEntityLoadManager(this);
 
@@ -321,7 +335,7 @@ CEntitySystem::~CEntitySystem()
 	SAFE_DELETE(m_pAreaManager);
 	SAFE_DELETE(m_pEntityArchetypeManager);
 	SAFE_DELETE(m_pEntityScriptBinding);
-	SAFE_DELETE(m_pEventDistributer);
+	SAFE_DELETE(m_pEventDistributor);
 	SAFE_DELETE(m_pEntityLoadManager);
 
 	SAFE_DELETE(m_pPhysicsEventListener);
@@ -361,6 +375,22 @@ bool CEntitySystem::Init(ISystem* pSystem)
 
 	m_entityTimeoutList.Clear();
 	m_bLocked = false;
+
+	// Expose internal components for creation outside of this module
+	RegisterExternalComponent<CAreaComponent>();
+	RegisterExternalComponent<CEntityAttributesComponent>();
+	RegisterExternalComponent<CEntityAudioComponent>();
+	RegisterExternalComponent<CCameraComponent>();
+	RegisterExternalComponent<CClipVolumeComponent>();
+	RegisterExternalComponent<CDynamicResponseComponent>();
+	RegisterExternalComponent<CFlowGraphComponent>();
+	RegisterExternalComponent<CPhysicsComponent>();
+	RegisterExternalComponent<CRopeComponent>();
+	RegisterExternalComponent<CRenderComponent>();
+	RegisterExternalComponent<CScriptComponent>();
+	RegisterExternalComponent<CSubstitutionComponent>();
+	RegisterExternalComponent<CEntityNodeComponent>();
+	RegisterExternalComponent<CTriggerComponent>();
 
 	return true;
 }
@@ -435,7 +465,7 @@ void CEntitySystem::Reset()
 
 	m_pEntityLoadManager->Reset();
 
-	m_pEventDistributer->Reset();
+	m_pEventDistributor->Reset();
 
 	// Flush the physics linetest and events queue
 	if (gEnv->pPhysicalWorld)
@@ -768,8 +798,8 @@ bool CEntitySystem::ResetEntityId(CEntity* pEntity, EntityId newEntityId)
 
 	RemoveEntityFromActiveList(pEntity);
 
-	// Inform the distributer of any change!
-	m_pEventDistributer->RemapEntityID(pEntity->GetId(), newEntityId);
+	// Inform the distributor of any change!
+	m_pEventDistributor->RemapEntityID(pEntity->GetId(), newEntityId);
 
 	if (newEntityId)
 	{
@@ -851,7 +881,7 @@ void CEntitySystem::DeleteEntity(CEntity* pEntity)
 			}
 		}
 
-		m_pEventDistributer->OnEntityDeleted(pEntity);
+		m_pEventDistributor->OnEntityDeleted(pEntity);
 
 		pEntity->ShutDown();
 
@@ -984,7 +1014,6 @@ void CEntitySystem::RemoveEntityFromActiveList(CEntity* pEntity)
 	if (pEntity)
 	{
 		m_mapActiveEntities.erase(pEntity->GetId());
-		ActivatePrePhysicsUpdateForEntity(pEntity, false);
 		m_tempActiveEntitiesValid = false;
 		pEntity->m_bActive = false;
 		if (pEntity->m_bInActiveList)
@@ -996,7 +1025,6 @@ void CEntitySystem::RemoveEntityFromActiveList(CEntity* pEntity)
 	}
 
 	assert(pEntity && m_mapActiveEntities.count(pEntity->GetId()) == 0);
-	assert(pEntity && m_mapPrePhysicsEntities.count(pEntity->GetId()) == 0);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1165,14 +1193,7 @@ void CEntitySystem::PrePhysicsUpdate()
 	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::PrePhysicsUpdate");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("EntitySystem::PrePhysicsUpdate");
 
-	if (static_cast<CComponentEventDistributer*>(m_pEventDistributer)->IsEnabled())
-	{
-		DoPrePhysicsUpdateFast();
-	}
-	else
-	{
-		DoPrePhysicsUpdate();
-	}
+	DoPrePhysicsUpdateFast();
 }
 
 //update the entity system
@@ -1931,13 +1952,96 @@ void CEntitySystem::CheckInternalConsistency() const
 }
 
 //////////////////////////////////////////////////////////////////////////
+static bool StringToKey(const char* s, uint32& key)
+{
+	const size_t len = strlen(s);
+	if (len > 4)
+		return false;
 
+	key = 0;
+	for (size_t i = 0; i < len; i++)
+	{
+		key <<= 8;
+		key |= uint8(s[i]);
+	}
+
+	return true;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::InitializeEntityScheduler()
+{
+	memset(&m_defaultProfiles, 0, sizeof(m_defaultProfiles));
+
+	if (XmlNodeRef schedParams = gEnv->pSystem->LoadXmlFromFile("Scripts/Network/EntityScheduler.xml"))
+	{
+		uint32 defaultPolicy = 0;
+
+		if (XmlNodeRef defpol = schedParams->findChild("Default"))
+		{
+			if (!StringToKey(defpol->getAttr("policy"), defaultPolicy))
+			{
+				EntityWarning("Unable to read Default from EntityScheduler.xml");
+			}
+		}
+
+		m_defaultProfiles.normal = m_defaultProfiles.owned = defaultPolicy;
+
+		for (int i = 0; i < schedParams->getChildCount(); i++)
+		{
+			XmlNodeRef node = schedParams->getChild(i);
+			if (0 != strcmp(node->getTag(), "Class"))
+				continue;
+
+			string name = node->getAttr("name");
+
+			SEntitySchedulingProfiles p;
+			p.normal = defaultPolicy;
+			if (node->haveAttr("policy"))
+				StringToKey(node->getAttr("policy"), p.normal);
+			p.owned = p.normal;
+			if (node->haveAttr("own"))
+				StringToKey(node->getAttr("own"), p.owned);
+
+#if !defined(_RELEASE)
+			TSchedulingProfiles::iterator iter = m_schedulingParams.find(CONST_TEMP_STRING(name));
+			if (iter != m_schedulingParams.end())
+			{
+				EntityWarning("Class '%s' has been defined multiple times in EntityScheduler.xml", name.c_str());
+			}
+#endif //#if !defined(_RELEASE)
+
+			m_schedulingParams[name] = p;
+		}
+	}
+}
+
+//////////////////////////////////////////////////////////////////////////
+const SEntitySchedulingProfiles* CEntitySystem::GetEntitySchedulerProfiles(IEntity* pEnt)
+{
+	if (!gEnv->bMultiplayer)
+		return &m_defaultProfiles;
+
+	if (pEnt->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY))
+		return &m_defaultProfiles;
+
+	TSchedulingProfiles::iterator iter = m_schedulingParams.find(CONST_TEMP_STRING(pEnt->GetClass()->GetName()));
+
+	if (iter == m_schedulingParams.end())
+	{
+		EntityWarning("No network scheduling parameters set for entities of class '%s' in EntityScheduler.xml", pEnt->GetClass()->GetName());
+		return &m_defaultProfiles;
+	}
+	return &iter->second;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CEntitySystem::RegisterComponentFactory(const CryInterfaceID &id, struct IEntityComponentFactory *pFactory)
 {
 	m_componentFactoryMap.insert(TEntityComponentFactoryMap::value_type(id, pFactory));
 }
 
-
+//////////////////////////////////////////////////////////////////////////
 IEntityComponent *CEntitySystem::CreateComponentInstance(const CryInterfaceID &id)
 {
 	auto factoryIt = m_componentFactoryMap.find(id);
@@ -1963,9 +2067,9 @@ bool CEntitySystem::IsIDUsed(EntityId nID) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntitySystem::SendEventViaEntityEvent(IEntity* piEntity, SEntityEvent& event)
+void CEntitySystem::SendEventViaEntityEvent(IEntity* piEntity, const SEntityEvent& event)
 {
-	m_pEventDistributer->SendEvent(event);
+	m_pEventDistributor->SendEvent(event);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2241,33 +2345,6 @@ void CEntitySystem::ActivateEntity(CEntity* pEntity, bool bActivate)
 	m_tempActiveEntitiesValid = false;
 }
 
-void CEntitySystem::ActivatePrePhysicsUpdateForEntity(CEntity* pEntity, bool bActivate)
-{
-	const EntityId entityID = pEntity->GetId();
-	if (bActivate)
-	{
-		if (m_mapPrePhysicsEntities.count(entityID) == 0)
-		{
-			m_pEventDistributer->EnableEventForEntity(pEntity->GetId(), ENTITY_EVENT_PREPHYSICSUPDATE, true);
-		}
-		m_mapPrePhysicsEntities.insert(entityID);
-	}
-	else
-	{
-		if (m_mapPrePhysicsEntities.count(entityID) > 0)
-		{
-			m_pEventDistributer->EnableEventForEntity(pEntity->GetId(), ENTITY_EVENT_PREPHYSICSUPDATE, false);
-		}
-		m_mapPrePhysicsEntities.erase(entityID);
-	}
-
-}
-
-bool CEntitySystem::IsPrePhysicsActive(CEntity* pEntity)
-{
-	return m_mapPrePhysicsEntities.find(pEntity->GetId()) != m_mapPrePhysicsEntities.end();
-}
-
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::OnEntityEvent(CEntity* pEntity, const SEntityEvent& event)
 {
@@ -2321,7 +2398,6 @@ void CEntitySystem::OnEntityEvent(CEntity* pEntity, const SEntityEvent& event)
 			for (uint32 i = 0; i < nNumElements; ++i)
 			{
 				IEntityEventListener* pListener = ppListeners[i];
-				ENTITY_EVENT_ENTITY_LISTENER(pListener);
 
 				if (pListener)
 					pListener->OnEntityEvent(pEntity, event);
@@ -3555,20 +3631,6 @@ void CEntitySystem::PurgeDeferredCollisionEvents(bool bForce)
 	}
 }
 
-void CEntitySystem::ComponentRegister(EntityId id, IComponentPtr pComponent, const int flags)
-{
-	pComponent->SetDistributer(m_pEventDistributer, id);
-	if ((flags& IComponent::EComponentFlags_LazyRegistration) == 0)
-	{
-		m_pEventDistributer->RegisterComponent(id, pComponent, (flags& IComponent::EComponentFlags_Enable) != 0);
-	}
-}
-
-void CEntitySystem::ComponentEnableEvent(const EntityId id, const int eventID, const bool enable)
-{
-	m_pEventDistributer->EnableEventForEntity(id, eventID, enable);
-}
-
 void CEntitySystem::DebugDraw()
 {
 	if (CVar::es_DrawProximityTriggers > 0)
@@ -3635,29 +3697,6 @@ void CEntitySystem::DebugDrawProximityTriggers()
 	}
 }
 
-void CEntitySystem::DoPrePhysicsUpdate()
-{
-	FUNCTION_PROFILER(m_pISystem, PROFILE_ENTITY);
-
-	float fFrameTime = gEnv->pTimer->GetFrameTime();
-	for (EntitiesSet::iterator it = m_mapPrePhysicsEntities.begin(); it != m_mapPrePhysicsEntities.end(); )
-	{
-		EntityId eid = *it;
-		EntitiesSet::iterator next = it;
-		++next;
-		CEntity* pEntity = (CEntity*)GetEntity(eid);
-		if (pEntity)
-		{
-#ifdef _DEBUG
-			INDENT_LOG_DURING_SCOPE(true, "While doing pre-physics update of %s...", pEntity->GetEntityTextDescription().c_str());
-#endif
-			pEntity->PrePhysicsUpdate(fFrameTime);
-		}
-		CRY_ASSERT_TRACE(pEntity, ("Non-valid entity exists in m_mapPrePhysicsEntities. Id = %u", eid));
-		it = next;
-	}
-}
-
 void CEntitySystem::DoPrePhysicsUpdateFast()
 {
 	FUNCTION_PROFILER(m_pISystem, PROFILE_ENTITY);
@@ -3666,7 +3705,7 @@ void CEntitySystem::DoPrePhysicsUpdateFast()
 	evt.fParam[0] = gEnv->pTimer->GetFrameTime();
 
 	// Dispatch the event.
-	m_pEventDistributer->SendEvent(evt);
+	m_pEventDistributor->SendEvent(evt);
 }
 
 void CEntitySystem::RegisterCharactersForRendering()

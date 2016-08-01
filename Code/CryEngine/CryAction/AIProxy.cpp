@@ -522,14 +522,18 @@ bool CAIProxy::CheckUpdateStatus()
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
 
-	bool update = false;
 	// DO NOT call Activate on Entity
 	// (this will result in an infinite-ish loop)
 	if (gEnv->pAISystem->GetUpdateAllAlways() || m_UpdateAlways)
-		update = m_pGameObject->SetAIActivation(eGOAIAM_Always);
+	{
+		m_pGameObject->GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Always);
+	}
 	else
-		update = m_pGameObject->SetAIActivation(eGOAIAM_VisibleOrInRange);
-	return update;
+	{
+		m_pGameObject->GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_InRange | EEntityUpdatePolicy_Visible);
+	}
+
+	return m_pGameObject->GetEntity()->GetLastConditionalUpdateFlags() != 0;
 }
 
 //
@@ -1301,7 +1305,7 @@ void CAIProxy::Reset(EObjectResetType type)
 
 	//if (gEnv->IsEditor())
 	if (m_pGameObject)
-		m_pGameObject->SetAIActivation(eGOAIAM_VisibleOrInRange); // we suppose the first update will set this properly.
+		m_pGameObject->GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Visible | EEntityUpdatePolicy_InRange); // we suppose the first update will set this properly.
 
 	if (m_commHandler.get())
 		m_commHandler->Reset();

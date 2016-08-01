@@ -4,7 +4,6 @@
 #define __VEHICLESEATACTIONORIENTATEBONETOVIEW_H__
 
 #include <CryAnimation/ICryAnimation.h>
-#include <CryEntitySystem/IComponent.h>
 
 struct ISkeletonPose;
 struct IAnimatedCharacter;

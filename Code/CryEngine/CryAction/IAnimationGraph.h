@@ -11,7 +11,6 @@
 #include <CrySystem/TimeValue.h>
 
 class CCryName;
-struct IGameObject;
 struct IAnimatedCharacter;
 
 const uint32 INVALID_ANIMATION_TOKEN = 0xffffffff;

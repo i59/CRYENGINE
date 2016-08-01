@@ -21,6 +21,8 @@
 
 #include <CryAISystem/VisionMapTypes.h>
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 // The variables needs to be carefully tuned to possible the player action speeds.
 static const float PLAYER_ACTION_SPRINT_RESET_TIME = 0.5f;
 static const float PLAYER_ACTION_JUMP_RESET_TIME = 1.3f;

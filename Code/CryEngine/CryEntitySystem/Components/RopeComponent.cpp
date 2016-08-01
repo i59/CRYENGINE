@@ -44,6 +44,17 @@ void CRopeComponent::Initialize(IEntity &entity)
 	m_pRopeRenderNode = (IRopeRenderNode*)gEnv->p3DEngine->CreateRenderNode(eERType_Rope);
 	m_pRopeRenderNode->SetEntityOwner(m_pEntity->GetId());
 	m_nSegmentsOrg = -1;
+
+	EnableEvent(ENTITY_EVENT_XFORM, 0, true);
+	EnableEvent(ENTITY_EVENT_HIDE, 0, true);
+	EnableEvent(ENTITY_EVENT_UNHIDE, 0, true);
+	EnableEvent(ENTITY_EVENT_ATTACH, 0, true);
+	EnableEvent(ENTITY_EVENT_DETACH, 0, true);
+	EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
+	EnableEvent(ENTITY_EVENT_LEVEL_LOADED, 0, true);
+	EnableEvent(ENTITY_EVENT_MATERIAL, 0, true);
+	EnableEvent(ENTITY_EVENT_RESET, 0, true);
+
 }
 
 //////////////////////////////////////////////////////////////////////////

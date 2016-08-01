@@ -294,6 +294,16 @@ void CAnimatedCharacter::PostInitialize()
 	m_proxiesInitialized = true;
 
 	GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Visible);
+
+	EnableEvent(ENTITY_EVENT_PRE_SERIALIZE, 0, true);
+	EnableEvent(ENTITY_EVENT_POST_SERIALIZE, 0, true);
+	EnableEvent(ENTITY_EVENT_ANIM_EVENT, 0, true);
+	EnableEvent(ENTITY_EVENT_BECOME_LOCAL_PLAYER, 0, true);
+	EnableEvent(ENTITY_EVENT_XFORM, 0, true);
+	EnableEvent(ENTITY_EVENT_SCRIPT_REQUEST_COLLIDERMODE, 0, true);
+	EnableEvent(ENTITY_EVENT_DONE, 0, true);
+	EnableEvent(ENTITY_EVENT_INIT, 0, true);
+	EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
 }
 
 void CAnimatedCharacter::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)

@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "FlowBaseNode.h"
-#include "../../GameObjects/GameObject.h"
 #include "IAnimationGraph.h"
 
 //--------------------------------------------------------------------------------
@@ -72,11 +71,7 @@ public:
 		if (pActInfo->pEntity == NULL)
 			return;
 
-		auto *pGameObject = pActInfo->pEntity->QueryComponent<CGameObject>();
-		if (pGameObject == NULL)
-			return;
-
-		IAnimatedCharacter* pAnimChar = (IAnimatedCharacter*)(pGameObject->QueryExtension("AnimatedCharacter"));
+		IAnimatedCharacter* pAnimChar = pActInfo->pEntity->QueryComponent<IAnimatedCharacter>();
 		if (pAnimChar == NULL)
 			return;
 

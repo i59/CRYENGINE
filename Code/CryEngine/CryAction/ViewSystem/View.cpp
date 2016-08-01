@@ -18,7 +18,7 @@
 #include <CrySystem/VR/IHMDManager.h>
 #include <ITimeDemoRecorder.h>
 #include "View.h"
-#include "GameObjects/GameObject.h"
+#include "EntityComponents/GameObject.h"
 #include "IGameSessionHandler.h"
 
 namespace
@@ -825,7 +825,7 @@ void CView::CreateAudioListener()
 			sTemp.Format("AudioListener(%d)", static_cast<int>(m_pAudioListener->GetId()));
 			m_pAudioListener->SetName(sTemp.c_str());
 
-			m_pAudioListener->CreateAudioComponent();
+			m_pAudioListener->AcquireExternalComponent<IEntityAudioComponent>();
 		}
 		else
 		{

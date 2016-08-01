@@ -81,6 +81,11 @@ int CPhysicsEventListener::OnPostStep(const EventPhys* pEvent)
 		if (auto *pPhysicsComponent = static_cast<CPhysicsComponent *>(pCEntity->QueryComponent<IEntityPhysicsComponent>()))
 			pPhysicsComponent->OnPhysicsPostStep(pPostStep);
 
+		SEntityEvent event(ENTITY_EVENT_PHYS_POSTSTEP);
+		event.nParam[0] = (INT_PTR)pEvent;
+
+		pCEntity->SendEvent(event);
+
 		if (auto *pRenderComponent = pCEntity->QueryComponent<IEntityRenderComponent>())
 		{
 			pRndNode = pRenderComponent->GetRenderNode();
@@ -208,6 +213,7 @@ int CPhysicsEventListener::OnStateChange(const EventPhys* pEvent)
 		{
 			SEntityEvent event(ENTITY_EVENT_PHYSICS_CHANGE_STATE);
 			event.nParam[0] = 1;
+			event.nParam[1] = (INT_PTR)pEvent;
 			pCEntity->SendEvent(event);
 			if (pStateChange->timeIdle >= CVar::es_FarPhysTimeout)
 			{
@@ -227,6 +233,7 @@ int CPhysicsEventListener::OnStateChange(const EventPhys* pEvent)
 		{
 			SEntityEvent event(ENTITY_EVENT_PHYSICS_CHANGE_STATE);
 			event.nParam[0] = 0;
+			event.nParam[1] = (INT_PTR)pEvent;
 			pCEntity->SendEvent(event);
 		}
 	}
@@ -545,8 +552,10 @@ IEntity* CEntity::UnmapAttachedChild(int& partId)
 	return this;
 }
 
-int CPhysicsEventListener::OnCollision(const EventPhys* pEvent)
+int CPhysicsEventListener::OnCollisionLogged(const EventPhys* pEvent)
 {
+	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ENTITY);
+
 	EventPhysCollision* pCollision = (EventPhysCollision*)pEvent;
 	SEntityEvent event;
 	CEntity* pEntitySrc = GetEntity(pCollision->pForeignData[0], pCollision->iForeignData[0]), * pChild,
@@ -591,6 +600,26 @@ int CPhysicsEventListener::OnCollision(const EventPhys* pEvent)
 	event.nParam[1] = 1;
 	if (pEntityTrg)
 		pEntityTrg->SendEvent(event);
+
+	return 1;
+}
+
+int CPhysicsEventListener::OnCollisionImmediate(const EventPhys* pEvent)
+{
+	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ENTITY);
+
+	const EventPhysCollision* pCollision = static_cast<const EventPhysCollision*>(pEvent);
+
+	/*SEntityEvent event(ENTITY_EVENT_COLLISION_IMMEDIATE);
+	event.nParam[0] = (INT_PTR)pEvent;
+
+	for (event.nParam[1] = 0; event.nParam[1] < 2; event.nParam[1]++)
+	{
+		if (auto *pEntity = gEnv->pEntitySystem->GetEntityFromPhysics(pCollision->pEntity[event.nParam[1]]))
+		{
+			//pEntity->SendEvent(event);
+		}
+	}*/
 
 	return 1;
 }
@@ -753,7 +782,8 @@ void CPhysicsEventListener::RegisterPhysicCallbacks()
 		m_pPhysics->AddEventClient(EventPhysCreateEntityPart::id, OnCreatePhysEntityPart, 0);
 		m_pPhysics->AddEventClient(EventPhysRemoveEntityParts::id, OnRemovePhysEntityParts, 1);
 		m_pPhysics->AddEventClient(EventPhysRevealEntityPart::id, OnRevealPhysEntityPart, 1);
-		m_pPhysics->AddEventClient(EventPhysCollision::id, OnCollision, 1, 1000.0f);
+		m_pPhysics->AddEventClient(EventPhysCollision::id, OnCollisionLogged, 1, 1000.0f);
+		m_pPhysics->AddEventClient(EventPhysCollision::id, OnCollisionImmediate, 0, 1000.0f);
 		m_pPhysics->AddEventClient(EventPhysJointBroken::id, OnJointBreak, 1);
 		m_pPhysics->AddEventClient(EventPhysPostPump::id, OnPostPump, 1);
 	}
@@ -772,7 +802,8 @@ void CPhysicsEventListener::UnregisterPhysicCallbacks()
 		m_pPhysics->RemoveEventClient(EventPhysCreateEntityPart::id, OnCreatePhysEntityPart, 0);
 		m_pPhysics->RemoveEventClient(EventPhysRemoveEntityParts::id, OnRemovePhysEntityParts, 1);
 		m_pPhysics->RemoveEventClient(EventPhysRevealEntityPart::id, OnRevealPhysEntityPart, 1);
-		m_pPhysics->RemoveEventClient(EventPhysCollision::id, OnCollision, 1);
+		m_pPhysics->RemoveEventClient(EventPhysCollision::id, OnCollisionLogged, 1);
+		m_pPhysics->RemoveEventClient(EventPhysCollision::id, OnCollisionImmediate, 0);
 		m_pPhysics->RemoveEventClient(EventPhysJointBroken::id, OnJointBreak, 1);
 		m_pPhysics->RemoveEventClient(EventPhysPostPump::id, OnPostPump, 1);
 		stl::free_container(m_physVisAreaUpdateVector);

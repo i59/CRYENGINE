@@ -132,7 +132,7 @@ bool CVehicleSeatActionRotateBone::Init(IVehicle* pVehicle, IVehicleSeat* pSeat,
 void CVehicleSeatActionRotateBone::Reset()
 {
 	// Enable PrePhysUpdate.
-	m_pVehicle->GetGameObject()->EnablePrePhysicsUpdate(ePPU_Always);
+	//m_pVehicle->GetGameObject()->EnablePrePhysicsUpdate(ePPU_Always);
 }
 
 void CVehicleSeatActionRotateBone::OnAction(const TVehicleActionId actionId, int activationMode, float value)

@@ -1629,6 +1629,9 @@ struct CTimeoutKillComponent : IEntityComponent
 	{
 		IEntityComponent::Initialize(entity);
 
+		EnableEvent(ENTITY_EVENT_TIMER, 0, true);
+		EnableEvent(ENTITY_EVENT_NOT_SEEN_TIMEOUT, 0, true);
+
 		m_pEntity->AddFlags(ENTITY_FLAG_NO_SAVE);
 	}
 };

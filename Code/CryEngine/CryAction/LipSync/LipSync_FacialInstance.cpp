@@ -104,7 +104,7 @@ CLipSync_FacialInstance::~CLipSync_FacialInstance()
 void CLipSync_FacialInstance::InjectLipSyncProvider()
 {
 	IEntity* pEntity = GetEntity();
-	auto &audioComponent = pEntity->CreateAudioComponent();
+	auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 	m_pLipSyncProvider.reset(new CLipSyncProvider_FacialInstance(pEntity->GetId()));
 	REINST(add SetLipSyncProvider to interface)
 	//pSoundProxy->SetLipSyncProvider(m_pLipSyncProvider);

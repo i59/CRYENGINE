@@ -689,7 +689,7 @@ bool GetPhysicalVelocity(Velocity3& Vel, IEntity* pEnt, const Vec3& vPos)
 	return false;
 }
 
-void CParticleEmitter::OnEntityEvent(IEntity* pEntity, SEntityEvent const& event)
+void CParticleEmitter::OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)
 {
 	switch (event.event)
 	{

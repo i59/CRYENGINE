@@ -4,12 +4,15 @@
 
 #include <CryEntitySystem/IEntity.h>
 #include <CryEntitySystem/IEntitySystem.h>
+
 #include <CryNetwork/ISerialize.h>
 #include <CryAudio/IAudioSystem.h>
-#include "IGameObjectSystem.h"
-#include "IGameObject.h"
 #include "IMovementController.h"
 #include "VehicleSystem/VehicleParams.h"
+
+#include <CryEntitySystem/INetworkedEntityComponent.h>
+
+#include <CryGame/IGameFramework.h>
 
 struct IGameFramework;
 struct SViewParams;
@@ -658,8 +661,10 @@ struct IVehicleAction
 //   Vehicle implementation interface
 // Description:
 //   Interface used to implement a vehicle.
-struct IVehicle : public IGameObjectExtension
+struct IVehicle : public CNetworkedEntityComponent<IEntityComponent>
 {
+	DECLARE_COMPONENT("Vehicle", 0xF78F1908C69E4EFF, 0x995228B8B12B066D)
+
 	// Summary:
 	//   Reset vehicle
 	// Description:
@@ -841,13 +846,17 @@ struct IVehicle : public IGameObjectExtension
 	virtual SParticleParams*            GetParticleParams() = 0;
 	virtual const SVehicleDamageParams& GetDamageParams() const = 0;
 
-	uint16                              GetChannelId()
+	uint16 GetChannelId() const
 	{
-		return GetGameObject()->GetChannelId();
+		if (auto *pNetworkComponent = GetEntity()->QueryComponent<IGameObject>())
+			return pNetworkComponent->GetChannelId();
+
+		return 0;
 	}
 	void SetChannelId(uint16 id)
 	{
-		GetGameObject()->SetChannelId(id);
+		if (auto *pNetworkComponent = GetEntity()->QueryComponent<IGameObject>())
+			return pNetworkComponent->SetChannelId(id);
 	}
 
 	enum EVehicleUpdateSlot
@@ -860,6 +869,8 @@ struct IVehicle : public IGameObjectExtension
 
 		eVUS_Last = eVUS_AIControlled
 	};
+
+	unsigned int m_slotUpdatePolicies[eVUS_Last];
 
 	enum EVehicleObjectUpdate
 	{
@@ -937,9 +948,6 @@ struct IVehicle : public IGameObjectExtension
 
 	// Returns collision damage multiplayer
 	virtual float GetSelfCollisionMult(const Vec3& velocity, const Vec3& normal, int partId, EntityId colliderId) const = 0;
-
-	// Is vehicle probably distant from the player?
-	virtual bool IsProbablyDistant() const = 0;
 
 	virtual bool IsIndestructable() const = 0;
 	// Sound parameters structure.
@@ -1654,12 +1662,6 @@ struct IVehiclePart
 	virtual const AABB& GetLocalBounds() = 0;
 
 	// Summary:
-	//   Obsolete function
-	// Description:
-	//   Obsolete. Will be changed soon.
-	virtual void RegisterSerializer(IGameObjectExtension* pGameObjectExt) = 0;
-
-	// Summary:
 	//   Retrieve type id
 	virtual int GetType() = 0;
 
@@ -1996,12 +1998,12 @@ typedef _smart_ptr<IVehicleIterator> IVehicleIteratorPtr;
 //   Interface used to implement the vehicle system.
 struct IVehicleSystem
 {
-	DECLARE_GAMEOBJECT_FACTORY(IVehicleMovement);
-	DECLARE_GAMEOBJECT_FACTORY(IVehicleView);
-	DECLARE_GAMEOBJECT_FACTORY(IVehiclePart);
-	DECLARE_GAMEOBJECT_FACTORY(IVehicleDamageBehavior);
-	DECLARE_GAMEOBJECT_FACTORY(IVehicleSeatAction);
-	DECLARE_GAMEOBJECT_FACTORY(IVehicleAction);
+	DECLARE_FACTORY(IVehicleMovement);
+	DECLARE_FACTORY(IVehicleView);
+	DECLARE_FACTORY(IVehiclePart);
+	DECLARE_FACTORY(IVehicleDamageBehavior);
+	DECLARE_FACTORY(IVehicleSeatAction);
+	DECLARE_FACTORY(IVehicleAction);
 
 	virtual ~IVehicleSystem(){}
 	virtual bool Init() = 0;
@@ -2050,8 +2052,6 @@ struct IVehicleSystem
 	virtual IVehicle*                        GetVehicle(EntityId entityId) = 0;
 
 	virtual IVehicle*                        GetVehicleByChannelId(uint16 channelId) = 0;
-
-	virtual bool                             IsVehicleClass(const char* name) const = 0;
 
 	virtual IVehicleMovement*                CreateVehicleMovement(const string& name) = 0;
 	virtual IVehicleView*                    CreateVehicleView(const string& name) = 0;

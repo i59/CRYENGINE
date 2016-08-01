@@ -109,7 +109,7 @@ void CVehicleSeatActionSound::ExecuteTrigger(const AudioControlId& controlID)
 	if (m_pSeat)
 		m_pSeat->ChangedNetworkState(CVehicle::ASPECT_SEAT_ACTION);
 
-	auto &audioComponent = m_pVehicle->GetEntity()->CreateAudioComponent();
+	auto &audioComponent = m_pVehicle->GetEntity()->AcquireExternalComponent<IEntityAudioComponent>();
 
 	audioComponent.ExecuteTrigger(controlID);
 
@@ -135,7 +135,7 @@ void CVehicleSeatActionSound::StopTrigger()
 	}
 	else if (m_audioTriggerStartId != INVALID_AUDIO_CONTROL_ID)
 	{
-		auto &audioComponent = m_pVehicle->GetEntity()->CreateAudioComponent();
+		auto &audioComponent = m_pVehicle->GetEntity()->AcquireExternalComponent<IEntityAudioComponent>();
 
 		audioComponent.StopTrigger(m_audioTriggerStartId);
 	}

@@ -26,6 +26,8 @@
 #include <CryAISystem/INavigationSystem.h>
 #include <CrySystem/VR/IHMDManager.h>
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 #ifdef ENABLE_BENCHMARK_SENSOR
 	#include <IBenchmarkFramework.h>
 	#include <IBenchmarkRendererSensorManager.h>

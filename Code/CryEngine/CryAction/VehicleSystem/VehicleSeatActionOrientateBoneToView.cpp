@@ -64,7 +64,7 @@ bool CVehicleSeatActionOrientateBoneToView::Init(IVehicle* pVehicle, IVehicleSea
 void CVehicleSeatActionOrientateBoneToView::Reset()
 {
 	// Enable PrePhysUpdate.
-	m_pVehicle->GetGameObject()->EnablePrePhysicsUpdate(ePPU_Always);
+	//m_pVehicle->GetGameObject()->EnablePrePhysicsUpdate(ePPU_Always);
 };
 
 void CVehicleSeatActionOrientateBoneToView::StartUsing(EntityId passengerId)

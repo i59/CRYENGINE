@@ -25,7 +25,6 @@
 #endif
 
 #include "CryAction.h"
-#include "IGameObject.h"
 #include "IItemSystem.h"
 #include <CryEntitySystem/IEntitySystem.h>
 
@@ -106,8 +105,7 @@ struct TRMIInventory_EquipmentPack
 	}
 };
 
-class CInventory :
-	public CGameObjectExtensionHelper<CInventory, IInventory>
+class CInventory : public IInventory
 {
 	struct SAmmoInfo
 	{
@@ -156,27 +154,15 @@ public:
 	CInventory();
 	virtual ~CInventory();
 
-	//IGameObjectExtension
-	virtual bool                 Init(IGameObject* pGameObject);
-	virtual void                 InitClient(int channelId)          {};
-	virtual void                 PostInit(IGameObject* pGameObject) {};
-	virtual void                 PostInitClient(int channelId)      {};
-	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params);
-	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params);
-	virtual void                 Release()                                                                     { delete this; };
-	virtual void                 FullSerialize(TSerialize ser);
-	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; }
-	virtual void                 PostSerialize();
-	virtual void                 SerializeSpawnInfo(TSerialize ser)                                            {}
-	virtual ISerializableInfoPtr GetSpawnInfo()                                                                { return 0; }
-	virtual void                 Update(SEntityUpdateContext& ctx, int)                                        {}
-	virtual void                 PostUpdate(float frameTime)                                                   {};
-	virtual void                 PostRemoteSpawn()                                                             {};
-	virtual void                 HandleEvent(const SGameObjectEvent&)                                          {};
-	virtual void                 ProcessEvent(const SEntityEvent&);
-	virtual void                 SetChannelId(uint16 id)                                                       {};
-	virtual void                 SetAuthority(bool auth)                                                       {};
-	//~IGameObjectExtension
+	// IEntityComponent
+	virtual void PostInitialize() override;
+	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
+
+	virtual void ProcessEvent(const SEntityEvent& event) override;
+
+	virtual bool NeedSerialize() override { return true; }
+	virtual void Serialize(TSerialize ser) override;
+	// ~IEntityComponent
 
 	//IInventory
 	virtual bool                AddItem(EntityId id);

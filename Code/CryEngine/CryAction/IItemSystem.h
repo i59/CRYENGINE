@@ -18,12 +18,13 @@
 
 #pragma once
 
-#include "IGameObject.h"
 #include "IItem.h"
 #include "IWeapon.h"
 #include <CryCore/BoostHelpers.h>
 #include "IActorSystem.h"
 #include <CryFlowGraph/IFlowSystem.h>
+
+#include <CryEntitySystem/INetworkedEntityComponent.h>
 
 enum EItemParamMapTypes
 {
@@ -176,8 +177,10 @@ private:
 	}
 };
 
-struct IInventory : public IGameObjectExtension
+struct IInventory : public CNetworkedEntityComponent<IEntityComponent>
 {
+	DECLARE_COMPONENT("Inventory", 0xF3E752025845404B, 0xA9F56A62BD36F6AD)
+
 	enum EInventorySlots
 	{
 		eInventorySlot_Weapon = 0,

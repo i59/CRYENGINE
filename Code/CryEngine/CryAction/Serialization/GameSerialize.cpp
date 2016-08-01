@@ -478,20 +478,6 @@ void CGameSerialize::ReserveEntityIds(const TBasicEntityDatas& basicEntityData)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CGameSerialize::FlushActivatableGameObjectExtensions()
-{
-	IEntityItPtr pIt = gEnv->pEntitySystem->GetEntityIterator();
-
-	pIt->MoveFirst();
-	while (!pIt->IsEnd())
-	{
-		const IEntity* pEntity = pIt->Next();
-		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
-			pGameObject->FlushActivatableExtensions();
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CGameSerialize::DeleteDynamicEntities(const TBasicEntityDatas& basicEntityData)
 {
 	IEntitySystem* pEntitySystem = gEnv->pEntitySystem;
@@ -760,7 +746,6 @@ ELoadGameResult CGameSerialize::LoadGame(CCryAction* pCryAction, const char* met
 
 		// delete any left-over entities
 		pEntitySystem->DeletePendingEntities();
-		FlushActivatableGameObjectExtensions();
 		pCryAction->FlushBreakableObjects();
 
 		// Clean all entities that should not be in system before loading entities from savegame.
@@ -1576,9 +1561,6 @@ bool CGameSerialize::LoadEntities(SLoadEnvironment& loadEnv, std::unique_ptr<TSe
 	// handle (with different salts). if we reserve before deletion, we would actually delete our reserved handle
 
 	{
-		FlushActivatableGameObjectExtensions();
-		loadEnv.m_checkpoint.Check("FlushExtensions");
-
 		loadEnv.m_pCryAction->FlushBreakableObjects();
 		loadEnv.m_checkpoint.Check("FlushBreakables");
 
@@ -1626,12 +1608,6 @@ bool CGameSerialize::LoadEntities(SLoadEnvironment& loadEnv, std::unique_ptr<TSe
 	}
 
 	loadEnv.m_checkpoint.Check("Reposition");
-
-	//~ entity creation/deletion/repositioning
-
-	FlushActivatableGameObjectExtensions();
-	loadEnv.m_checkpoint.Check("FlushExtensions2");
-
 	return true;
 }
 

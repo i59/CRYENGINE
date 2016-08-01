@@ -226,7 +226,7 @@ bool CVehicleAnimation::StartAnimation()
 
 			if (!animState.sound.empty())
 			{
-				auto &audioComponent = pEntity->CreateAudioComponent();
+				auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 				REINST("send an animation start event?");
 				/*int soundFlags = FLAG_SOUND_DEFAULT_3D;

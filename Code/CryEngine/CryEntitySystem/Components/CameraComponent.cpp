@@ -21,6 +21,9 @@ void CCameraComponent::Initialize(IEntity &entity)
 	IEntityComponent::Initialize(entity);
 
 	UpdateMaterialCamera();
+
+	EnableEvent(ENTITY_EVENT_INIT, 0, true);
+	EnableEvent(ENTITY_EVENT_XFORM, 0, true);
 }
 
 //////////////////////////////////////////////////////////////////////////

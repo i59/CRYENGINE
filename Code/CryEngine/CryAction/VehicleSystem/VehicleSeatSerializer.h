@@ -14,40 +14,27 @@
 #ifndef __VEHICLESEATSERIALIZER_H__
 #define __VEHICLESEATSERIALIZER_H__
 
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
+
+#include <CryEntitySystem/INetworkedEntityComponent.h>
 
 class CVehicle;
 class CVehicleSeat;
 
-class CVehicleSeatSerializer
-	: public CGameObjectExtensionHelper<CVehicleSeatSerializer, IGameObjectExtension>
+class CVehicleSeatSerializer : public CNetworkedEntityComponent<IEntityComponent>
 {
 public:
 
 	CVehicleSeatSerializer();
 	virtual ~CVehicleSeatSerializer();
 
-	virtual bool                 Init(IGameObject* pGameObject);
-	virtual void                 InitClient(int channelId);
-	virtual void                 PostInit(IGameObject*)                                                          {}
-	virtual void                 PostInitClient(int channelId)                                                   {};
-	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params);
-	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) {}
-	virtual void                 Release()                                                                       { delete this; }
+	// IEntityComponent
+	virtual void PostInitialize() override;
 
-	virtual void                 FullSerialize(TSerialize ser);
-	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags);
-	virtual void                 PostSerialize() {}
-	virtual void                 SerializeSpawnInfo(TSerialize ser);
-	virtual ISerializableInfoPtr GetSpawnInfo();
-	virtual void                 Update(SEntityUpdateContext& ctx, int);
-	virtual void                 HandleEvent(const SGameObjectEvent& event);
-	virtual void                 ProcessEvent(const SEntityEvent& event)  {};
-	virtual void                 SetChannelId(uint16 id)            {};
-	virtual void                 SetAuthority(bool auth)            {};
-	virtual void                 PostUpdate(float frameTime)        { CRY_ASSERT(false); };
-	virtual void                 PostRemoteSpawn()                  {};
-	virtual void                 GetMemoryUsage(ICrySizer* s) const { s->Add(*this); }
+	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override;
+
+	virtual ISerializableInfoPtr GetSpawnInfo() override;
+	// ~IEntityComponent
 
 	void                         SetVehicle(CVehicle* pVehicle);
 	void                         SetSeat(CVehicleSeat* pSeat);

@@ -146,7 +146,7 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	void SetOnProxy(IEntity* const pEntity, float const value)
 	{
-		auto &audioComponent = pEntity->CreateAudioComponent();
+		auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 		audioComponent.SetRtpcValue(m_requestData.audioRtpcId, value);
 	}

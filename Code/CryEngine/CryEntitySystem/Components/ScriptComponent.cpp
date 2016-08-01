@@ -60,6 +60,32 @@ void CScriptComponent::PostInitialize()
 {
 	// Call Init.
 	CallInitEvent(false);
+
+	EnableEvent(ENTITY_EVENT_ANIM_EVENT, 0, true);
+	EnableEvent(ENTITY_EVENT_RESET, 0, true);
+	EnableEvent(ENTITY_EVENT_INIT, 0, true);
+	EnableEvent(ENTITY_EVENT_TIMER, 0, true);
+	EnableEvent(ENTITY_EVENT_XFORM, 0, true);
+	EnableEvent(ENTITY_EVENT_ATTACH, 0, true);
+	EnableEvent(ENTITY_EVENT_ATTACH_THIS, 0, true);
+	EnableEvent(ENTITY_EVENT_DETACH, 0, true);
+	EnableEvent(ENTITY_EVENT_DETACH_THIS, 0, true);
+	EnableEvent(ENTITY_EVENT_ENTERAREA, 0, true);
+	EnableEvent(ENTITY_EVENT_MOVEINSIDEAREA, 0, true);
+	EnableEvent(ENTITY_EVENT_ENTERNEARAREA, 0, true);
+	EnableEvent(ENTITY_EVENT_LEAVENEARAREA, 0, true);
+	EnableEvent(ENTITY_EVENT_MOVENEARAREA, 0, true);
+	EnableEvent(ENTITY_EVENT_CROSS_AREA, 0, true);
+	EnableEvent(ENTITY_EVENT_PHYS_BREAK, 0, true);
+	EnableEvent(ENTITY_EVENT_SOUND_DONE, 0, true);
+	EnableEvent(ENTITY_EVENT_LEVEL_LOADED, 0, true);
+	EnableEvent(ENTITY_EVENT_START_LEVEL, 0, true);
+	EnableEvent(ENTITY_EVENT_START_GAME, 0, true);
+	EnableEvent(ENTITY_EVENT_PRE_SERIALIZE, 0, true);
+	EnableEvent(ENTITY_EVENT_POST_SERIALIZE, 0, true);
+	EnableEvent(ENTITY_EVENT_HIDE, 0, true);
+	EnableEvent(ENTITY_EVENT_UNHIDE, 0, true);
+	EnableEvent(ENTITY_EVENT_XFORM_FINISHED_EDITOR, 0, true);
 }
 
 //////////////////////////////////////////////////////////////////////////

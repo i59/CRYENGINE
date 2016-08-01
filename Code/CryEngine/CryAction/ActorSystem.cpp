@@ -17,8 +17,6 @@
 #include <CryString/CryPath.h>
 #include "CryAction.h"
 
-#include "GameObjects/GameObject.h"
-
 //------------------------------------------------------------------------
 void CActorSystem::DemoSpectatorSystem::SwitchSpectator(TActorMap* pActors, EntityId id)
 {

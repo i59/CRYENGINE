@@ -55,14 +55,10 @@ void CVoiceListener::Release()
 	delete this;
 }
 
-void CVoiceListener::Update(SEntityUpdateContext& ctx, int updateSlot)
+void CVoiceListener::Update(SEntityUpdateContext& ctx)
 {
 	// this will happen whenever entity is within range (150m).
 	UpdateSound3dPan();
-}
-
-void CVoiceListener::HandleEvent(const SGameObjectEvent& event)
-{
 }
 
 void CVoiceListener::ProcessEvent(const SEntityEvent& evt)

@@ -83,7 +83,7 @@ public:
 					if (pActInfo->pEntity)
 					{
 						const string& signalName = GetPortString(pActInfo, eIn_SignalName);
-						auto &dynamicResponseComponent = pActInfo->pEntity->CreateDynamicResponseComponent();
+						auto &dynamicResponseComponent = pActInfo->pEntity->AcquireExternalComponent<IEntityDynamicResponseComponent>();
 
 						SET_DRS_USER_SCOPED("SendDrsSignal FlowGraph");
 
@@ -217,7 +217,7 @@ public:
 					const string& signalName = GetPortString(pActInfo, eIn_SignalName);
 					if (pActInfo->pEntity)
 					{
-						auto &dynamicResponseComponent = pActInfo->pEntity->CreateDynamicResponseComponent();
+						auto &dynamicResponseComponent = pActInfo->pEntity->AcquireExternalComponent<IEntityDynamicResponseComponent>();
 
 						gEnv->pDynamicResponseSystem->CancelSignalProcessing(signalName, dynamicResponseComponent.GetResponseActor());
 					}

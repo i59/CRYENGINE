@@ -20,7 +20,6 @@
 #include "CryAction.h"
 #include "GameRulesSystem.h"
 #include <CryScriptSystem/ScriptHelpers.h>
-#include "GameObjects/GameObject.h"
 #include "ScriptRMI.h"
 #include <CryPhysics/IPhysics.h>
 #include "PhysicsSync.h"
@@ -37,6 +36,8 @@
 #include "CryActionCVars.h"
 #include <CryNetwork/INetwork.h>
 #include <CryCore/Platform/IPlatformOS.h>
+
+#include "EntityComponents/GameObject.h"
 
 // context establishment tasks
 #include <CryNetwork/NetHelpers.h>
@@ -136,7 +137,8 @@ CGameContext::CGameContext(CCryAction* pFramework, CScriptRMI* pScriptRMI, CActi
 	m_flags |= eGSF_ImmersiveMultiplayer;
 
 	m_pPhysicalWorld = gEnv->pPhysicalWorld;
-	m_pGame->AddGlobalPhysicsCallback(eEPE_OnCollisionLogged, OnCollision, 0);
+
+	m_pPhysicalWorld->AddEventClient(EventPhysCollision::id, OnCollision, 1);
 
 	gEnv->pNetwork->AddHostMigrationEventListener(this, "CGameContext", ELPT_PostEngine);
 
@@ -167,7 +169,7 @@ CGameContext::~CGameContext()
 	if (m_pEntitySystem)
 		m_pEntitySystem->RemoveSink(this);
 
-	m_pGame->RemoveGlobalPhysicsCallback(eEPE_OnCollisionLogged, OnCollision, 0);
+	m_pPhysicalWorld->RemoveEventClient(EventPhysCollision::id, OnCollision, 1);
 
 	m_pScriptRMI->SetContext(NULL);
 #ifndef OLD_VOICE_SYSTEM_DEPRECATED
@@ -1497,7 +1499,7 @@ void CGameContext::OnEvent(IEntity* pEntity, const SEntityEvent& event)
 // physics synchronization
 //
 
-void CGameContext::OnCollision(const EventPhys* pEvent, void*)
+int CGameContext::OnCollision(const EventPhys* pEvent)
 {
 	const EventPhysCollision* pCEvent = static_cast<const EventPhysCollision*>(pEvent);
 	//IGameObject *pSrc = pCollision->iForeignData[0]==PHYS_FOREIGN_ID_ENTITY ? s_this->GetEntityGameObject((IEntity*)pCollision->pForeignData[0]):0;
@@ -1506,10 +1508,12 @@ void CGameContext::OnCollision(const EventPhys* pEvent, void*)
 	IEntity* pEntityTrg = GetEntity(pCEvent->iForeignData[1], pCEvent->pForeignData[1]);
 
 	if (!pEntitySrc || !pEntityTrg)
-		return;
+		return 1;
 
 	s_pGameContext->m_pNetContext->PulseObject(pEntitySrc->GetId(), 'bump');
 	s_pGameContext->m_pNetContext->PulseObject(pEntityTrg->GetId(), 'bump');
+
+	return 1;
 }
 
 //
@@ -2002,12 +2006,6 @@ void CGameContext::PlayerIdSet(EntityId id)
 
 		SEntityEvent event(ENTITY_EVENT_BECOME_LOCAL_PLAYER);
 		pEntity->SendEvent(event);
-
-		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
-		{
-			SGameObjectEvent goe(eGFE_BecomeLocalPlayer, eGOEF_ToAll);
-			pGameObject->SendEvent(goe);
-		}
 	}
 }
 

@@ -33,6 +33,8 @@ void CDynamicResponseComponent::Initialize(IEntity &entity)
 	}
 	SET_DRS_USER_SCOPED("DrsProxy Initialize");
 	m_pResponseActor->GetLocalVariables()->SetVariableValue("Name", CHashedString(szEntityName));
+
+	EnableEvent(ENTITY_EVENT_RESET, 0, true);
 }
 
 //////////////////////////////////////////////////////////////////////////

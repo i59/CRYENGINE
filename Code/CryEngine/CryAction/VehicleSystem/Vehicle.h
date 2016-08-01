@@ -23,8 +23,6 @@
 #include "VehicleDamages.h"
 #include <CryCore/Containers/CryListenerSet.h>
 
-#include <CryEntitySystem/IComponent.h>
-
 #include "Animation/VehicleAnimationComponent.h"
 
 class CEntityObject;
@@ -127,7 +125,7 @@ struct SDebugClientPredictData
 #endif
 
 class CVehicle :
-	public CGameObjectExtensionHelper<CVehicle, IVehicle>,
+	public IVehicle,
 	public CVehicleDamages
 {
 public:
@@ -176,21 +174,16 @@ public:
 		eVPhys_DemoRecording
 	};
 
-	//IEntityEvent
-	virtual ComponentEventPriority GetEventPriority(const int eventID) const;
-	virtual void                   ProcessEvent(const SEntityEvent& entityEvent);
-	//~IEntityEvent
+	// IEntityComponent
+	virtual void PostInitialize() override;
+
+	virtual void ProcessEvent(const SEntityEvent& entityEvent);
+
+	virtual void GetMemoryUsage(ICrySizer* s) const override;
+	// ~IEntityComponent
 
 	// IVehicle
-	virtual bool Init(IGameObject* pGameObject);
-	virtual void InitClient(int channelId) {};
-	virtual void PostInit(IGameObject* pGameObject);
-	virtual void PostInitClient(int channelId);
-	virtual void Reset(bool enterGame);
-	virtual bool ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params);
-	virtual void PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) {}
-	virtual void Release()                                                                       { delete this; }
-	virtual void GetMemoryUsage(ICrySizer* pSizer) const;
+	virtual void Reset(bool enterGame) override;
 
 	virtual void SetAmmoCapacity(IEntityClass* pAmmoType, int capacity);
 	virtual void SetAmmoCount(IEntityClass* pAmmoType, int amount);
@@ -206,13 +199,12 @@ public:
 
 	virtual SEntityPhysicalizeParams&   GetPhysicsParams() { return m_physicsParams; }
 
-	virtual void                        HandleEvent(const SGameObjectEvent&);
 	virtual void                        PostUpdate(float frameTime);
 	virtual void                        PostRemoteSpawn() {};
 
 	virtual const SVehicleStatus&       GetStatus() const;
 
-	virtual void                        Update(SEntityUpdateContext& ctx, int nSlot);
+	virtual void                        Update(SEntityUpdateContext& ctx);
 	virtual void                        UpdateView(SViewParams& viewParams, EntityId playerId = 0);
 	virtual void                        UpdatePassenger(float frameTime, EntityId playerId = 0);
 
@@ -222,7 +214,6 @@ public:
 	virtual void                        FullSerialize(TSerialize ser);
 	virtual bool                        NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags);
 	virtual void                        PostSerialize();
-	virtual void                        SerializeSpawnInfo(TSerialize ser);
 	virtual ISerializableInfoPtr        GetSpawnInfo();
 	virtual void                        OnAction(const TVehicleActionId actionId, int activationMode, float value, EntityId callerId);
 	virtual void                        OnHit(const HitInfo& hitInfo, IVehicleComponent* pHitComponent = NULL);
@@ -320,12 +311,13 @@ public:
 
 	virtual float           GetSelfCollisionMult(const Vec3& velocity, const Vec3& normal, int partId, EntityId colliderId) const;
 
-	// Is vehicle probably distant from the player?
-	virtual bool IsProbablyDistant() const;
-
 	virtual void OffsetPosition(const Vec3& delta);
 
 	// ~IVehicle
+
+	// IGameObjectNetListener
+	virtual void PostInitClient(int channelId) override;
+	// ~IGameObjectNetListener
 
 	void OnSpawnComplete();
 
@@ -660,13 +652,12 @@ protected:
 
 	void                             LoadParts(const CVehicleParams& table, IVehiclePart* pParent, SPartInitInfo& initInfo);
 
-	void                             OnPhysPostStep(const EventPhys* pEvent, bool logged);
+	void                             OnPhysPostStep(const EventPhysPostStep* pEvent, bool logged);
 	void                             OnPhysStateChange(EventPhysStateChange* pEvent);
 	void                             OnMaterialLayerChanged(const SEntityEvent& event);
 	bool                             InitParticles(const CVehicleParams& table);
 	void                             InitModification(const CVehicleParams& data, const char* modification);
 	void                             OnTimer(int timerId);
-	void                             CheckDisableUpdate(int slot);
 	void                             ProcessFlipped();
 
 	void                             UpdateStatus(const float deltaTime);
@@ -789,6 +780,8 @@ protected:
 	bool                       m_hasAuthority;
 
 	float                      m_physUpdateTime;
+
+	bool					   m_bVisible;
 
 	/*
 	   struct SSharedParams : public ISharedParams

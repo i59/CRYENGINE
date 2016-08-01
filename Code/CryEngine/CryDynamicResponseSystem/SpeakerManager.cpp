@@ -12,6 +12,8 @@
 #include <CryGame/IGame.h>
 #include "DialogLineDatabase.h"
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 namespace
 {
 static const uint32 s_attachmentPosName = CCrc32::ComputeLowercase("voice");
@@ -264,7 +266,7 @@ bool CSpeakerManager::StartSpeaking(DRS::IResponseActor* pIActor, const CHashedS
 		{
 			if (priority > activateSpeaker.priority || (m_samePrioCancelsLinesCVar != 0 && priority >= activateSpeaker.priority && lineID != activateSpeaker.lineID))  //if the new line is not less important, stop the old one
 			{
-				auto &audioComponent = pEntity->CreateAudioComponent();
+				auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 				//if someone is waiting for this line to finish, and now we are replacing that line, we have to remove the queued line as well
 				for (QueuedSpeakerList::iterator itQueued = m_queuedSpeakers.begin(); itQueued != m_queuedSpeakers.end(); )
@@ -630,7 +632,7 @@ void CryDRS::CSpeakerManager::StartSpeaking(SSpeakInfo* pSpeakerInfoToUse)
 
 	if (bHasAudioAsset)
 	{
-		auto &audioComponent = pSpeakerInfoToUse->pEntity->CreateAudioComponent();
+		auto &audioComponent = pSpeakerInfoToUse->pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 		if (m_audioRtpcIdLocal != INVALID_AUDIO_CONTROL_ID)
 		{

@@ -9,11 +9,6 @@
 #include <CryScriptSystem/ScriptHelpers.h>
 #include <IViewSystem.h>
 
-// FIXME: Cell SDK GCC bug workaround.
-#ifndef __IGAMEOBJECTSYSTEM_H__
-	#include "IGameObjectSystem.h"
-#endif
-
 class CCryAction;
 
 class CScriptBind_Action :
@@ -60,11 +55,6 @@ public:
 	//! <code>Action.GetPlayerList()</code>
 	//! <description>Checks the current players list.</description>
 	int GetPlayerList(IFunctionHandler* pH);
-
-	//! <code>Action.IsGameObjectProbablyVisible( gameObject )</code>
-	//!		<param name="gameObject">Object that we want to check.</param>
-	//! <returns>true if an object is probably visible.</returns>
-	int IsGameObjectProbablyVisible(IFunctionHandler* pH, ScriptHandle gameObject);
 
 	//! <code>Action.ActivateEffect( name )</code>
 	//!		<param name="name">Name of the effect.</param>
@@ -114,12 +104,6 @@ public:
 	//! <returns>true if the channel is special.</returns>
 	int IsChannelSpecial(IFunctionHandler* pH);
 
-	//! <code>Action.ForceGameObjectUpdate( entityId, force )</code>
-	//!		<param name="entityId">Identifier for the entity.</param>
-	//!		<param name="force">True to force the update, false otherwise.</param>
-	//! <description>Forces the game object to be updated.</description>
-	int ForceGameObjectUpdate(IFunctionHandler* pH, ScriptHandle entityId, bool force);
-
 	//! <code>Action.CreateGameObjectForEntity( entityId )</code>
 	//!		<param name="entityId">Identifier for the entity.</param>
 	//! <description>Creates a game object for the specified entity.</description>
@@ -129,13 +113,6 @@ public:
 	//!		<param name="entityId">Identifier for the entity.</param>
 	//! <description>Binds game object to the network.</description>
 	int BindGameObjectToNetwork(IFunctionHandler* pH, ScriptHandle entityId);
-
-	//! <code>Action.ActivateExtensionForGameObject( entityId, extension, activate )</code>
-	//!		<param name="entityId">Identifier for the entity.</param>
-	//!		<param name="extension">Extension name.</param>
-	//!		<param name="activate">True to activate the extension, false to deactivate it.</param>
-	//! <description>Activates a specified extension for a game object.</description>
-	int ActivateExtensionForGameObject(IFunctionHandler* pH, ScriptHandle entityId, const char* extension, bool activate);
 
 	//! <code>Action.SetNetworkParent( entityId, parentId )</code>
 	//!		<param name="entityId">Identifier for the entity.</param>

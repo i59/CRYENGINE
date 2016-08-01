@@ -31,7 +31,7 @@ class CEntity;
 struct ICVar;
 struct IPhysicalEntity;
 class IComponent;
-class CComponentEventDistributer;
+class CComponentEventDistributor;
 class CEntityClassRegistry;
 class CScriptBind_Entity;
 class CPhysicsEventListener;
@@ -134,7 +134,7 @@ public:
 	virtual void                  RemoveEntity(EntityId entity, bool bForceRemoveNow = false) override;
 	virtual uint32                GetNumEntities() const override;
 	virtual IEntityIt*            GetEntityIterator() override;
-	virtual void                  SendEventViaEntityEvent(IEntity* piEntity, SEntityEvent& event) override;
+	virtual void                  SendEventViaEntityEvent(IEntity* piEntity, const SEntityEvent& event) override;
 	virtual void                  SendEventToAll(SEntityEvent& event) override;
 	virtual int                   QueryProximity(SEntityProximityQuery& query) override;
 	virtual void                  ResizeProximityGrid(int nWidth, int nHeight) override;
@@ -221,7 +221,7 @@ public:
 	virtual void                      CloneHeldLayerEntities(const char* pLayerName, const Vec3& localOffset, const Matrix34& l2w, const char** pExcludeLayers = NULL, int numExcludeLayers = 0) override;
 	virtual void                      ReleaseHeldEntities() override;
 
-	ILINE CComponentEventDistributer* GetEventDistributer() { return m_pEventDistributer; }
+	ILINE CComponentEventDistributor* GetEventDistributor() { return m_pEventDistributor; }
 
 	virtual bool                      ExtractArcheTypeLoadParams(XmlNodeRef& entityNode, SEntitySpawnParams& spawnParams) const override;
 	virtual bool                      ExtractEntityLoadParams(XmlNodeRef& entityNode, SEntitySpawnParams& spawnParams) const override;
@@ -236,8 +236,6 @@ public:
 
 	// Puts entity into active list.
 	void ActivateEntity(CEntity* pEntity, bool bActivate);
-	void ActivatePrePhysicsUpdateForEntity(CEntity* pEntity, bool bActivate);
-	bool IsPrePhysicsActive(CEntity* pEntity);
 	void OnEntityEvent(CEntity* pEntity, const SEntityEvent& event);
 
 	// Access to class that binds script to entity functions.
@@ -278,9 +276,6 @@ public:
 
 	virtual void                     PurgeDeferredCollisionEvents(bool bForce = false) override;
 
-	void                             ComponentRegister(EntityId id, IComponentPtr pComponent, const int flags);
-	virtual void                     ComponentEnableEvent(const EntityId id, const int eventID, const bool enable) override;
-
 	virtual void                     DebugDraw() override;
 
 	virtual bool                     EntitiesUseGUIDs() const override                { return m_bEntitiesUseGUIDs; }
@@ -289,12 +284,13 @@ public:
 	virtual IBSPTree3D*              CreateBSPTree3D(const IBSPTree3D::FaceList& faceList) override;
 	virtual void                     ReleaseBSPTree3D(IBSPTree3D*& pTree) override;
 
+	virtual const SEntitySchedulingProfiles* GetEntitySchedulerProfiles(IEntity* pEnt) override;
+
 	virtual void RegisterComponentFactory(const CryInterfaceID &id, IEntityComponentFactory *pFactory) override;
 	
 	IEntityComponent *CreateComponentInstance(const CryInterfaceID &id);
 
 private: // -----------------------------------------------------------------
-	void DoPrePhysicsUpdate();
 	void DoPrePhysicsUpdateFast();
 	void DoUpdateLoop(float fFrameTime);
 
@@ -318,6 +314,8 @@ private: // -----------------------------------------------------------------
 
 	// slow - to find specific problems
 	void CheckInternalConsistency() const;
+
+	void InitializeEntityScheduler();
 
 	//////////////////////////////////////////////////////////////////////////
 	// Variables.
@@ -352,14 +350,13 @@ private: // -----------------------------------------------------------------
 	std::vector<CEntity*>       m_deferredUsedEntities;
 	EntitiesMap                 m_mapActiveEntities;        // Map of currently active entities (All entities that need per frame update).
 	bool                        m_tempActiveEntitiesValid;  // must be set to false whenever m_mapActiveEntities is changed
-	EntitiesSet                 m_mapPrePhysicsEntities;    // map of entities requiring pre-physics activation
-
+	
 	EntityNamesMap              m_mapEntityNames;      // Map entity name to entity ID.
 
 	CSaltBufferArray<>          m_EntitySaltBuffer;         // used to create new entity ids (with uniqueid=salt)
 	std::vector<EntityId>       m_tempActiveEntities;       // Temporary array of active entities.
 
-	CComponentEventDistributer* m_pEventDistributer;
+	CComponentEventDistributor* m_pEventDistributor;
 	//////////////////////////////////////////////////////////////////////////
 
 	// Entity timers.
@@ -416,6 +413,10 @@ private: // -----------------------------------------------------------------
 	THeaps  m_garbageLayerHeaps;
 	bool    m_bEntitiesUseGUIDs;
 	int     m_nGeneratedFromGuid;
+
+	typedef std::map<string, SEntitySchedulingProfiles> TSchedulingProfiles;
+	TSchedulingProfiles       m_schedulingParams;
+	SEntitySchedulingProfiles m_defaultProfiles;
 
 	typedef std::unordered_map<const CryInterfaceID, IEntityComponentFactory *, stl::hash_guid> TEntityComponentFactoryMap;
 	TEntityComponentFactoryMap m_componentFactoryMap;

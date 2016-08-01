@@ -29,6 +29,11 @@ struct IEntityComponent
 
 	virtual void PostInitialize() {}
 
+	void EnableEvent(EEntityEvent event, uint32 priority, bool bEnable)
+	{
+		m_pEntity->EnableEvent(bEnable, *this, event, priority);
+	}
+
 	virtual void ProcessEvent(const SEntityEvent& event) {}
 
 	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) {}
@@ -44,6 +49,16 @@ struct IEntityComponent
 
 	inline IEntity *GetEntity() const { return m_pEntity; }
 	inline EntityId GetEntityId() const { return m_entityId; }
+
+	void ActivateFlowNodeOutputPort(int port, const TFlowInputData& data)
+	{
+		SEntityEvent evnt;
+		evnt.event = ENTITY_EVENT_ACTIVATE_FLOW_NODE_OUTPUT;
+		evnt.nParam[0] = port;
+		evnt.nParam[1] = (INT_PTR)&data;
+
+		GetEntity()->SendEvent(evnt);
+	}
 
 	// Template function used to query a component by entity id
 	template <typename T>
@@ -397,9 +412,9 @@ struct IEntityScriptComponent : public IEntityComponent
 
 inline IScriptTable* IEntity::GetScriptTable() const
 {
-	if (auto *pScriptComponent = QueryComponent<IEntityScriptComponent>())
-		return pScriptComponent->GetScriptTable();
-
+	if (auto *pComponent = QueryComponent<IEntityScriptComponent>())
+		return pComponent->GetScriptTable();
+	
 	return nullptr;
 }
 
@@ -644,8 +659,8 @@ struct IEntityFlowGraphComponent : public IEntityComponent
 	virtual void        SetFlowGraph(IFlowGraph* pFlowGraph) = 0;
 	virtual IFlowGraph* GetFlowGraph() = 0;
 
-	virtual void        AddEventListener(IEntityEventListener* pListener) = 0;
-	virtual void        RemoveEventListener(IEntityEventListener* pListener) = 0;
+	virtual void        AddEventListener(struct IEntityEventListener* pListener) = 0;
+	virtual void        RemoveEventListener(struct IEntityEventListener* pListener) = 0;
 	// </interfuscator:shuffle>
 };
 
@@ -693,4 +708,10 @@ struct IEntityDynamicResponseComponent : public IEntityComponent
 
 	virtual DRS::IResponseActor*      GetResponseActor() const = 0;
 	virtual DRS::IVariableCollection* GetLocalVariableCollection() const = 0;
+};
+
+// Track view node component
+struct IEntityNodeComponent : public IEntityComponent
+{
+	DECLARE_COMPONENT("EntityNodeComponent", 0x3592CE70D61B47FF, 0xBCC75AA894E236F7)
 };

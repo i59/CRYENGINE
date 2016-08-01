@@ -35,7 +35,8 @@ public:
 	static int OnRevealPhysEntityPart(const EventPhys* pEvent);
 	static int OnPreUpdateMesh(const EventPhys* pEvent);
 	static int OnPreCreatePhysEntityPart(const EventPhys* pEvent);
-	static int OnCollision(const EventPhys* pEvent);
+	static int OnCollisionLogged(const EventPhys* pEvent);
+	static int OnCollisionImmediate(const EventPhys* pEvent);
 	static int OnJointBreak(const EventPhys* pEvent);
 	static int OnPostPump(const EventPhys* pEvent);
 

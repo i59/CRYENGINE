@@ -13,12 +13,11 @@
 *************************************************************************/
 #include "StdAfx.h"
 
-#include "GameObjects/GameObject.h"
 #include "IActorSystem.h"
 #include "IVehicleSystem.h"
 #include "IViewSystem.h"
 #include "CryAction.h"
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
 #include <CryAISystem/IAgent.h>
 
 #include "Vehicle.h"
@@ -314,7 +313,10 @@ void CVehicleComponent::OnHit(const HitInfo& hitInfo, const TVehicleComponentVec
 	int newDamageLevel = int(min(newDamageRatio, 1.0f) / 0.25f);
 
 	if (gEnv->bServer)
-		CHANGED_NETWORK_STATE(m_pVehicle, CVehicle::ASPECT_COMPONENT_DAMAGE);
+	{
+		if (auto *pGameObject = m_pVehicle->GetEntity()->QueryComponent<IGameObject>())
+			pGameObject->ChangedNetworkState(CVehicle::ASPECT_COMPONENT_DAMAGE);
+	}
 
 	if (m_pSharedParams->useDamageLevels && currentDamageLevel == newDamageLevel)
 		return;

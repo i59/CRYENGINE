@@ -22,6 +22,8 @@
 #include <CrySerialization/IArchiveHost.h>
 #include "EnvironmentPreset.h"
 
+#include <CryAudio/IAudioSystem.h>
+
 #define SERIALIZATION_ENUM_DEFAULTNAME(x) SERIALIZATION_ENUM(ITimeOfDay::x, # x, # x)
 
 SERIALIZATION_ENUM_BEGIN_NESTED(ITimeOfDay, ETimeOfDayParamID, "ETimeOfDayParamID")

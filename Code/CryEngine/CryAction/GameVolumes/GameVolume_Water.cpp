@@ -3,6 +3,8 @@
 #include "StdAfx.h"
 #include "GameVolume_Water.h"
 
+#include "EntityComponents/GameObject.h"
+
 #include <CryGame/IGameVolumes.h>
 
 //#pragma optimize("", off)
@@ -19,16 +21,6 @@ bool GetVolumeInfoForEntity(EntityId entityId, IGameVolumes::VolumeInfo& volumeI
 	}
 
 	return false;
-}
-}
-
-namespace GVW
-{
-void RegisterEvents(IGameObjectExtension& goExt, IGameObject& gameObject)
-{
-	const int eventID = eGFE_ScriptEvent;
-	gameObject.UnRegisterExtForEvents(&goExt, NULL, 0);
-	gameObject.RegisterExtForEvents(&goExt, &eventID, 1);
 }
 }
 
@@ -66,93 +58,34 @@ CGameVolume_Water::~CGameVolume_Water()
 	}
 }
 
-bool CGameVolume_Water::Init(IGameObject* pGameObject)
+void CGameVolume_Water::PostInitialize()
 {
-	SetGameObject(pGameObject);
+	auto &gameObject = GetEntity()->AcquireComponent<CGameObject>();
 
-	if (!GetGameObject()->BindToNetwork())
-		return false;
+	if (!gameObject.BindToNetwork())
+		return;
 
-	return true;
-}
-
-void CGameVolume_Water::PostInit(IGameObject* pGameObject)
-{
-	GVW::RegisterEvents(*this, *pGameObject);
 	SetupVolume();
 
 	//////////////////////////////////////////////////////////////////////////
 	/// For debugging purposes
 	if (gEnv->IsEditor())
 	{
-		GetGameObject()->EnableUpdateSlot(this, 0);
+		GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Always);
 	}
+
+	EnableEvent(ENTITY_EVENT_EDITOR_PROPERTY_CHANGED, 0, true);
+	EnableEvent(ENTITY_EVENT_RESET, 0, true);
+	EnableEvent(ENTITY_EVENT_XFORM, 0, true);
+	EnableEvent(ENTITY_EVENT_HIDE, 0, true);
+	EnableEvent(ENTITY_EVENT_UNHIDE, 0, true);
 }
 
-bool CGameVolume_Water::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
-{
-	ResetGameObject();
-
-	GVW::RegisterEvents(*this, *pGameObject);
-
-	CRY_ASSERT_MESSAGE(false, "CGameVolume_Water::ReloadExtension not implemented");
-
-	return false;
-}
-
-void CGameVolume_Water::Release()
-{
-	delete this;
-}
-
-void CGameVolume_Water::Update(SEntityUpdateContext& ctx, int slot)
+void CGameVolume_Water::Update(SEntityUpdateContext& ctx)
 {
 	if (gEnv->IsEditing())
 	{
 		DebugDrawVolume();
-	}
-}
-
-void CGameVolume_Water::HandleEvent(const SGameObjectEvent& gameObjectEvent)
-{
-	if ((gameObjectEvent.event == eGFE_ScriptEvent) && (gameObjectEvent.param != NULL))
-	{
-		const char* eventName = static_cast<const char*>(gameObjectEvent.param);
-		if (strcmp(eventName, "PhysicsEnable") == 0)
-		{
-			IGameVolumes::VolumeInfo volumeInfo;
-			if (GetVolumeInfoForEntity(GetEntityId(), volumeInfo))
-			{
-				for (uint32 i = 0; i < m_segments.size(); ++i)
-				{
-					SWaterSegment& segment = m_segments[i];
-
-					if ((segment.m_pWaterArea == NULL) && (segment.m_pWaterRenderNode != NULL))
-					{
-						if (!m_isRiver)
-						{
-							CreatePhysicsArea(i, m_baseMatrix, &volumeInfo.pVertices[0], volumeInfo.verticesCount, false, m_streamSpeed);
-						}
-						else
-						{
-							Vec3 vertices[4];
-							FillOutRiverSegment(i, &volumeInfo.pVertices[0], volumeInfo.verticesCount, &vertices[0]);
-							CreatePhysicsArea(i, m_baseMatrix, vertices, 4, true, m_streamSpeed);
-						}
-
-						segment.m_pWaterRenderNode->SetMatrix(m_baseMatrix);
-					}
-				}
-
-				AwakeAreaIfRequired(true);
-
-				m_lastAwakeCheckPosition.zero();
-			}
-		}
-		else if (strcmp(eventName, "PhysicsDisable") == 0)
-		{
-			DestroyPhysicsAreas();
-		}
 	}
 }
 

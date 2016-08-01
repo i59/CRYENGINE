@@ -3,7 +3,7 @@
 #include "StdAfx.h"
 #include "RuntimeAreas.h"
 #include "EntityComponents/RuntimeAreaObject.h"
-#include <IGameObject.h>
+#include <CryAction/IGameObject.h>
 
 CRuntimeAreaManager::CRuntimeAreaManager()
 {
@@ -148,7 +148,7 @@ void CRuntimeAreaManager::CreateAreas()
 		{
 			EntityId const nAreaEntityID = pNewAreaEntity->GetId();
 
-			auto &areaComponent = pNewAreaEntity->CreateAreaComponent();
+			auto &areaComponent = pNewAreaEntity->AcquireExternalComponent<IEntityAreaComponent>();
 
 			size_t const nPointCount = cluster.boundary_points.size();
 			DynArray<bool> abObstructSound(nPointCount + 2, false);

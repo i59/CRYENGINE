@@ -22,6 +22,9 @@ void CMannequinObject::PostInitialize()
 	m_pAnimatedCharacter = &GetEntity()->AcquireComponent<CAnimatedCharacter>();
 
 	Reset();
+
+	EnableEvent(ENTITY_EVENT_RESET, 0, true);
+	EnableEvent(ENTITY_EVENT_SCRIPT_EVENT, 0, true);
 }
 
 ///////////////////////////////////////////////////////////////////////////

@@ -13,7 +13,6 @@
 *************************************************************************/
 #include "StdAfx.h"
 #include "CryAction.h"
-#include "GameObjects/GameObject.h"
 #include "IActorSystem.h"
 #include "IAnimatedCharacter.h"
 #include "IVehicleSystem.h"

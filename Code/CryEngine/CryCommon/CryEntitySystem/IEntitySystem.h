@@ -27,76 +27,6 @@
 
 #define _DISABLE_AREASOLID_
 
-#include <CryEntitySystem/IComponent.h>
-#if !defined(_RELEASE) && CRY_PLATFORM_WINDOWS
-	#define ENABLE_ENTITYEVENT_DEBUGGING 1
-#else
-	#define ENABLE_ENTITYEVENT_DEBUGGING 0
-#endif
-
-// entity event listener debug output macro
-#if ENABLE_ENTITYEVENT_DEBUGGING
-	#define ENTITY_EVENT_LISTENER_DEBUG                                      \
-	  {                                                                      \
-	    if (gEnv && gEnv->pConsole)                                          \
-	    {                                                                    \
-	      ICVar* pCvar = gEnv->pConsole->GetCVar("es_debugEntityListeners"); \
-	      if (pCvar && pCvar->GetIVal())                                     \
-	        CryLog("Entity Event listener %s '%p'", __FUNCTION__, this);     \
-	    }                                                                    \
-	  }
-
-	#define ENTITY_EVENT_ENTITY_DEBUG(pEntity)                                          \
-	  {                                                                                 \
-	    if (gEnv && gEnv->pConsole)                                                     \
-	    {                                                                               \
-	      ICVar* pCvar = gEnv->pConsole->GetCVar("es_debugEntityListeners");            \
-	      if (pCvar && pCvar->GetIVal())                                                \
-	        CryLog("Event for entity '%s' pointer '%p'", pEntity->GetName(), pEntity);  \
-	    }                                                                               \
-	  }
-
-	#define ENTITY_EVENT_ENTITY_LISTENER(pListener)                          \
-	  {                                                                      \
-	    if (gEnv && gEnv->pConsole)                                          \
-	    {                                                                    \
-	      ICVar* pCvar = gEnv->pConsole->GetCVar("es_debugEntityListeners"); \
-	      if (pCvar && pCvar->GetIVal())                                     \
-	        CryLog("Event listener '%p'", pListener);                        \
-	    }                                                                    \
-	  }
-
-	#define ENTITY_EVENT_LISTENER_ADDED(pEntity, pListener)                                                                                 \
-	  {                                                                                                                                     \
-	    if (gEnv && gEnv->pConsole)                                                                                                         \
-	    {                                                                                                                                   \
-	      ICVar* pCvar = gEnv->pConsole->GetCVar("es_debugEntityListeners");                                                                \
-	      if (pCvar && pCvar->GetIVal())                                                                                                    \
-	        CryLog("Adding Entity Event listener for entity '%s' pointer '%p' for listener '%p'", pEntity->GetName(), pEntity, pListener);  \
-	    }                                                                                                                                   \
-	  }
-
-	#define ENTITY_EVENT_LISTENER_REMOVED(nEntity, pListener)                                                                               \
-	  {                                                                                                                                     \
-	    if (gEnv && gEnv->pConsole)                                                                                                         \
-	    {                                                                                                                                   \
-	      ICVar* pCvar = gEnv->pConsole->GetCVar("es_debugEntityListeners");                                                                \
-	      if (pCvar && pCvar->GetIVal())                                                                                                    \
-	      {                                                                                                                                 \
-	        CEntity* pCEntity = (CEntity*)GetEntity(nEntity);                                                                               \
-	        CryLog("Removing Entity Event listener for entity '%s' for listener '%p'", pCEntity ? pCEntity->GetName() : "null", pListener); \
-	      }                                                                                                                                 \
-	    }                                                                                                                                   \
-	  }
-
-#else
-	#define ENTITY_EVENT_LISTENER_DEBUG
-	#define ENTITY_EVENT_ENTITY_DEBUG(pEntity)
-	#define ENTITY_EVENT_ENTITY_LISTENER(pListener)
-	#define ENTITY_EVENT_LISTENER_ADDED(pEntity, pListener)
-	#define ENTITY_EVENT_LISTENER_REMOVED(nEntity, pListener)
-#endif
-
 #include <CryEntitySystem/IEntity.h>
 #include <CryEntitySystem/IEntityClass.h>
 #include <CryEntitySystem/IEntityLayer.h>
@@ -373,6 +303,12 @@ struct SEntityProximityQuery
 	}
 };
 
+struct SEntitySchedulingProfiles
+{
+	uint32 normal;
+	uint32 owned;
+};
+
 //! Interface to the system that manages the entities in the game.
 //! Interface to the system that manages the entities in the game, their creation, deletion and upkeep.
 //! The entities are kept in a map indexed by their unique entity ID. The entity system updates only unbound entities every frame (bound entities
@@ -483,7 +419,7 @@ struct IEntitySystem
 
 	//! Sends the same event to the entity in Entity System using the EntityEvent system
 	//! \param event Event to send.
-	virtual void SendEventViaEntityEvent(IEntity* piEntity, SEntityEvent& event) = 0;
+	virtual void SendEventViaEntityEvent(IEntity* piEntity, const SEntityEvent& event) = 0;
 
 	//! Get all entities within proximity of the specified bounding box.
 	//! \note Query is not exact, entities reported can be a few meters away from the bounding box.
@@ -657,9 +593,6 @@ struct IEntitySystem
 
 	virtual void PurgeDeferredCollisionEvents(bool bForce = false) = 0;
 
-	//! Component APIs.
-	virtual void ComponentEnableEvent(const EntityId id, const int eventID, const bool enable) = 0;
-
 	virtual bool EntitiesUseGUIDs() const = 0;
 	virtual void SetEntitiesUseGUIDs(const bool bEnable) = 0;
 
@@ -697,7 +630,10 @@ struct IEntitySystem
 	virtual IBSPTree3D* CreateBSPTree3D(const IBSPTree3D::FaceList& faceList) = 0;
 	virtual void        ReleaseBSPTree3D(IBSPTree3D*& pTree) = 0;
 
+	virtual const SEntitySchedulingProfiles* GetEntitySchedulerProfiles(IEntity* pEnt) = 0;
 
+	// Registers a factory that can create entity components outside of its primary engine module
+	// The component can be created by its interface id.
 	virtual void RegisterComponentFactory(const CryInterfaceID &id, struct IEntityComponentFactory *pFactory) = 0;
 	// </interfuscator:shuffle>
 };

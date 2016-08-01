@@ -16,13 +16,14 @@
 #include "GameContext.h"
 #include "CryAction.h"
 #include "GameRulesSystem.h"
-#include "GameObjects/GameObject.h"
 #include "GameClientNub.h"
 #include "ILevelSystem.h"
 #include "IActorSystem.h"
 #include "ActionGame.h"
 #include <CryNetwork/INetworkService.h>
 #include <CryNetwork/INetwork.h>
+
+#include "EntityComponents/GameObject.h"
 
 #define LOCAL_ACTOR_VARIABLE     "g_localActor"
 #define LOCAL_CHANNELID_VARIABLE "g_localChannelId"
@@ -222,8 +223,7 @@ void CGameClientChannel::DefineProtocol(IProtocolBuilder* pBuilder)
 {
 	pBuilder->AddMessageSink(this, CGameServerChannel::GetProtocolDef(), CGameClientChannel::GetProtocolDef());
 	CCryAction* cca = CCryAction::GetCryAction();
-	if (cca->GetIGameObjectSystem())
-		cca->GetIGameObjectSystem()->DefineProtocol(false, pBuilder);
+		cca->DefineProtocol(false, pBuilder);
 	if (cca->GetGameContext())
 		cca->GetGameContext()->DefineContextProtocols(pBuilder, false);
 }
@@ -349,18 +349,14 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 	{
 		const EntityId entityId = pEntity->GetId();
 
-		CCryAction::GetCryAction()->GetIGameObjectSystem()->SetSpawnSerializerForEntity(entityId, &ser);
 		if (param.bClientActor)
 		{
 			gEnv->pGame->PlayerIdSet(entityId);
 		}
 		if (!pEntitySystem->InitEntity(pEntity, esp))
 		{
-			CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
 			return false;
 		}
-
-		auto &gameObject = pEntity->AcquireComponent<CGameObject>();
 
 		if (param.bClientActor)
 		{
@@ -368,18 +364,17 @@ NET_IMPLEMENT_IMMEDIATE_MESSAGE(CGameClientChannel, DefaultSpawn, eNRT_Unreliabl
 			if (!pActor)
 			{
 				pEntitySystem->RemoveEntity(entityId);
-				CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
 				pNetChannel->Disconnect(eDC_ContextCorruption, "Client actor spawned entity was not an actor");
 				return false;
 			}
 			SetPlayerId(entityId);
 		}
 
+		auto &gameObject = pEntity->AcquireComponent<CGameObject>();
 		gameObject.SetChannelId(channelId);
 
 		GetGameContext()->GetNetContext()->SpawnedObject(entityId);
-		CCryAction::GetCryAction()->GetIGameObjectSystem()->ClearSpawnSerializerForEntity(entityId);
-		gameObject.PostRemoteSpawn();
+
 		return true;
 	}
 
@@ -433,10 +428,10 @@ void CGameClientChannel::SetPlayerId(EntityId id)
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(id);
 		if (pEntity)
 		{
-			auto *pGameObject = pEntity->QueryComponent<IGameObject>();
+			auto *pNetworkComponent = pEntity->QueryComponent<IGameObject>();
 
 			pSS->SetGlobalValue(LOCAL_ACTOR_VARIABLE, pEntity->GetScriptTable());
-			pSS->SetGlobalValue(LOCAL_CHANNELID_VARIABLE, pGameObject ? pGameObject->GetChannelId() : 0);
+			pSS->SetGlobalValue(LOCAL_CHANNELID_VARIABLE, pNetworkComponent ? pNetworkComponent->GetChannelId() : 0);
 		}
 		else
 		{

@@ -14,7 +14,7 @@ DRS::IVariableCollection* GetVariableCollection(EntityId entityID, const string&
 		IEntity* pVariableCollectionOwningEntity = gEnv->pEntitySystem->GetEntity(entityID);
 		if (pVariableCollectionOwningEntity)
 		{
-			auto &dynamicResponseComponent = pVariableCollectionOwningEntity->CreateDynamicResponseComponent();
+			auto &dynamicResponseComponent = pVariableCollectionOwningEntity->AcquireExternalComponent<IEntityDynamicResponseComponent>();
 
 			return dynamicResponseComponent.GetLocalVariableCollection();
 		}

@@ -42,7 +42,7 @@ public:
 	{
 		BaseClass::Initialise(entity, actionController);
 
-		m_pIEntityAudioProxy = &entity.CreateAudioComponent();
+		m_pIEntityAudioProxy = &entity.AcquireExternalComponent<IEntityAudioComponent>();
 	}
 
 	virtual void Update(float timePassed) override

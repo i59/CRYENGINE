@@ -30,6 +30,14 @@ CFlowGraphComponent::~CFlowGraphComponent()
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CFlowGraphComponent::PostInitialize()
+{
+	// Need to enable all events for the listener below
+	for(int i = 0; i < ENTITY_EVENT_LAST; i++)
+		EnableEvent((EEntityEvent)i, 0, true);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CFlowGraphComponent::SetFlowGraph(IFlowGraph* pFlowGraph)
 {
 	if (m_pFlowGraph)

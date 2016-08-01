@@ -27,13 +27,12 @@ class CGameRulesSystem : public IGameRulesSystem
 {
 	typedef struct SGameRulesDef
 	{
-		string              extension;
+		CryInterfaceID componentInterfaceID;
 		std::vector<string> aliases;
 		std::vector<string> maplocs;
 
 		void GetMemoryUsage(ICrySizer* pSizer) const
 		{
-			pSizer->AddObject(extension);
 			pSizer->AddObject(aliases);
 			pSizer->AddObject(maplocs);
 		}
@@ -46,7 +45,7 @@ public:
 
 	void                Release() { delete this; };
 
-	virtual bool        RegisterGameRules(const char* rulesName, const char* extensionName);
+	virtual bool        RegisterGameRules(const char* rulesName, const CryInterfaceID &componentInterfaceID, bool bUseScript = true);
 	virtual bool        CreateGameRules(const char* rulesName);
 	virtual bool        DestroyGameRules();
 	virtual bool        HaveGameRules(const char* rulesName);
@@ -61,10 +60,9 @@ public:
 
 	void                GetMemoryStatistics(ICrySizer* s);
 
-private:
-	SGameRulesDef*         GetGameRulesDef(const char* name);
-	static void CreateGameObject(IEntity& pEntity, SEntitySpawnParams& params, void* pUserData);
+	SGameRulesDef*      GetGameRulesDef(const char* name);
 
+private:
 	IGameFramework* m_pGameFW;
 
 	EntityId        m_currentGameRules;

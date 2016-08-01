@@ -50,6 +50,8 @@
 #include <list>
 #include <functional>
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 #if CRY_PLATFORM_LINUX || CRY_PLATFORM_ANDROID
 	#include <float.h> // for FLT_MAX
 #endif

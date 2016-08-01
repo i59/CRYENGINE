@@ -129,7 +129,6 @@ private:
 	//helper functions
 	void Clean();
 	void ReserveEntityIds(const TBasicEntityDatas& basicEntityData);
-	void FlushActivatableGameObjectExtensions();
 	bool RepositionEntities(const TBasicEntityDatas& basicEntityData, bool insistOnAllEntitiesBeingThere);
 	void DeleteDynamicEntities(const TBasicEntityDatas& basicEntityData);
 	void DumpEntities();

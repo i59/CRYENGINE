@@ -16,6 +16,14 @@ CRuntimeAreaObject::~CRuntimeAreaObject()
 }
 
 ///////////////////////////////////////////////////////////////////////////
+void CRuntimeAreaObject::PostInitialize()
+{
+	EnableEvent(ENTITY_EVENT_ENTERAREA, 0, true);
+	EnableEvent(ENTITY_EVENT_LEAVEAREA, 0, true);
+	EnableEvent(ENTITY_EVENT_MOVEINSIDEAREA, 0, true);
+}
+
+///////////////////////////////////////////////////////////////////////////
 void CRuntimeAreaObject::ProcessEvent(const SEntityEvent& entityEvent)
 {
 	switch (entityEvent.event)
@@ -81,7 +89,7 @@ void CRuntimeAreaObject::UpdateParameterValues(IEntity* const pEntity, TAudioPar
 	static float const fParamEpsilon = 0.001f;
 	static float const fMaxDensity = 256.0f;
 
-	auto &audioComponent = pEntity->CreateAudioComponent();
+	auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 	ISurfaceType* aSurfaceTypes[MMRM_MAX_SURFACE_TYPES];
 	memset(aSurfaceTypes, 0x0, sizeof(aSurfaceTypes));
@@ -135,7 +143,7 @@ void CRuntimeAreaObject::StopEntitySounds(EntityId const entityId, TAudioParamet
 	IEntity* const pEntity = gEnv->pEntitySystem->GetEntity(entityId);
 	if (pEntity != NULL)
 	{
-		auto &audioComponent = pEntity->CreateAudioComponent();
+		auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 		for (TAudioParameterMap::const_iterator iSoundPair = paramMap.begin(), iSoundPairEnd = paramMap.end(); iSoundPair != iSoundPairEnd; ++iSoundPair)
 		{

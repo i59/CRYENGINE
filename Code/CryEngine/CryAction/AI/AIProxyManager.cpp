@@ -63,21 +63,20 @@ IAIActorProxy* CAIProxyManager::CreateActorProxy(EntityId entityID)
 
 	if (auto *pEntity = gEnv->pEntitySystem->GetEntity(entityID))
 	{
-		if (auto *pGameObject = pEntity->QueryComponent<IGameObject>())
-		{
-			pResult = new CAIProxy(pGameObject);
+		auto &gameObject = pEntity->AcquireExternalComponent<IGameObject>();
 
-			// (MATT) Check if this instance already has a proxy - right now there's no good reason to change proxies on an instance {2009/04/06}
-			TAIProxyMap::iterator it = m_aiProxyMap.find(entityID);
-			if (it != m_aiProxyMap.end())
-			{
-				CRY_ASSERT_TRACE(false, ("Entity ID %d already has an actor proxy! possible memory leak", entityID));
-				it->second = pResult;
-			}
-			else
-			{
-				m_aiProxyMap.insert(std::make_pair(entityID, pResult));
-			}
+		pResult = new CAIProxy(&gameObject);
+
+		// (MATT) Check if this instance already has a proxy - right now there's no good reason to change proxies on an instance {2009/04/06}
+		TAIProxyMap::iterator it = m_aiProxyMap.find(entityID);
+		if (it != m_aiProxyMap.end())
+		{
+			CRY_ASSERT_TRACE(false, ("Entity ID %d already has an actor proxy! possible memory leak", entityID));
+			it->second = pResult;
+		}
+		else
+		{
+			m_aiProxyMap.insert(std::make_pair(entityID, pResult));
 		}
 	}
 	return pResult;

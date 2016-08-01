@@ -1,33 +1,22 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:	This file implements dispatching RMI calls in C++ to
-                relevant game object code
-
-   -------------------------------------------------------------------------
-   History:
-    - 24 Oct 2005 : Created by Craig Tiller
-
-*************************************************************************/
-
 #ifndef __GAMEOBJECTDISPATCH_H__
 #define __GAMEOBJECTDISPATCH_H__
 
 #pragma once
 
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
+
 #include <vector>
 
-class CGameObjectDispatch
+//This file implements dispatching RMI calls in C++ to relevant entity component code
+class CEntityComponentRMIDispatch
 {
 public:
-	CGameObjectDispatch();
-	~CGameObjectDispatch();
+	CEntityComponentRMIDispatch();
+	~CEntityComponentRMIDispatch();
 
-	void             RegisterInterface(SGameObjectExtensionRMI* pMessages, size_t nCount);
+	void             RegisterInterface(SRemoteComponentFunction* pMessages, size_t nCount);
 
 	INetMessageSink* GetServerSink() { return &m_serverDef; }
 	INetMessageSink* GetClientSink() { return &m_clientDef; }
@@ -41,7 +30,7 @@ private:
 	void LockSafety();
 
 	// all messages we have registered
-	std::vector<SGameObjectExtensionRMI*> m_messages;
+	std::vector<SRemoteComponentFunction*> m_messages;
 
 	// protocol definitions
 	std::vector<SNetMessageDef> m_serverCalls;
@@ -58,8 +47,6 @@ private:
 
 	CProtocolDef                m_serverDef;
 	CProtocolDef                m_clientDef;
-
-	static CGameObjectDispatch* m_pGOD;
 
 	static TNetMessageCallbackResult Trampoline(
 	  uint32 userId,

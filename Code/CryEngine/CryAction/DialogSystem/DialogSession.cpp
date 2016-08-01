@@ -368,7 +368,7 @@ IEntityAudioComponent* CDialogSession::GetEntityAudioProxy(IEntity* pEntity) con
 	if (!pEntity)
 		return 0;
 
-	return &pEntity->CreateAudioComponent();
+	return &pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 }
 
 ////////////////////////////////////////////////////////////////////////////

@@ -44,7 +44,6 @@ public:
 
 	~CActionController();
 
-	virtual void   OnEvent(const SGameObjectEvent& event) override;
 	virtual void   OnAnimationEvent(ICharacterInstance* pCharacter, const AnimEventInstance& event) override;
 
 	virtual void   Reset() override;

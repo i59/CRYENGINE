@@ -70,6 +70,8 @@
 #include "Navigation/MNM/TileGenerator.h"
 #include "Navigation/MNM/MeshGrid.h"
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 //-----------------------------------------------------------------------------------------------------------
 static bool IsPuppetOnScreen(CPuppet* pPuppet)
 {

@@ -13,7 +13,7 @@
 #include "StdAfx.h"
 #include "ScriptBind_Inventory.h"
 #include "Inventory.h"
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
 
 //------------------------------------------------------------------------
 CScriptBind_Inventory::CScriptBind_Inventory(ISystem* pSystem, IGameFramework* pGameFramework)
@@ -228,10 +228,7 @@ int CScriptBind_Inventory::SetAmmoCount(IFunctionHandler* pH, const char* ammoNa
 		pInventory->SetAmmoCount(pClass, count);
 		if (gEnv->bServer)
 		{
-			if (auto *pGameObject = pInventory->GetActor()->GetEntity()->QueryComponent<IGameObject>())
-				pGameObject->InvokeRMI(CInventory::Cl_SetAmmoCount(),
-			                                                   TRMIInventory_Ammo(ammoName, count),
-			                                                   eRMI_ToRemoteClients);
+			pInventory->InvokeRemoteMethod(CInventory::Cl_SetAmmoCount(), TRMIInventory_Ammo(ammoName, count), eRMI_ToRemoteClients);
 		}
 	}
 	else

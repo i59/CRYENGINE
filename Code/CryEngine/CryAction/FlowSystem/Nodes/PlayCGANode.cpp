@@ -5,7 +5,6 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <IActorSystem.h>
 #include <IAnimatedCharacter.h>
-#include <GameObjects/GameObject.h>
 #include "IAnimatedCharacter.h"
 
 #include "FlowBaseNode.h"
@@ -821,7 +820,7 @@ public:
 		case eFE_Update:
 			if (pActInfo->pEntity && pCharacter)
 			{
-				auto *pGameObject = pActInfo->pEntity->QueryComponent<CGameObject>();
+				auto *pGameObject = pActInfo->pEntity->QueryComponent<IGameObject>();
 				IMovementController* pMC = pGameObject ? pGameObject->GetMovementController() : NULL;
 				if (pMC)
 				{
@@ -856,7 +855,7 @@ public:
 					if (pCharacter)
 					{
 						// Turns off look ik.
-						auto *pGameObject = pActInfo->pEntity->QueryComponent<CGameObject>();
+						auto *pGameObject = pActInfo->pEntity->QueryComponent<IGameObject>();
 						IMovementController* pMC = pGameObject ? pGameObject->GetMovementController() : NULL;
 						if (pMC)
 						{
@@ -1367,7 +1366,7 @@ public:
 		{
 		case eFE_Activate:
 			if (pActInfo->pEntity)
-				if (auto *pGameObject = pActInfo->pEntity->QueryComponent<CGameObject>())
+				if (auto *pGameObject = pActInfo->pEntity->QueryComponent<IGameObject>())
 					if (IMovementController* pMC = pGameObject->GetMovementController())
 					{
 						CMovementRequest mc;

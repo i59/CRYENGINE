@@ -22,7 +22,6 @@
 #include "FlowBaseNode.h"
 #include <CryAction.h>
 #include <CryActionCVars.h>
-#include <IGameObjectSystem.h>
 #include <CryString/StringUtils.h>
 #include <CryInput/IInput.h>
 #include "ForceFeedbackSystem/ForceFeedbackSystem.h"

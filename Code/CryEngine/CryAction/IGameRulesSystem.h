@@ -16,8 +16,10 @@
 
 #pragma once
 
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
 #include <CryParticleSystem/IParticles.h>
+
+#include <CryEntitySystem/INetworkedEntityComponent.h>
 
 // Summary
 //   Types for the different kind of messages.
@@ -500,16 +502,8 @@ struct IHitListener
 
 // Summary
 //   Interface used to implement the game rules
-struct IGameRules : public IGameObjectExtension
+struct IGameRules : public CNetworkedEntityComponent<IEntityComponent>
 {
-	struct SGameCollision
-	{
-		const EventPhysCollision* pCollision;
-		IGameObject*              pSrc;
-		IGameObject*              pTrg;
-		IEntity*                  pSrcEntity;
-		IEntity*                  pTrgEntity;
-	};
 	// Summary
 	//   Returns wether the disconnecting client should be kept for a few more moments or not.
 	virtual bool ShouldKeepClient(int channelId, EDisconnectionCause cause, const char* desc) const = 0;
@@ -697,19 +691,6 @@ struct IGameRules : public IGameObjectExtension
 	//   AddHitListener
 	virtual void RemoveHitListener(IHitListener* pHitListener) = 0;
 
-	// Summary
-	//		Gets called when two entities collide, gamerules should dispatch this
-	//		call also to Script functions
-	// Parameters
-	//  pEvent - physics event containing the necessary info
-	virtual bool OnCollision(const SGameCollision& event) = 0;
-
-	// Summary
-	//		Gets called when two entities collide, and determines if AI should receive stiulus
-	// Parameters
-	//  pEvent - physics event containing the necessary info
-	virtual void OnCollision_NotifyAI(const EventPhys* pEvent) = 0;
-
 	// allows gamerules to extend the 'status' command
 	virtual void ShowStatus() = 0;
 
@@ -752,10 +733,11 @@ struct IGameRulesSystem
 	//   Registers a new GameRules
 	// Parameters
 	//   pRulesName - The name of the GameRules, which should also be the name of the GameRules script
-	//   pExtensionName - The name of the IGameRules implementation which should be used by the GameRules
+	//   componentInterfaceID - The interface id of the IGameRules implementation which should be used by the GameRules, obtained by calling the ::IID function
+	//   bUseScript - Whether or not to load a Lua script file in the Scripts/GameRules directory
 	// Returns
 	//   The value true will be returned if the GameRules could have been registered.
-	virtual bool RegisterGameRules(const char* pRulesName, const char* pExtensionName) = 0;
+	virtual bool        RegisterGameRules(const char* rulesName, const CryInterfaceID &componentInterfaceID, bool bUseScript = true) = 0;
 
 	// Summary
 	//   Creates a new instance for a GameRules

@@ -46,7 +46,6 @@ public:
 	virtual void            Update(const float frameTime) override;
 
 	virtual void            Serialize(TSerialize serialize, EEntityAspects aspects) override;
-	virtual void            RegisterSerializer(IGameObjectExtension* gameObjectExt) override {}
 	virtual void            GetMemoryUsage(ICrySizer* s) const override
 	{
 		s->Add(*this);

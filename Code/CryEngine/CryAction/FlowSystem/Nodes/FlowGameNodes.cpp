@@ -4,7 +4,6 @@
 #include "FlowBaseNode.h"
 #include "CryAction.h"
 #include "IActorSystem.h"
-#include "GameObjects/GameObject.h"
 #include "IGameRulesSystem.h"
 #include "ILevelSystem.h"
 
@@ -601,56 +600,6 @@ public:
 	}
 };
 
-class CFlowGameObjectEvent : public CFlowBaseNode<eNCT_Singleton>
-{
-public:
-	CFlowGameObjectEvent(SActivationInfo* pActInfo)
-	{
-	}
-
-	void GetConfiguration(SFlowNodeConfig& config)
-	{
-		static const SInputPortConfig in_ports[] =
-		{
-			InputPortConfig_Void("Trigger",       _HELP("Trigger this port to send the event")),
-			InputPortConfig<string>("EventName",  _HELP("Name of event to send")),
-			InputPortConfig<string>("EventParam", _HELP("Parameter of the event [event-specific]")),
-			{ 0 }
-		};
-		config.nFlags |= EFLN_TARGET_ENTITY;
-		config.pInputPorts = in_ports;
-		config.pOutputPorts = 0;
-		config.sDescription = _HELP("Broadcast a game object event or send to a specific entity. EventParam is an event specific string");
-		config.SetCategory(EFLN_ADVANCED);
-	}
-
-	void ProcessEvent(EFlowEvent event, SActivationInfo* pActInfo)
-	{
-		if (eFE_Activate == event && IsPortActive(pActInfo, 0))
-		{
-			const string& eventName = GetPortString(pActInfo, 1);
-			uint32 eventId = CCryAction::GetCryAction()->GetIGameObjectSystem()->GetEventID(eventName.c_str());
-			SGameObjectEvent evt(eventId, eGOEF_ToAll, IGameObjectSystem::InvalidExtensionID, (void*) (GetPortString(pActInfo, 2).c_str()));
-			if (pActInfo->pEntity == 0)
-			{
-				// broadcast to all gameobject events
-				CCryAction::GetCryAction()->GetIGameObjectSystem()->BroadcastEvent(evt);
-			}
-			else
-			{
-				// send to a specific entity only
-				if (auto *pGameObject = pActInfo->pEntity->QueryComponent<CGameObject>())
-					pGameObject->SendEvent(evt);
-			}
-		}
-	}
-
-	virtual void GetMemoryUsage(ICrySizer* s) const
-	{
-		s->Add(*this);
-	}
-};
-
 class CFlowGetSupportedGameRulesForMap : public CFlowBaseNode<eNCT_Instanced>
 {
 public:
@@ -849,7 +798,6 @@ REGISTER_FLOW_NODE("Game:ActorGrabObject", CFlowActorGrabObject);
 REGISTER_FLOW_NODE("Game:ActorGetHealth", CFlowActorGetHealth);
 REGISTER_FLOW_NODE("Game:ActorSetHealth", CFlowActorSetHealth);
 REGISTER_FLOW_NODE("Game:ActorCheckHealth", CFlowActorCheckHealth);
-REGISTER_FLOW_NODE("Game:GameObjectEvent", CFlowGameObjectEvent);
 REGISTER_FLOW_NODE("Game:GetSupportedGameRulesForMap", CFlowGetSupportedGameRulesForMap);
 REGISTER_FLOW_NODE("Game:GetEntityState", CFlowGetStateOfEntity);
 REGISTER_FLOW_NODE("Game:IsLevelOfType", CFlowIsLevelOfType);

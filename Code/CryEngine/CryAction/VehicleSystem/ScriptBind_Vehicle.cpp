@@ -27,7 +27,7 @@
 #include "VehicleSeat.h"
 #include "ScriptBind_Vehicle.h"
 #include "VehicleDamages.h"
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
 
 //------------------------------------------------------------------------
 // macro for retrieving vehicle and entity

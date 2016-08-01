@@ -41,6 +41,13 @@ void CEntityAudioComponent::Initialize(IEntity &entity)
 	CreateAuxAudioProxy();
 	SetObstructionCalcType(eAudioOcclusionType_Ignore);
 	OnMove();
+
+	EnableEvent(ENTITY_EVENT_XFORM, 0, true);
+	EnableEvent(ENTITY_EVENT_ENTERAREA, 0, true);
+	EnableEvent(ENTITY_EVENT_MOVENEARAREA, 0, true);
+	EnableEvent(ENTITY_EVENT_ENTERNEARAREA, 0, true);
+	EnableEvent(ENTITY_EVENT_MOVEINSIDEAREA, 0, true);
+	EnableEvent(ENTITY_EVENT_ANIM_EVENT, 0, true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -151,7 +158,7 @@ void CEntityAudioComponent::ProcessEvent(const SEntityEvent& event)
 				}
 
 				break;
-			}
+			} 
 		case ENTITY_EVENT_MOVENEARAREA:
 		case ENTITY_EVENT_ENTERNEARAREA:
 			{

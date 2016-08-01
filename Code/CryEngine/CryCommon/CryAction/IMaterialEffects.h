@@ -19,6 +19,8 @@
 
 #include <CryFlowGraph/IFlowSystem.h> // <> required for Interfuscator
 
+#include <CryAudio/IAudioInterfacesCommonData.h>
+
 struct IEntityClass;
 struct ISurfaceType;
 

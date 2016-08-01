@@ -57,8 +57,6 @@ public:
 
 	// Called by entity system to complete initialization of the entity.
 	bool Init(SEntitySpawnParams& params);
-	// Called by EntitySystem every frame for each pre-physics active entity.
-	void PrePhysicsUpdate(float fFrameTime);
 	// Called by EntitySystem every frame for each active entity.
 	void Update(SEntityUpdateContext& ctx);
 	// Called by EntitySystem at the end of each frame for each active entity.
@@ -145,9 +143,6 @@ public:
 	virtual void Activate(bool bActive) override;
 	virtual bool IsActive() const override { return m_bActive; }
 
-	virtual void PrePhysicsActivate(bool bActive) override;
-	virtual bool IsPrePhysicsActive() override;
-
 	//////////////////////////////////////////////////////////////////////////
 	virtual void Serialize(TSerialize ser, int nFlags) override;
 
@@ -174,13 +169,14 @@ public:
 
 	virtual void                SetUpdatePolicy(unsigned int eUpdatePolicy) override;
 	virtual unsigned int GetUpdatePolicy() const override { return m_updatePolicy; }
+	virtual unsigned int GetLastConditionalUpdateFlags() override { return m_lastConditionalUpdateFlags; }
 
 	virtual void RegisterComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent) override;
 	virtual IEntityComponent *GetComponentByTypeId(const CryInterfaceID &interfaceID) const override;
 
-	virtual void            RegisterComponent(IComponentPtr pComponentPtr, const int flags) override;
 	virtual IEntityComponent *CreateComponentByTypeId(const CryInterfaceID &interfaceID) override;
 
+	virtual void EnableEvent(bool bEnable, IEntityComponent &component, EEntityEvent event, uint32 priority) override;
 	virtual bool SendEvent(const SEntityEvent& event) override;
 
 	//////////////////////////////////////////////////////////////////////////
@@ -196,14 +192,6 @@ public:
 	virtual void             UpdateSlotPhysics(int slot) override;
 
 	virtual void             SetPhysicsState(XmlNodeRef& physicsState) override;
-
-	virtual IEntityPhysicsComponent &CreatePhysicsComponent() override;
-	virtual IEntityTriggerComponent &CreateTriggerComponent() override;
-	virtual IEntityAudioComponent &CreateAudioComponent() override;
-	virtual IEntitySubstitutionComponent &CreatSubstitutionComponent() override;
-	virtual IEntityAreaComponent &CreateAreaComponent() override;
-	virtual IEntityDynamicResponseComponent &CreateDynamicResponseComponent() override;
-	virtual void CreateEntityNodeComponent() override;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Custom entity material.
@@ -301,7 +289,7 @@ public:
 	void ActivateForNumUpdates(int numUpdates);
 	void SetUpdateStatus();
 	// Get status if entity need to be update every frame or not.
-	bool GetUpdateStatus() const { return (m_bActive || m_nUpdateCounter) && (!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN)); }
+	bool GetUpdateStatus() const { return (m_bActive || m_nUpdateCounter || m_updatePolicy != 0) && (!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN)); }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Description:
@@ -402,7 +390,7 @@ private:
 	                                                // deactivate after this counter reaches zero
 	unsigned int m_updatePolicy;					// Update policy defines in which cases to call
 	                                                // entity update function every frame.
-	bool m_bWasUpdatedLastFrame;
+	unsigned int m_lastConditionalUpdateFlags;
 
 	unsigned int m_bInvisible           : 1;        // Set if this entity is invisible.
 	unsigned int m_bNotInheritXform     : 1;        // Inherit or not transformation from parent.
@@ -455,10 +443,6 @@ private:
 
 	// Custom entity material.
 	_smart_ptr<IMaterial> m_pMaterial;
-
-	//////////////////////////////////////////////////////////////////////////
-	typedef std::set<IComponentPtr> TComponents;
-	TComponents m_components;
 
 	typedef std::unordered_map<const CryInterfaceID, std::shared_ptr<IEntityComponent>, stl::hash_guid> TEntityComponentMap;
 	// Store components in map for lookup by type id

@@ -98,6 +98,22 @@ CEntity *CPhysicsComponent::GetCEntity() const
 	return static_cast<CEntity *>(m_pEntity);
 }
 
+void CPhysicsComponent::PostInitialize()
+{
+	EnableEvent(ENTITY_EVENT_XFORM, 0, true);
+	EnableEvent(ENTITY_EVENT_HIDE, 0, true);
+	EnableEvent(ENTITY_EVENT_INVISIBLE, 0, true);
+	EnableEvent(ENTITY_EVENT_UNHIDE, 0, true);
+	EnableEvent(ENTITY_EVENT_VISIBLE, 0, true);
+	EnableEvent(ENTITY_EVENT_DONE, 0, true);
+	EnableEvent(ENTITY_EVENT_ATTACH, 0, true);
+	EnableEvent(ENTITY_EVENT_DETACH, 0, true);
+	EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
+	EnableEvent(ENTITY_EVENT_PHYS_BREAK, 0, true);
+	EnableEvent(ENTITY_EVENT_RENDER, 0, true);
+	EnableEvent(ENTITY_EVENT_MATERIAL, 0, true);
+}
+
 void CPhysicsComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	m_nFlags = 0;
@@ -759,7 +775,7 @@ void CPhysicsComponent::Physicalize(SEntityPhysicalizeParams& params)
 		{
 			pe_status_dynamics sd;
 			m_pPhysicalEntity->GetStatus(&sd);
-			m_pEntity->PrePhysicsActivate(true); // make sure we are completely in-sync with physics b4 ragdollizing
+			GetEntity()->EnableEvent(true, *this, ENTITY_EVENT_PREPHYSICSUPDATE, 0);
 			v = sd.v;
 			int hideOnly = params.fStiffnessScale > 0;
 			if (hideOnly)

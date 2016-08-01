@@ -13,7 +13,7 @@
 #include "StdAfx.h"
 #include "Inventory.h"
 #include <CryEntitySystem/IEntitySystem.h>
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
 #include "CryAction.h"
 #include "ScriptBind_Inventory.h"
 #include "IActorSystem.h"
@@ -37,42 +37,34 @@ CInventory::~CInventory()
 }
 
 //------------------------------------------------------------------------
-bool CInventory::Init(IGameObject* pGameObject)
+void CInventory::PostInitialize()
 {
-	SetGameObject(pGameObject);
 	// attach script bind
 	CCryAction* pCryAction = static_cast<CCryAction*>(gEnv->pGame->GetIGameFramework());
 	pCryAction->GetInventoryScriptBind()->AttachTo(this);
 
 	m_pGameFrameWork = pCryAction;
 
-	m_pActor = pCryAction->GetIActorSystem()->GetActor(pGameObject->GetEntityId());
-
-	return true;
-}
-
-//------------------------------------------------------------------------
-bool CInventory::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
-{
-	ResetGameObject();
+	m_pActor = pCryAction->GetIActorSystem()->GetActor(GetEntityId());
 
 	Destroy();
 
-	return true;
+	EnableEvent(ENTITY_EVENT_RESET, 0, true);
+	EnableEvent(ENTITY_EVENT_POST_SERIALIZE, 0, true);
 }
 
 //------------------------------------------------------------------------
-void CInventory::PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
+void CInventory::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	// attach script bind
 	CCryAction* pCryAction = static_cast<CCryAction*>(gEnv->pGame->GetIGameFramework());
 	pCryAction->GetInventoryScriptBind()->AttachTo(this);
 
-	m_pActor = pCryAction->GetIActorSystem()->GetActor(pGameObject->GetEntityId());
+	m_pActor = pCryAction->GetIActorSystem()->GetActor(GetEntityId());
 }
 
 //------------------------------------------------------------------------
-void CInventory::FullSerialize(TSerialize ser)
+void CInventory::Serialize(TSerialize ser)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Inventory serialization");
 
@@ -191,41 +183,6 @@ void CInventory::FullSerialize(TSerialize ser)
 	   ser.EndGroup();*/
 
 	ser.EndGroup();
-}
-
-void CInventory::PostSerialize()
-{
-	for (int i = 0; i < IInventory::eInventorySlot_Last; ++i)
-	{
-		const int itemIndex = FindItem(m_stats.slotsInfo[i].lastSelected);
-
-		// For whatever reason we don't have this last item in the inventory,
-		// so find a suitable item in the same slot.
-		if (itemIndex == -1)
-		{
-			const EntityId entityId = GetAnyEntityInSlot(i);
-
-			SetLastSelectedInSlot(entityId);
-		}
-	}
-
-	// Benito - This is last minute workaround to solve a strange bug:
-	// If the game is saved while you had equipped a 'heavy weapon' (dynamic one, not present in the level) but this ones is holstered at the moment of save
-	// when the game is loaded, the item is not restored properly, because the entity does not get a serialize call.
-	// This code ensures that weapon goes back to the hands of the player, adding as many checks here as possible before doing the final call
-	const bool ownerActorIsClientNotInVehicle = (m_pActor != NULL) && m_pActor->IsClient() && (m_pActor->GetLinkedVehicle() == NULL);
-	if (ownerActorIsClientNotInVehicle)
-	{
-		IItem* pCurrentItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(m_stats.currentItemId);
-		if ((pCurrentItem != NULL) && (pCurrentItem->GetOwnerId() == 0))
-		{
-			if (pCurrentItem->CanUse(m_pActor->GetEntityId()))
-			{
-				m_stats.currentItemId = 0; //Reset and use it again
-				pCurrentItem->Use(m_pActor->GetEntityId());
-			}
-		}
-	}
 }
 
 //------------------------------------------------------------------------
@@ -477,23 +434,62 @@ void CInventory::ProcessEvent(const SEntityEvent& event)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ACTION);
 
-	if (event.event == ENTITY_EVENT_RESET)
+	switch(event.event)
 	{
-		if (gEnv->IsEditor())
+	case ENTITY_EVENT_RESET:
 		{
-			if (event.nParam[0]) // entering game mode in editor
-				m_editorstats = m_stats;
-			else
+			if (gEnv->IsEditor())
 			{
-				// leaving game mode
-				if (m_stats.currentItemId != m_editorstats.currentItemId)
-					m_pGameFrameWork->GetIItemSystem()->SetActorItem(m_pActor, m_editorstats.currentItemId, false);
-				m_stats = m_editorstats;
+				if (event.nParam[0]) // entering game mode in editor
+					m_editorstats = m_stats;
+				else
+				{
+					// leaving game mode
+					if (m_stats.currentItemId != m_editorstats.currentItemId)
+						m_pGameFrameWork->GetIItemSystem()->SetActorItem(m_pActor, m_editorstats.currentItemId, false);
+					m_stats = m_editorstats;
 
-				//Validate inventory, some things might have changed, like some FG removing items while in editor game
-				Validate();
+					//Validate inventory, some things might have changed, like some FG removing items while in editor game
+					Validate();
+				}
 			}
 		}
+		break;
+		case ENTITY_EVENT_POST_SERIALIZE:
+		{
+			for (int i = 0; i < IInventory::eInventorySlot_Last; ++i)
+			{
+				const int itemIndex = FindItem(m_stats.slotsInfo[i].lastSelected);
+
+				// For whatever reason we don't have this last item in the inventory,
+				// so find a suitable item in the same slot.
+				if (itemIndex == -1)
+				{
+					const EntityId entityId = GetAnyEntityInSlot(i);
+
+					SetLastSelectedInSlot(entityId);
+				}
+			}
+
+			// Benito - This is last minute workaround to solve a strange bug:
+			// If the game is saved while you had equipped a 'heavy weapon' (dynamic one, not present in the level) but this ones is holstered at the moment of save
+			// when the game is loaded, the item is not restored properly, because the entity does not get a serialize call.
+			// This code ensures that weapon goes back to the hands of the player, adding as many checks here as possible before doing the final call
+			const bool ownerActorIsClientNotInVehicle = (m_pActor != NULL) && m_pActor->IsClient() && (m_pActor->GetLinkedVehicle() == NULL);
+			if (ownerActorIsClientNotInVehicle)
+			{
+				IItem* pCurrentItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem(m_stats.currentItemId);
+				if ((pCurrentItem != NULL) && (pCurrentItem->GetOwnerId() == 0))
+				{
+					if (pCurrentItem->CanUse(m_pActor->GetEntityId()))
+					{
+						m_stats.currentItemId = 0; //Reset and use it again
+						pCurrentItem->Use(m_pActor->GetEntityId());
+					}
+				}
+			}
+		}
+		break;
 	}
 }
 
@@ -1302,7 +1298,7 @@ void CInventory::RMIReqToServer_RemoveAllItems() const
 {
 	TRMIInventory_Dummy Info;
 
-	GetGameObject()->InvokeRMI(SvReq_RemoveAllItems(), Info, eRMI_ToServer);
+	InvokeRemoteMethod(SvReq_RemoveAllItems(), Info, eRMI_ToServer);
 }
 
 // RMI receiver in the server to remove all items from the inventory. changes are automatically propagated to the clients
@@ -1322,7 +1318,7 @@ IMPLEMENT_RMI(CInventory, SvReq_RemoveAllItems)
 	if (gEnv->bMultiplayer)
 	{
 		TRMIInventory_Dummy Info;
-		GetGameObject()->InvokeRMI(Cl_RemoveAllAmmo(), Info, eRMI_ToAllClients);
+		InvokeRemoteMethod(Cl_RemoveAllAmmo(), Info, eRMI_ToAllClients);
 	}
 	else
 	{
@@ -1338,7 +1334,7 @@ void CInventory::RMIReqToServer_AddItem(const char* _pszItemClass) const
 {
 	TRMIInventory_Item Info(_pszItemClass);
 
-	GetGameObject()->InvokeRMI(SvReq_AddItem(), Info, eRMI_ToServer);
+	InvokeRemoteMethod(SvReq_AddItem(), Info, eRMI_ToServer);
 }
 
 // RMI receiver in the server to add an item to the inventory. change is automatically propagated to the clients
@@ -1357,7 +1353,7 @@ void CInventory::RMIReqToServer_RemoveItem(const char* _pszItemClass) const
 {
 	TRMIInventory_Item Info(_pszItemClass);
 
-	GetGameObject()->InvokeRMI(SvReq_RemoveItem(), Info, eRMI_ToServer);
+	InvokeRemoteMethod(SvReq_RemoveItem(), Info, eRMI_ToServer);
 }
 
 // RMI receiver in the server to remove an item from the inventory. change is automatically propagated to the clients
@@ -1400,7 +1396,7 @@ void CInventory::RMIReqToServer_SetAmmoCount(const char* _pszAmmoClass, int _iAm
 {
 	TRMIInventory_Ammo Info(_pszAmmoClass, _iAmount);
 
-	GetGameObject()->InvokeRMI(SvReq_SetAmmoCount(), Info, eRMI_ToServer);
+	InvokeRemoteMethod(SvReq_SetAmmoCount(), Info, eRMI_ToServer);
 }
 
 // RMI receiver in the server to set the ammo count for an ammo class in the inventory.
@@ -1408,7 +1404,7 @@ IMPLEMENT_RMI(CInventory, SvReq_SetAmmoCount)
 {
 	TRMIInventory_Ammo Info(params);
 
-	GetGameObject()->InvokeRMI(Cl_SetAmmoCount(), Info, eRMI_ToAllClients);
+	InvokeRemoteMethod(Cl_SetAmmoCount(), Info, eRMI_ToAllClients);
 	return true;
 }
 
@@ -1436,7 +1432,7 @@ void CInventory::RMIReqToServer_AddEquipmentPack(const char* _pszEquipmentPack, 
 {
 	TRMIInventory_EquipmentPack Info(_pszEquipmentPack, _bAdd, _bPrimary);
 
-	GetGameObject()->InvokeRMI(SvReq_AddEquipmentPack(), Info, eRMI_ToServer);
+	InvokeRemoteMethod(SvReq_AddEquipmentPack(), Info, eRMI_ToServer);
 }
 
 // RMI receiver in the server to add an equipment pack to the inventory. change is automatically propagated to the clients

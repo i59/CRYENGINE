@@ -15,8 +15,7 @@
 
 #include "VehicleSeatActionRotateTurret.h"
 
-#include "GameObjects/GameObject.h"
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
 #include "IVehicleSystem.h"
 #include "Vehicle.h"
 #include "VehicleSeat.h"
@@ -228,7 +227,7 @@ void CVehicleSeatActionRotateTurret::DoUpdate(const float frameTime)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
 
-	if (gEnv->IsClient() && m_pVehicle->IsProbablyDistant() && !m_pVehicle->GetGameObject()->IsProbablyVisible())
+	if (gEnv->IsClient())
 		return;
 
 	// AI use the aim goal to control their rotation (remote usage too)

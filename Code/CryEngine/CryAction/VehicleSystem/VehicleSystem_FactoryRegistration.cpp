@@ -67,13 +67,7 @@
 //------------------------------------------------------------------------
 void CVehicleSystem::RegisterVehicles(IGameFramework* gameFramework)
 {
-	IEntityClassRegistry::SEntityClassDesc serializerClass;
-	serializerClass.sName = "VehicleSeatSerializer";
-	serializerClass.sScriptFile = "";
-	serializerClass.flags = ECLF_INVISIBLE;
-
-	static IGameFramework::CGameObjectExtensionCreator<CVehicleSeatSerializer> createVehicleSeatSerializer;
-	CCryAction::GetCryAction()->GetIGameObjectSystem()->RegisterExtension(serializerClass.sName, &createVehicleSeatSerializer, &serializerClass);
+	RegisterEntityWithComponent<CVehiclePartDetachedEntity>("SEntityClassDesc", ECLF_INVISIBLE);
 
 	// register the detached part entity
 	RegisterEntityWithComponent<CVehiclePartDetachedEntity>("VehiclePartDetached", ECLF_INVISIBLE, "Scripts/Entities/Vehicles/VehiclePartDetached.lua");
@@ -105,8 +99,7 @@ void CVehicleSystem::RegisterVehicles(IGameFramework* gameFramework)
 					std::pair<std::set<string>::iterator, bool> result = setVehicles.insert(className);
 					if (result.second)
 					{
-						IEntityClassRegistry::SEntityClassDesc vehicleClass;
-						vehicleClass.sName = className.c_str();
+						int entityClassFlags = 0;
 
 						char scriptName[1024];
 
@@ -120,14 +113,10 @@ void CVehicleSystem::RegisterVehicles(IGameFramework* gameFramework)
 						if (root->getAttr("show", show))
 						{
 							if (!show && VehicleCVars().v_show_all == 0)
-								vehicleClass.flags |= ECLF_INVISIBLE;
+								entityClassFlags |= ECLF_INVISIBLE;
 						}
 
-						vehicleClass.sScriptFile = scriptName;
-
-						static IGameFramework::CGameObjectExtensionCreator<CVehicle> vehicleCreator;
-						CCryAction::GetCryAction()->GetIGameObjectSystem()->RegisterExtension(name, &vehicleCreator, &vehicleClass);
-						m_classes.insert(TVehicleClassMap::value_type(name, &vehicleCreator));
+						RegisterEntityWithComponent<CVehicle>(className.c_str(), entityClassFlags, scriptName);
 					}
 					else
 						CryLog("Vehicle <%s> already registered", name);
@@ -145,7 +134,7 @@ void CVehicleSystem::RegisterVehicles(IGameFramework* gameFramework)
 	}
 
 #define REGISTER_VEHICLEOBJECT(name, obj)                    \
-  REGISTER_FACTORY((IVehicleSystem*)this, name, obj, false); \
+  IVehicleSystem::RegisterFactory<obj>(name, (obj *)nullptr); \
   obj::m_objectId = this->AssignVehicleObjectId(name);
 
 	// register other factories
@@ -205,7 +194,7 @@ void CVehicleSystem::RegisterVehicles(IGameFramework* gameFramework)
 	REGISTER_VEHICLEOBJECT("RotateBone", CVehicleSeatActionRotateBone);
 	REGISTER_VEHICLEOBJECT("ShakeParts", CVehicleSeatActionShakeParts);
 
-	// actions
-	REGISTER_FACTORY((IVehicleSystem*)this, "Enter", CVehicleUsableActionEnter, false);
-	REGISTER_FACTORY((IVehicleSystem*)this, "Flip", CVehicleUsableActionFlip, false);
+	//actions
+	REGISTER_VEHICLEOBJECT("Enter", CVehicleUsableActionEnter);
+	REGISTER_VEHICLEOBJECT("Flip", CVehicleUsableActionFlip);
 }

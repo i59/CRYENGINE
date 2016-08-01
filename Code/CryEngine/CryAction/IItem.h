@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include <IGameObject.h>
+#include <IActionMapManager.h>
 
 enum EViewMode
 {
@@ -30,7 +30,7 @@ struct IInventory;
 
 // Summary
 //   Interface to implement a new Item class
-struct IItem : public IGameObjectExtension
+struct IItem : public IEntityComponent
 {
 	enum eItemBackAttachment
 	{

@@ -409,7 +409,7 @@ void CEntityObject::OnXForm(CEntity* pEntity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityObject::OnEntityEvent(CEntity* pEntity, SEntityEvent const& event)
+void CEntityObject::OnEntityEvent(CEntity* pEntity, const SEntityEvent& event)
 {
 	if (pChildRenderNode)
 		pChildRenderNode->OnEntityEvent(pEntity, event);

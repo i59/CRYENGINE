@@ -196,7 +196,7 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	void SetStateOnProxy(IEntity* const pIEntity, int const stateIndex)
 	{
-		auto &audioComponent = pIEntity->CreateAudioComponent();
+		auto &audioComponent = pIEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 		audioComponent.SetSwitchState(m_requestData.audioSwitchId, m_audioSwitchStates[stateIndex]);
 	}

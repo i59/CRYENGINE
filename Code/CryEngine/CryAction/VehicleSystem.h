@@ -20,7 +20,6 @@
 
 #include "IVehicleSystem.h"
 
-typedef std::map<string, IGameObjectExtensionCreatorBase*> TVehicleClassMap;
 typedef std::map<EntityId, IVehicle*>                      TVehicleMap;
 typedef std::map<string, IVehicleMovement*(*)()>           TVehicleMovementClassMap;
 typedef std::map<string, IVehicleView*(*)()>               TVehicleViewClassMap;
@@ -62,8 +61,7 @@ public:
 	virtual IVehicle*                        CreateVehicle(uint16 channelId, const char* name, const char* vehicleClass, const Vec3& pos, const Quat& rot, const Vec3& scale, EntityId id = 0);
 	virtual IVehicle*                        GetVehicle(EntityId entityId);
 	virtual IVehicle*                        GetVehicleByChannelId(uint16 channelId);
-	virtual bool                             IsVehicleClass(const char* name) const;
-
+	
 	virtual IVehicleMovement*                CreateVehicleMovement(const string& name);
 	virtual IVehicleView*                    CreateVehicleView(const string& name);
 	virtual IVehiclePart*                    CreateVehiclePart(const string& name);
@@ -95,7 +93,6 @@ public:
 	void                SetInitializingSeat(CVehicleSeat* pSeat) { m_pInitializingSeat = pSeat; };
 	CVehicleSeat*       GetInitializingSeat()                    { return m_pInitializingSeat; };
 
-	void                RegisterVehicleClass(const char* name, IGameFramework::IVehicleCreator* pCreator, bool isAI);
 	void                AddVehicle(EntityId entityId, IVehicle* pProxy);
 	void                RemoveVehicle(EntityId entityId);
 
@@ -188,7 +185,6 @@ private:
 	};
 
 	TVehicleMap                m_vehicles;
-	TVehicleClassMap           m_classes;
 	TVehicleMovementClassMap   m_movementClasses;
 	TVehicleViewClassMap       m_viewClasses;
 	TVehiclePartClassMap       m_partClasses;

@@ -60,7 +60,6 @@ class CScriptRMI;
 class CGameSerialize;
 class CMaterialEffects;
 class CMaterialEffectsCVars;
-class CGameObjectSystem;
 class CActionMapManager;
 class CActionGame;
 class CActorSystem;
@@ -122,9 +121,6 @@ public:
 
 	virtual uint32                        GetPreUpdateTicks();
 
-	virtual void                          RegisterFactory(const char* name, IItemCreator* pCreator, bool isAI);
-	virtual void                          RegisterFactory(const char* name, IVehicleCreator* pCreator, bool isAI);
-	virtual void                          RegisterFactory(const char* name, IGameObjectExtensionCreator* pCreator, bool isAI);
 	virtual void                          RegisterFactory(const char* name, ISaveGame*(*func)(), bool);
 	virtual void                          RegisterFactory(const char* name, ILoadGame*(*func)(), bool);
 
@@ -163,7 +159,6 @@ public:
 	virtual IViewSystem*                  GetIViewSystem();
 	virtual IGameplayRecorder*            GetIGameplayRecorder();
 	virtual IGameRulesSystem*             GetIGameRulesSystem();
-	virtual IGameObjectSystem*            GetIGameObjectSystem();
 	virtual IFlowSystem*                  GetIFlowSystem();
 	virtual IGameTokenSystem*             GetIGameTokenSystem();
 	virtual IEffectSystem*                GetIEffectSystem();
@@ -356,6 +351,9 @@ public:
 	void                    StopNetworkStallTicker();
 	void                    GoToSegment(int x, int y);
 
+	void DefineProtocol(bool server, IProtocolBuilder* pBuilder);
+	class CEntityComponentRMIDispatch *GetRMIDispatch() const { return m_pEntityComponentRMIDispatch; }
+
 private:
 	void InitScriptBinds();
 	void ReleaseScriptBinds();
@@ -490,7 +488,6 @@ private:
 	CGameplayRecorder*            m_pGameplayRecorder;
 	CGameRulesSystem*             m_pGameRulesSystem;
 	CFlowSystem*                  m_pFlowSystem;
-	CGameObjectSystem*            m_pGameObjectSystem;
 	CUIDraw*                      m_pUIDraw;
 	CScriptRMI*                   m_pScriptRMI;
 	CAnimationGraphCVars*         m_pAnimationGraphCvars;
@@ -642,6 +639,8 @@ private:
 	uint32                  m_PreUpdateTicks;
 
 	CNetMessageDistpatcher* m_pNetMsgDispatcher;
+
+	class CEntityComponentRMIDispatch *m_pEntityComponentRMIDispatch;
 };
 
 #endif //__CRYACTION_H__

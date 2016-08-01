@@ -15,7 +15,6 @@
 #include "ActionMap.h"
 #include "ActionMapManager.h"
 #include <CrySystem/IConsole.h>
-#include "GameObjects/GameObject.h"
 #include <CryCore/CryCrc32.h>
 
 #define ACTIONINPUT_NAME_STR                               "name"

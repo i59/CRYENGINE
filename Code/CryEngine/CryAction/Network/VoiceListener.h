@@ -7,7 +7,7 @@
 
 #ifndef OLD_VOICE_SYSTEM_DEPRECATED
 
-	#include "IGameObject.h"
+	#include <CryAction/IGameObject.h>
 
 struct ISound;
 
@@ -27,10 +27,8 @@ public:
 	virtual void                 FullSerialize(TSerialize ser)                                                 {}
 	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return true; }
 	virtual void                 PostSerialize()                                                               {}
-	virtual void                 SerializeSpawnInfo(TSerialize ser)                                            {}
 	virtual ISerializableInfoPtr GetSpawnInfo()                                                                { return 0; }
-	virtual void                 Update(SEntityUpdateContext& ctx, int updateSlot);
-	virtual void                 HandleEvent(const SGameObjectEvent&);
+	virtual void                 Update(SEntityUpdateContext& ctx);
 	virtual void                 ProcessEvent(const SEntityEvent&);
 	virtual void                 SetChannelId(uint16 id) {};
 	virtual void                 SetAuthority(bool auth);

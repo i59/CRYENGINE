@@ -5,7 +5,7 @@
 
 #pragma once
 
-class CGameVolume_Water : public CGameObjectExtensionHelper<CGameVolume_Water, IGameObjectExtension>
+class CGameVolume_Water : public IEntityComponent
 {
 	struct WaterProperties
 	{
@@ -64,31 +64,19 @@ class CGameVolume_Water : public CGameObjectExtensionHelper<CGameVolume_Water, I
 	};
 
 public:
+	DECLARE_COMPONENT("GameVolume_Water", 0x4FF4E2EFC69F4F9A, 0x8A2AB98D26085E2A)
+
 	CGameVolume_Water();
 	virtual ~CGameVolume_Water();
 
-	// IGameObjectExtension
-	virtual bool                 Init(IGameObject* pGameObject);
-	virtual void                 InitClient(int channelId)                                                       {};
-	virtual void                 PostInit(IGameObject* pGameObject);
-	virtual void                 PostInitClient(int channelId)                                                   {};
-	virtual bool                 ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params);
-	virtual void                 PostReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params) {}
-	virtual void                 Release();
-	virtual void                 FullSerialize(TSerialize ser)                                                 {};
-	virtual bool                 NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) { return false; };
-	virtual void                 PostSerialize()                                                               {};
-	virtual void                 SerializeSpawnInfo(TSerialize ser)                                            {}
-	virtual ISerializableInfoPtr GetSpawnInfo()                                                                { return 0; }
-	virtual void                 Update(SEntityUpdateContext& ctx, int slot);
-	virtual void                 HandleEvent(const SGameObjectEvent& gameObjectEvent);
-	virtual void                 ProcessEvent(const SEntityEvent&);
-	virtual void                 SetChannelId(uint16 id)     {};
-	virtual void                 SetAuthority(bool auth)     {};
-	virtual void                 PostUpdate(float frameTime) { CRY_ASSERT(false); }
-	virtual void                 PostRemoteSpawn()           {};
-	virtual void                 GetMemoryUsage(ICrySizer* pSizer) const;
-	// ~IGameObjectExtension
+	// IEntityComponent
+	virtual void PostInitialize() override;
+	virtual void ProcessEvent(const SEntityEvent& event) override;
+
+	virtual void Update(SEntityUpdateContext& ctx) override;
+
+	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;
+	// ~IEntityComponent
 
 private:
 

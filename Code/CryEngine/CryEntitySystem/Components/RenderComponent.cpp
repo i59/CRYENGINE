@@ -126,6 +126,17 @@ void CRenderComponent::Initialize(IEntity &entity)
 		AddFlags(FLAG_POST_INIT);
 		RegisterForRendering(true);
 	}
+
+	EnableEvent(ENTITY_EVENT_XFORM, 0, true);
+	EnableEvent(ENTITY_EVENT_HIDE, 0, true);
+	EnableEvent(ENTITY_EVENT_INVISIBLE, 0, true);
+	EnableEvent(ENTITY_EVENT_UNHIDE, 0, true);
+	EnableEvent(ENTITY_EVENT_VISIBLE, 0, true);
+	EnableEvent(ENTITY_EVENT_NOT_SEEN_TIMEOUT, 0, true);
+	EnableEvent(ENTITY_EVENT_MATERIAL, 0, true);
+	EnableEvent(ENTITY_EVENT_ANIM_EVENT, 0, true);
+	EnableEvent(ENTITY_EVENT_RESET, 0, true);
+	EnableEvent(ENTITY_EVENT_PREPHYSICSUPDATE, 0, true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2566,5 +2577,5 @@ bool CRenderComponent::CanExecuteRenderAsJob()
 void CRenderComponent::QueueSlotGeometryChange(int nSlot, IStatObj* pStatObj)
 {
 	m_queuedGeometryChanges.push_back(std::make_pair(nSlot, pStatObj));
-	m_pEntity->PrePhysicsActivate(true);
+	GetEntity()->EnableEvent(true, *this, ENTITY_EVENT_PREPHYSICSUPDATE, 0);
 }

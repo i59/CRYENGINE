@@ -2179,12 +2179,6 @@ void CLevelSystem::UnLoadLevel()
 		p3DEngine->UnloadLevel();
 	}
 
-	if (pCryAction)
-	{
-		IGameObjectSystem* pGameObjectSystem = pCryAction->GetIGameObjectSystem();
-		pGameObjectSystem->Reset();
-	}
-
 	IGameTokenSystem* pGameTokenSystem = CCryAction::GetCryAction()->GetIGameTokenSystem();
 	pGameTokenSystem->RemoveLibrary("Level");
 	pGameTokenSystem->Unload();

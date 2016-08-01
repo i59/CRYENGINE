@@ -1,37 +1,18 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
-/*************************************************************************
-   -------------------------------------------------------------------------
-   $Id$
-   $DateTime$
-   Description:	This file implements dispatching RMI calls in C++ to
-                relevant game object code
-
-   -------------------------------------------------------------------------
-   History:
-    - 24 Oct 2005 : Created by Craig Tiller
-
-*************************************************************************/
-
 #include "StdAfx.h"
-#include "GameObject.h"
-#include "GameObjectDispatch.h"
+#include "EntityComponentRMIDispatch.h"
 #include "Network/GameContext.h"
 
-CGameObjectDispatch* CGameObjectDispatch::m_pGOD = NULL;
-
-CGameObjectDispatch::CGameObjectDispatch() : m_bSafety(false)
+CEntityComponentRMIDispatch::CEntityComponentRMIDispatch() : m_bSafety(false)
 {
-	CRY_ASSERT(m_pGOD == NULL);
-	m_pGOD = this;
 }
 
-CGameObjectDispatch::~CGameObjectDispatch()
+CEntityComponentRMIDispatch::~CEntityComponentRMIDispatch()
 {
-	m_pGOD = NULL;
 }
 
-void CGameObjectDispatch::RegisterInterface(SGameObjectExtensionRMI* pMessages, size_t nCount)
+void CEntityComponentRMIDispatch::RegisterInterface(SRemoteComponentFunction* pMessages, size_t nCount)
 {
 	if (nCount == 0)
 		return;
@@ -44,7 +25,7 @@ void CGameObjectDispatch::RegisterInterface(SGameObjectExtensionRMI* pMessages, 
 
 	if (m_bSafety)
 	{
-		CryFatalError("CGameObjectDispatch::RegisterInterface: occurs too late");
+		CryFatalError("CEntityComponentRMIDispatch::RegisterInterface: occurs too late");
 		return;
 	}
 
@@ -78,7 +59,7 @@ void CGameObjectDispatch::RegisterInterface(SGameObjectExtensionRMI* pMessages, 
 	}
 }
 
-TNetMessageCallbackResult CGameObjectDispatch::Trampoline(
+TNetMessageCallbackResult CEntityComponentRMIDispatch::Trampoline(
   uint32 userId,
   INetMessageSink* handler,
   TSerialize serialize,
@@ -88,7 +69,7 @@ TNetMessageCallbackResult CGameObjectDispatch::Trampoline(
   EntityId* pEntityId,
   INetChannel* pNetChannel)
 {
-	const SGameObjectExtensionRMI* pRMI = m_pGOD->m_messages[userId];
+	const SRemoteComponentFunction* pRMI = CCryAction::GetCryAction()->GetRMIDispatch()->m_messages[userId];
 	IRMIAtSyncItem* pItem = (IRMIAtSyncItem*) pRMI->decoder(serialize, pEntityId, pNetChannel);
 	if (pItem)
 	{
@@ -102,7 +83,7 @@ TNetMessageCallbackResult CGameObjectDispatch::Trampoline(
 	return TNetMessageCallbackResult(pItem != 0, pItem);
 }
 
-void CGameObjectDispatch::LockSafety()
+void CEntityComponentRMIDispatch::LockSafety()
 {
 	if (m_bSafety)
 		return;
@@ -115,17 +96,19 @@ void CGameObjectDispatch::LockSafety()
 	m_bSafety = true;
 }
 
-bool CGameObjectDispatch::CProtocolDef::IsServer()
+bool CEntityComponentRMIDispatch::CProtocolDef::IsServer()
 {
-	return this == &m_pGOD->m_serverDef;
+	return this == &CCryAction::GetCryAction()->GetRMIDispatch()->m_serverDef;
 }
 
-void CGameObjectDispatch::CProtocolDef::DefineProtocol(IProtocolBuilder* pBuilder)
+void CEntityComponentRMIDispatch::CProtocolDef::DefineProtocol(IProtocolBuilder* pBuilder)
 {
-	m_pGOD->LockSafety();
+	auto *pDispatch = CCryAction::GetCryAction()->GetRMIDispatch();
 
-	std::vector<SNetMessageDef>* pSending = IsServer() ? &m_pGOD->m_clientCalls : &m_pGOD->m_serverCalls;
-	std::vector<SNetMessageDef>* pReceiving = IsServer() ? &m_pGOD->m_serverCalls : &m_pGOD->m_clientCalls;
+	pDispatch->LockSafety();
+
+	std::vector<SNetMessageDef>* pSending = IsServer() ? &pDispatch->m_clientCalls : &pDispatch->m_serverCalls;
+	std::vector<SNetMessageDef>* pReceiving = IsServer() ? &pDispatch->m_serverCalls : &pDispatch->m_clientCalls;
 
 	SNetProtocolDef protoSending;
 	protoSending.nMessages = pSending->size();
@@ -137,14 +120,16 @@ void CGameObjectDispatch::CProtocolDef::DefineProtocol(IProtocolBuilder* pBuilde
 	pBuilder->AddMessageSink(this, protoSending, protoReceiving);
 }
 
-bool CGameObjectDispatch::CProtocolDef::HasDef(const SNetMessageDef* pDef)
+bool CEntityComponentRMIDispatch::CProtocolDef::HasDef(const SNetMessageDef* pDef)
 {
+	auto *pDispatch = CCryAction::GetCryAction()->GetRMIDispatch();
+
 	return
-	  pDef >= &*m_pGOD->m_serverCalls.begin() && pDef < &*m_pGOD->m_serverCalls.end() ||
-	  pDef >= &*m_pGOD->m_clientCalls.begin() && pDef < &*m_pGOD->m_clientCalls.end();
+	  pDef >= &*pDispatch->m_serverCalls.begin() && pDef < &*pDispatch->m_serverCalls.end() ||
+	  pDef >= &*pDispatch->m_clientCalls.begin() && pDef < &*pDispatch->m_clientCalls.end();
 }
 
-void CGameObjectDispatch::GetMemoryUsage(ICrySizer* s) const
+void CEntityComponentRMIDispatch::GetMemoryUsage(ICrySizer* s) const
 {
 	//s->AddObject(m_messages);
 	//s->AddObject(m_clientCalls);

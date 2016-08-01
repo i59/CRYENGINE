@@ -147,7 +147,7 @@ void CMFXAudioEffect::Execute(const SMFXRunTimeEffectParams& params)
 	IEntity* pOwnerEntity = (params.audioProxyEntityId != 0) ? gEnv->pEntitySystem->GetEntity(params.audioProxyEntityId) : NULL;
 	if (pOwnerEntity)
 	{
-		auto &audioComponent = pOwnerEntity->CreateAudioComponent();
+		auto &audioComponent = pOwnerEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 		MaterialEffectsUtils::PrepareForAudioTriggerExecution<IEntityAudioComponent>(&audioComponent, m_audioParams, params);
 

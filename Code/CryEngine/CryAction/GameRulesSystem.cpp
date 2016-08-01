@@ -12,8 +12,6 @@
 
 *************************************************************************/
 #include "StdAfx.h"
-#include "GameObjects/GameObjectSystem.h"
-#include "GameObjects/GameObject.h"
 #include "GameRulesSystem.h"
 #include "Network/GameServerNub.h"
 
@@ -40,16 +38,33 @@ CGameRulesSystem::~CGameRulesSystem()
 }
 
 //------------------------------------------------------------------------
-bool CGameRulesSystem::RegisterGameRules(const char* rulesName, const char* extensionName)
+static void OnGameRulesEntitySpawned(IEntity& entity, SEntitySpawnParams& params, void* pUserData)
+{
+	auto *pGameRulesSystem = (CGameRulesSystem *)pUserData;
+
+	if (auto *pRulesDefinition = pGameRulesSystem->GetGameRulesDef(entity.GetClass()->GetName()))
+	{
+		// Create the game rules implementation
+		auto *pGameRules = static_cast<IGameRules *>(entity.CreateComponentByTypeId(pRulesDefinition->componentInterfaceID));
+	}
+}
+
+bool CGameRulesSystem::RegisterGameRules(const char* rulesName, const CryInterfaceID& componentInterfaceID, bool bUseScript)
 {
 	IEntityClassRegistry::SEntityClassDesc ruleClass;
 
-	char scriptName[1024];
-	cry_sprintf(scriptName, "Scripts/GameRules/%s.lua", rulesName);
+	if (bUseScript)
+	{
+		char scriptName[1024];
+		cry_sprintf(scriptName, "Scripts/GameRules/%s.lua", rulesName);
+
+		ruleClass.sScriptFile = scriptName;
+	}
+	else
+		ruleClass.sScriptFile = "";
 
 	ruleClass.sName = rulesName;
-	ruleClass.sScriptFile = scriptName;
-	ruleClass.pEntitySpawnCallback = CreateGameObject;
+	ruleClass.pEntitySpawnCallback = OnGameRulesEntitySpawned;
 	ruleClass.pEntitySpawnCallbackData = this;
 	ruleClass.flags |= ECLF_INVISIBLE;
 
@@ -60,7 +75,7 @@ bool CGameRulesSystem::RegisterGameRules(const char* rulesName, const char* exte
 	}
 
 	std::pair<TGameRulesMap::iterator, bool> rit = m_GameRules.insert(TGameRulesMap::value_type(rulesName, SGameRulesDef()));
-	rit.first->second.extension = extensionName;
+	rit.first->second.componentInterfaceID = componentInterfaceID;
 
 	return true;
 }
@@ -69,8 +84,7 @@ bool CGameRulesSystem::RegisterGameRules(const char* rulesName, const char* exte
 bool CGameRulesSystem::CreateGameRules(const char* rulesName)
 {
 	const char* name = GetGameRulesName(rulesName);
-	TGameRulesMap::iterator it = m_GameRules.find(name);
-	if (it == m_GameRules.end())
+	if (name == nullptr)
 		return false;
 
 	// If a rule is currently being used, ask the entity system to remove it
@@ -206,13 +220,6 @@ const char* CGameRulesSystem::GetGameRulesName(const char* alias) const
 }
 
 //------------------------------------------------------------------------
-/*
-   string& CGameRulesSystem::GetCurrentGameRules()
-   {
-   return
-   }
- */
-
 CGameRulesSystem::SGameRulesDef* CGameRulesSystem::GetGameRulesDef(const char* name)
 {
 	TGameRulesMap::iterator it = m_GameRules.find(name);
@@ -223,24 +230,6 @@ CGameRulesSystem::SGameRulesDef* CGameRulesSystem::GetGameRulesDef(const char* n
 }
 
 //------------------------------------------------------------------------
-void CGameRulesSystem::CreateGameObject(IEntity& entity, SEntitySpawnParams& params, void* pUserData)
-{
-	CGameRulesSystem* pThis = static_cast<CGameRulesSystem*>(pUserData);
-	CRY_ASSERT(pThis);
-	TGameRulesMap::iterator it = pThis->m_GameRules.find(params.pClass->GetName());
-	CRY_ASSERT(it != pThis->m_GameRules.end());
-
-	auto &gameObject = entity.AcquireComponent<CGameObject>();
-
-	if (!it->second.extension.empty())
-	{
-		if (!gameObject.ActivateExtension(it->second.extension.c_str()))
-		{
-			GameWarning("Failed to activate default game rules extension");
-		}
-	}
-}
-
 void CGameRulesSystem::GetMemoryStatistics(ICrySizer* s)
 {
 	s->Add(*this);

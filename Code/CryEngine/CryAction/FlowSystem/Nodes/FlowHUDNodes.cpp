@@ -14,7 +14,6 @@
 #include "StdAfx.h"
 #include "FlowBaseNode.h"
 #include <CryAction.h>
-#include <IGameObjectSystem.h>
 #include <CryString/StringUtils.h>
 #include <IActorSystem.h>
 #include <PersistantDebug.h>

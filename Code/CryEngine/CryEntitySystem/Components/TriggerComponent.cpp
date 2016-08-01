@@ -71,6 +71,12 @@ void CTriggerComponent::Reset()
 		GetTriggerSystem()->RemoveEntity(GetCEntity()->m_pProximityEntity);
 		GetCEntity()->m_pProximityEntity = 0;
 	}
+
+	EnableEvent(ENTITY_EVENT_XFORM, 0, true);
+	EnableEvent(ENTITY_EVENT_ENTERAREA, 0, true);
+	EnableEvent(ENTITY_EVENT_LEAVEAREA, 0, true);
+	EnableEvent(ENTITY_EVENT_PRE_SERIALIZE, 0, true);
+	EnableEvent(ENTITY_EVENT_POST_SERIALIZE, 0, true);
 }
 
 //////////////////////////////////////////////////////////////////////////

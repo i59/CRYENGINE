@@ -124,7 +124,6 @@ public:
 	virtual void            Serialize(TSerialize ser, EEntityAspects aspects) override;
 	virtual void            PostSerialize() override                                         {}
 
-	virtual void            RegisterSerializer(IGameObjectExtension* gameObjectExt) override {}
 	virtual int             GetType() override                                               { return m_pSharedParameters->m_typeId; }
 
 	virtual IVehicleWheel*  GetIWheel() override                                             { return nullptr; }

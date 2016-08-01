@@ -17,6 +17,11 @@
 #include <CryAction/IMaterialEffects.h>
 #include <CryAnimation/ICryAnimation.h>
 
+void CEntityNodeComponent::PostInitialize()
+{
+	EnableEvent(ENTITY_EVENT_ANIM_EVENT, 0, true);
+}
+
 void CEntityNodeComponent::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)

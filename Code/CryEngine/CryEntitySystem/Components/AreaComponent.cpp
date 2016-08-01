@@ -43,6 +43,11 @@ void CAreaComponent::Initialize(IEntity &entity)
 	m_pArea->SetEntityID(m_pEntity->GetId());
 
 	Reset();
+
+	EnableEvent(ENTITY_EVENT_XFORM, 0, true);
+	EnableEvent(ENTITY_EVENT_SCRIPT_EVENT, 0, true);
+	EnableEvent(ENTITY_EVENT_RENDER, 0, true);
+	EnableEvent(ENTITY_EVENT_TIMER, 0, true);
 }
 
 //////////////////////////////////////////////////////////////////////////

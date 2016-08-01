@@ -13,98 +13,83 @@
 
 #pragma once
 
-#ifndef __ComponentEventDistributer_h__
-	#define __ComponentEventDistributer_h__
+#include <CryEntitySystem/IEntitySystem.h>
+#include <CryEntitySystem/IEntityComponent.h>
+#include <CryCore/CryFlags.h>
 
-	#include <CryEntitySystem/IEntitySystem.h>
-	#include <CryEntitySystem/IComponent.h>
-	#include <CryCore/CryFlags.h>
+#include <bitset>
 
-class CComponentEventDistributer : public IComponentEventDistributer
+class CComponentEventDistributor
 {
 public:
-	enum EEventUpdatePolicy
+	// Struct containing a component and the priority that the event it belongs to should receive
+	struct SEventComponentInfo
 	{
-		EEventUpdatePolicy_UseDistributer = BIT(0),
-		EEventUpdatePolicy_SortByPriority = BIT(1),
-		EEventUpdatePolicy_AlwaysSort     = BIT(2)
-	};
-
-	struct SEventPtr
-	{
-		EntityId      m_entityID;
-		IComponentPtr m_pComponent;
-
-		bool operator==(const SEventPtr& rhs) const { return((m_entityID == rhs.m_entityID) && (m_pComponent == rhs.m_pComponent)); }
-
-		SEventPtr()
-			: m_entityID(0)
-		{}
-		SEventPtr(EntityId entityID, IComponentPtr pComponent)
+		SEventComponentInfo() : m_pComponent(nullptr) {}
+		SEventComponentInfo(IEntityComponent *pComponent, uint32 priority)
 			: m_pComponent(pComponent)
-			, m_entityID(entityID)
-		{}
-	};
-
-	typedef std::vector<SEventPtr> TEventPtrs;
-	struct SEventPtrs
-	{
-		TEventPtrs m_eventPtrs;
-		int        m_lastSortedEvent;
-		bool       m_bDirty : 1;
-
-		SEventPtrs() : m_bDirty(true), m_lastSortedEvent(-1) {}
-		SEventPtrs(const SEventPtrs& eventPtrs)
-			: m_eventPtrs(eventPtrs.m_eventPtrs)
-			, m_lastSortedEvent(eventPtrs.m_lastSortedEvent)
-			, m_bDirty(eventPtrs.m_bDirty)
-		{}
-		bool operator==(const SEventPtrs& rhs) const
+			, eventPriority(priority)
 		{
-			return((m_bDirty == rhs.m_bDirty) && (m_eventPtrs == rhs.m_eventPtrs));
 		}
+
+		// Pointer to the component
+		IEntityComponent *m_pComponent;
+		// Priority of the event, in order to determine which component gets it first
+		uint32 eventPriority;
 	};
-	typedef std::map<int, SEventPtrs> TComponentContainer;
 
-	explicit CComponentEventDistributer(const int flags);
-	TComponentContainer& GetEventContainer() { return m_componentDistributer; }
-	void                 SetFlags(int flags);
-	ILINE bool           IsEnabled() const   { return m_flags.AreAllFlagsActive(EEventUpdatePolicy_UseDistributer); }
+	// Struct containing information on the components that have requested to receive this event
+	struct SEventComponents
+	{
+		struct SCompare 
+		{
+			bool operator() (const SEventComponentInfo& lhs, const SEventComponentInfo& rhs) const 
+			{
+				if (lhs.eventPriority > rhs.eventPriority)
+				{
+					return true;
+				}
 
-	void                 EnableEventForEntity(const EntityId id, const int eventID, const bool enable);
-	void                 RegisterComponent(const EntityId entityID, IComponentPtr pComponent, bool bEnable);
-	void                 SendEvent(const SEntityEvent& event);
-	void                 RemapEntityID(EntityId oldID, EntityId newID);
-	void                 OnEntityDeleted(IEntity* piEntity);
+				if (lhs.eventPriority < rhs.eventPriority)
+				{
+					return false;
+				}
 
-	void                 Reset();
+				return lhs.m_pComponent->GetEntityId() > rhs.m_pComponent->GetEntityId();
+			}
+		};
+
+		std::set<SEventComponentInfo, SCompare> m_components;
+	};
+
+public:
+	CComponentEventDistributor();
+
+	void EnableEvent(IEntityComponent &component, EEntityEvent event, uint32 priority, bool bEnable);
+	void SendEvent(const SEntityEvent& event);
+	void SendEventToEntity(IEntity &entity, const SEntityEvent& event);
+
+	void RemapEntityID(EntityId oldID, EntityId newID);
+	void OnEntityDeleted(IEntity* piEntity);
+
+	void Reset();
 
 protected:
+	typedef std::unordered_map<EEntityEvent, SEventComponents> TEventComponentMap;
+	TEventComponentMap m_eventComponentMap;
 
-	virtual void RegisterEvent(const EntityId entityID, IComponentPtr pComponent, const int eventID, const int flags);
+	// Pick type that can fit all entity events as bitwise flags
+	typedef uint64 TSubscribedEventFlags;
 
-private:
-
-	typedef std::set<int> TRegisteredEvents;
-	struct SRegisteredComponentEvents
+	struct SEntitySubscribedEvents
 	{
-		SRegisteredComponentEvents(IComponentPtr pComponent) : m_pComponent(pComponent) {}
-
-		IComponentPtr     m_pComponent;
-		TRegisteredEvents m_registeredEvents;
+		// Bit flags indicating which events are subscribed
+		TSubscribedEventFlags m_subscribedEventFlags;
 	};
 
-	typedef std::map<EntityId, EntityId>                        TMappedEntityIDContainer;
-	typedef std::multimap<EntityId, SRegisteredComponentEvents> TComponentRegistrationContainer;
-	TComponentRegistrationContainer m_componentRegistration;
-	TComponentContainer             m_componentDistributer;
-	TMappedEntityIDContainer        m_mappedEntityIDs;
-	TEventPtrs                      m_eventPtrTemp;
-	CCryFlags<uint>                 m_flags;
+	typedef std::unordered_map<EntityId, SEntitySubscribedEvents> TEntityReverseLookupMap;
 
-	void     ErasePtr(TEventPtrs& eventPtrs, IComponentPtr pComponent);
-	void     EnableEventForComponent(EntityId entityID, IComponentPtr pComponent, const int eventID, bool bEnable);
-	EntityId GetAndEraseMappedEntityID(const EntityId entityID);
+	// Reverse lookup map to speed up finding and erasing events from the component storage
+	// Otherwise we would have to go through every component's subscribed event
+	TEntityReverseLookupMap m_entityReverseLookupMap;
 };
-
-#endif //__ComponentEventDistributer_h__

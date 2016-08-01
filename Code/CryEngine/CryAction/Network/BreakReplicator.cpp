@@ -24,12 +24,8 @@ void CBreakReplicator::RegisterClasses()
 	if (once)
 	{
 		once = false;
-		IEntityClassRegistry::SEntityClassDesc serializerClass;
-		serializerClass.sName = "BreakRepGameObject";
-		serializerClass.sScriptFile = "";
-		serializerClass.flags = ECLF_INVISIBLE;
-		static IGameFramework::CGameObjectExtensionCreator<CBreakRepGameObject> creator;
-		CCryAction::GetCryAction()->GetIGameObjectSystem()->RegisterExtension(serializerClass.sName, &creator, &serializerClass);
+		
+		RegisterEntityWithComponent<CBreakRepGameObject>("BreakRepGameObject", ECLF_INVISIBLE);
 	}
 }
 
@@ -299,13 +295,10 @@ void CBreakReplicator::OnEndFrame()
 		{
 			if ((pEntity->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY)) == 0)
 			{
-				if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
+				if (auto *pObject = pEntity->QueryComponent<CBreakRepGameObject>())
 				{
-					if (IGameObjectExtension* pExtension = pGameObject->QueryExtension("BreakRepGameObject"))
-					{
-						// Net serialise that this entity should free its breakage statobj slot
-						static_cast<CBreakRepGameObject*>(pExtension)->m_removed = true;
-					}
+					// Net serialise that this entity should free its breakage statobj slot
+					pObject->m_removed = true;
 				}
 			}
 			else

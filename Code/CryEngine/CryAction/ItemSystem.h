@@ -120,7 +120,6 @@ public:
 
 	bool ScanXML(XmlNodeRef& root, const char* xmlFile);
 
-	void RegisterItemClass(const char* name, IGameFramework::IItemCreator* pCreator);
 	void PrecacheLevel();
 
 	void GetMemoryUsage(ICrySizer* s) const;
@@ -221,16 +220,6 @@ private:
 
 	} SItemParamsDesc;
 
-	typedef struct SItemClassDesc
-	{
-		SItemClassDesc() : pCreator(0) {};
-		SItemClassDesc(IGameObjectExtensionCreatorBase* pCrtr) : pCreator(pCrtr) {};
-
-		IGameObjectExtensionCreatorBase* pCreator;
-		void GetMemoryUsage(ICrySizer* pSizer) const { /*nothing*/ }
-	} SItemClassDesc;
-
-	typedef std::map<string, SItemClassDesc>   TItemClassMap;
 	typedef std::map<string, SItemParamsDesc>  TItemParamsMap;
 
 	typedef std::map<string, int>              TItemSystemSpawnPolicy;
@@ -253,7 +242,6 @@ private:
 
 	XmlNodeRef                     m_playerLevelToLevelSave;
 
-	TItemClassMap                  m_classes;
 	TItemParamsMap                 m_params;
 	TItemMap                       m_items;
 	TListeners                     m_listeners;

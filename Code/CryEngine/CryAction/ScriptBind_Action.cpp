@@ -1,7 +1,6 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "GameObjects/GameObject.h"
 #include "ScriptBind_Action.h"
 #include "Serialization/XMLScriptLoader.h"
 #include "CryAction.h"
@@ -75,7 +74,6 @@ void CScriptBind_Action::RegisterMethods()
 	SCRIPT_REG_TEMPLFUNC(IsClient, "");
 	SCRIPT_REG_TEMPLFUNC(IsGameStarted, "");
 	SCRIPT_REG_TEMPLFUNC(IsRMIServer, "");
-	SCRIPT_REG_TEMPLFUNC(IsGameObjectProbablyVisible, "entityId");
 	SCRIPT_REG_TEMPLFUNC(GetPlayerList, "");
 	SCRIPT_REG_TEMPLFUNC(ActivateEffect, "name");
 	SCRIPT_REG_TEMPLFUNC(GetWaterInfo, "pos");
@@ -87,10 +85,8 @@ void CScriptBind_Action::RegisterMethods()
 	SCRIPT_REG_TEMPLFUNC(IsImmersivenessEnabled, "");
 	SCRIPT_REG_TEMPLFUNC(IsChannelSpecial, "entityId/channelId");
 
-	SCRIPT_REG_TEMPLFUNC(ForceGameObjectUpdate, "entityId, force");
 	SCRIPT_REG_TEMPLFUNC(CreateGameObjectForEntity, "entityId");
 	SCRIPT_REG_TEMPLFUNC(BindGameObjectToNetwork, "entityId");
-	SCRIPT_REG_TEMPLFUNC(ActivateExtensionForGameObject, "entityId, extension, activate");
 	SCRIPT_REG_TEMPLFUNC(SetNetworkParent, "entityId, parentId");
 	SCRIPT_REG_TEMPLFUNC(IsChannelOnHold, "channelId");
 	SCRIPT_REG_TEMPLFUNC(BanPlayer, "playerId, message");
@@ -246,20 +242,6 @@ int CScriptBind_Action::GetPlayerList(IFunctionHandler* pH)
 	return pH->EndFunction(*playerList);
 }
 
-int CScriptBind_Action::IsGameObjectProbablyVisible(IFunctionHandler* pH, ScriptHandle gameObject)
-{
-	IEntity* pEntity = gEnv->pEntitySystem->GetEntity((EntityId)gameObject.n);
-	if (pEntity)
-	{
-		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
-		{
-			if (pGameObject->IsProbablyVisible())
-				return pH->EndFunction(1);
-		}
-	}
-	return pH->EndFunction();
-}
-
 int CScriptBind_Action::ActivateEffect(IFunctionHandler* pH, const char* name)
 {
 	int i = CCryAction::GetCryAction()->GetIEffectSystem()->GetEffectId(name);
@@ -333,23 +315,11 @@ int CScriptBind_Action::GetServerTime(IFunctionHandler* pFH)
 }
 
 //------------------------------------------------------------------------
-int CScriptBind_Action::ForceGameObjectUpdate(IFunctionHandler* pH, ScriptHandle entityId, bool force)
-{
-	if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity((EntityId)entityId.n))
-	{
-		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
-			pGameObject->ForceUpdate(force);
-	}
-
-	return pH->EndFunction();
-}
-
-//------------------------------------------------------------------------
 int CScriptBind_Action::CreateGameObjectForEntity(IFunctionHandler* pH, ScriptHandle entityId)
 {
 	if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity((EntityId)entityId.n))
 	{
-		pEntity->AcquireComponent<CGameObject>();
+		pEntity->AcquireExternalComponent<IGameObject>();
 	}
 
 	return pH->EndFunction();
@@ -360,7 +330,7 @@ int CScriptBind_Action::BindGameObjectToNetwork(IFunctionHandler* pH, ScriptHand
 {
 	if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity((EntityId)entityId.n))
 	{
-		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
+		if (auto *pGameObject = pEntity->QueryComponent<IGameObject>())
 			pGameObject->BindToNetwork();
 	}
 
@@ -368,29 +338,11 @@ int CScriptBind_Action::BindGameObjectToNetwork(IFunctionHandler* pH, ScriptHand
 }
 
 //------------------------------------------------------------------------
-int CScriptBind_Action::ActivateExtensionForGameObject(IFunctionHandler* pH, ScriptHandle entityId, const char* extension, bool activate)
-{
-	if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity((EntityId)entityId.n))
-	{
-		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
-		{
-			if (activate)
-				pGameObject->ActivateExtension(extension);
-			else
-				pGameObject->DeactivateExtension(extension);
-		}
-	}
-
-	return pH->EndFunction();
-
-}
-
-//------------------------------------------------------------------------
 int CScriptBind_Action::SetNetworkParent(IFunctionHandler* pH, ScriptHandle entityId, ScriptHandle parentId)
 {
 	if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity((EntityId)entityId.n))
 	{
-		if (auto *pGameObject = pEntity->QueryComponent<CGameObject>())
+		if (auto *pGameObject = pEntity->QueryComponent<IGameObject>())
 			pGameObject->SetNetworkParent((EntityId)parentId.n);
 	}
 
@@ -750,7 +702,7 @@ int CScriptBind_Action::DontSyncPhysics(IFunctionHandler* pH, ScriptHandle entit
 {
 	if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity((EntityId)entityId.n))
 	{
-		auto &gameObject = pEntity->AcquireComponent<CGameObject>();
+		auto &gameObject = pEntity->AcquireExternalComponent<IGameObject>();
 
 		gameObject.DontSyncPhysics();
 	}
@@ -823,9 +775,6 @@ int CScriptBind_Action::RegisterWithAI(IFunctionHandler* pH)
 	if (pVSystem)
 		pVehicle = pVSystem->GetVehicle(pEntity->GetId());
 
-	// Set this if we've found something to create a proxy from
-	IGameObject* pGameObject = NULL;
-
 	switch (type)
 	{
 	case AIOBJECT_ACTOR:
@@ -840,7 +789,6 @@ int CScriptBind_Action::RegisterWithAI(IFunctionHandler* pH)
 				GameWarning("RegisterWithAI: no Actor for %s.", pEntity->GetName());
 				return pH->EndFunction();
 			}
-			pGameObject = pActor->GetEntity()->QueryComponent<IGameObject>();
 		}
 		break;
 	case AIOBJECT_BOAT:
@@ -851,7 +799,6 @@ int CScriptBind_Action::RegisterWithAI(IFunctionHandler* pH)
 				GameWarning("RegisterWithAI: no Vehicle for %s (Id %i).", pEntity->GetName(), pEntity->GetId());
 				return pH->EndFunction();
 			}
-			pGameObject = pVehicle->GetGameObject();
 		}
 		break;
 
@@ -863,7 +810,6 @@ int CScriptBind_Action::RegisterWithAI(IFunctionHandler* pH)
 				GameWarning("RegisterWithAI: no Vehicle for %s (Id %i).", pEntity->GetName(), pEntity->GetId());
 				return pH->EndFunction();
 			}
-			pGameObject = pVehicle->GetGameObject();
 			params.m_moveAbility.b3DMove = true;
 		}
 		break;
@@ -878,8 +824,6 @@ int CScriptBind_Action::RegisterWithAI(IFunctionHandler* pH)
 				pH->GetParam(3, pTable);
 			else
 				return pH->EndFunction();
-
-			pGameObject = pActor->GetEntity()->QueryComponent<IGameObject>();
 
 			pTable->GetValue("groupid", params.m_sParamStruct.m_nGroup);
 

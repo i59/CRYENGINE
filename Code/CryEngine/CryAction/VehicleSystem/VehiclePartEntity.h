@@ -15,7 +15,7 @@
 #ifndef __VEHICLEPARTENTITY_H__
 #define __VEHICLEPARTENTITY_H__
 
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
 #include "VehiclePartBase.h"
 
 class CVehiclePartEntity : public CVehiclePartBase

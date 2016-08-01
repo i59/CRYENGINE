@@ -179,8 +179,7 @@ public:
 			if (isOther && !allowOthers)
 				continue;
 
-			auto *pGameObject = pEntity->QueryComponent<CGameObject>();
-			if (pGameObject)
+			if (auto *pGameObject = pEntity->QueryComponent<IGameObject>())
 			{
 				if (pGameObject->IsBoundToNetwork())
 					pGameObject->BindToNetwork(eBTNM_Force); // force rebinding

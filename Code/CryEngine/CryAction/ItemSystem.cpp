@@ -15,9 +15,7 @@
 #include <CryString/CryPath.h>
 //#include "ScriptBind_ItemSystem.h"
 #include "IActionMapManager.h"
-#include "GameObjects/GameObject.h"
 #include "CryAction.h"
-#include "IGameObjectSystem.h"
 #include "IActorSystem.h"
 
 #include <CryEntitySystem/IEntitySystem.h>
@@ -124,12 +122,6 @@ void CItemSystem::OnUnloadComplete(ILevelInfo* pLevel)
 	if (m_LTLPrecacheState == LTLCS_FORSAVEGAME)
 		m_precacheLevelToLevelItemList.clear(); // just for sanity reasons.
 #endif
-}
-
-//------------------------------------------------------------------------
-void CItemSystem::RegisterItemClass(const char* name, IGameFramework::IItemCreator* pCreator)
-{
-	m_classes.insert(TItemClassMap::value_type(name, SItemClassDesc(pCreator)));
 }
 
 //------------------------------------------------------------------------
@@ -513,15 +505,6 @@ bool CItemSystem::ScanXML(XmlNodeRef& root, const char* xmlFile)
 
 	INDENT_LOG_DURING_SCOPE(true, "Item system parsing '%s' file (name='%s' class='%s')", xmlFile, name, className);
 
-	TItemClassMap::iterator it = m_classes.find(CONST_TEMP_STRING(className));
-	if (it == m_classes.end())
-	{
-		CryFixedStringT<128> errorBuffer;
-		errorBuffer.Format("Unknown item class '%s'! Skipping...", className);
-		ItemSystemErrorMessage(xmlFile, errorBuffer.c_str(), true);
-		return false;
-	}
-
 	TItemParamsMap::iterator dit = m_params.find(CONST_TEMP_STRING(name));
 
 	if (dit == m_params.end())
@@ -540,11 +523,12 @@ bool CItemSystem::ScanXML(XmlNodeRef& root, const char* xmlFile)
 		int invisible = 0;
 		root->getAttr("invisible", invisible);
 
-		classDesc.pEntitySpawnCallback = (IEntityClass::EntitySpawnCallback)it->second.pCreator;
+		REINST("Item class logic")
+		/*classDesc.pEntitySpawnCallback = (IEntityClass::EntitySpawnCallback)it->second.pCreator;
 		classDesc.flags |= invisible ? ECLF_INVISIBLE : 0;
 
 		if (!m_reloading)
-			CCryAction::GetCryAction()->GetIGameObjectSystem()->RegisterExtension(name, it->second.pCreator, &classDesc);
+			CCryAction::GetCryAction()->GetIGameObjectSystem()->RegisterExtension(name, it->second.pCreator, &classDesc);*/
 
 		std::pair<TItemParamsMap::iterator, bool> result = m_params.insert(TItemParamsMap::value_type(name, SItemParamsDesc()));
 		dit = result.first;
@@ -1670,7 +1654,6 @@ void CItemSystem::GetMemoryUsage(ICrySizer* pSizer) const
 	pSizer->AddObject(this, sizeof(*this));
 	pSizer->AddContainer(m_objectCache);
 	pSizer->AddContainer(m_characterCache);
-	pSizer->AddContainer(m_classes);
 	pSizer->AddContainer(m_params);
 	pSizer->AddContainer(m_items);
 	m_listeners.GetMemoryUsage(pSizer);

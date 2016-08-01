@@ -19,6 +19,8 @@
 #include <CryAnimation/ICryAnimation.h>
 #include <CryParticleSystem/ParticleParams.h>
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 // TypeInfo implementations
 #ifndef _LIB
 	#include <CryParticleSystem/ParticleParams_TypeInfo.h>

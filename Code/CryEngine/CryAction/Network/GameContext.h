@@ -25,11 +25,6 @@
 #include "ClassRegistryReplicator.h"
 #include <CryNetwork/INetworkService.h>
 
-// FIXME: Cell SDK GCC bug workaround.
-#ifndef __GAMEOBJECT_H__
-	#include "GameObjects/GameObject.h"
-#endif
-
 class CScriptRMI;
 class CPhysicsSync;
 class CGameServerChannel;
@@ -267,7 +262,7 @@ private:
 
 	int              m_loadFlags;
 
-	static void OnCollision(const EventPhys* pEvent, void*);
+	static int OnCollision(const EventPhys* pEvent);
 
 	// singleton
 	static CGameContext* s_pGameContext;

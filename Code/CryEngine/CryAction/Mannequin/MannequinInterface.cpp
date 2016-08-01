@@ -9,7 +9,6 @@
 
 #include "ActionController.h"
 #include "AnimationDatabaseManager.h"
-#include "GameObjects/GameObject.h"
 #include "MannequinDebug.h"
 #include "ProceduralClipFactory.h"
 

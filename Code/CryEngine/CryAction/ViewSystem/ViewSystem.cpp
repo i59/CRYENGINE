@@ -15,7 +15,7 @@
 #include <CryMath/Cry_Camera.h>
 #include <ILevelSystem.h>
 #include "ViewSystem.h"
-#include "GameObjects/GameObject.h"
+#include "EntityComponents/GameObject.h"
 #include "CryAction.h"
 #include "IActorSystem.h"
 #include <CryMath/PNoise3.h>

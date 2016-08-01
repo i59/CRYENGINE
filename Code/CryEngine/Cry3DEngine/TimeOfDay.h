@@ -16,6 +16,12 @@
 
 #include <Cry3DEngine/ITimeOfDay.h>
 
+#include <CryAudio/IAudioInterfacesCommonData.h>
+#include <CrySystem/XML/IXml.h>
+#include <CrySystem/ITimer.h>
+#include <CryNetwork/ISerialize.h>
+#include <CrySystem/IConsole.h>
+
 class CEnvironmentPreset;
 //////////////////////////////////////////////////////////////////////////
 // ITimeOfDay interface implementation.

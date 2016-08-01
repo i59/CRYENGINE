@@ -54,6 +54,7 @@ class CEngineModule_EntitySystem : public IEngineModule
 		ISystem* pSystem = env.pSystem;
 
 		CEntitySystem* pEntitySystem = new CEntitySystem(pSystem);
+		env.pEntitySystem = pEntitySystem;
 		g_pIEntitySystem = pEntitySystem;
 		if (!pEntitySystem->Init(pSystem))
 		{
@@ -61,8 +62,6 @@ class CEngineModule_EntitySystem : public IEngineModule
 			return false;
 		}
 		pSystem->GetISystemEventDispatcher()->RegisterListener(&g_system_event_listener_entity);
-
-		env.pEntitySystem = pEntitySystem;
 		return true;
 	}
 };

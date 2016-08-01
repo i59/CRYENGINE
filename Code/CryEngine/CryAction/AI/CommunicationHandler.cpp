@@ -56,7 +56,7 @@ void CommunicationHandler::Reset()
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId);
 		if (pEntity)
 		{
-			pIEntityAudioProxy = &pEntity->CreateAudioComponent();
+			pIEntityAudioProxy = &pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 		}
 
 		PlayingSounds::iterator end = m_playingSounds.end();
@@ -104,7 +104,7 @@ void CommunicationHandler::Reset()
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId);
 	if (pEntity)
 	{
-		auto &audioComponent = pEntity->CreateAudioComponent();
+		auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 		const ICommunicationManager::WWiseConfiguration& wiseConfigutation = gEnv->pAISystem->GetCommunicationManager()->GetWiseConfiguration();
 
@@ -184,7 +184,7 @@ void CommunicationHandler::StopSound(const SCommunicationSound& soundToStop)
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId);
 	if (pEntity)
 	{
-		auto &audioComponent = pEntity->CreateAudioComponent();
+		auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 		if (soundToStop.stopSoundControlId != INVALID_AUDIO_CONTROL_ID)
 		{
@@ -299,7 +299,7 @@ SCommunicationSound CommunicationHandler::PlaySound(CommPlayID playID, const cha
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entityId);
 	if (pEntity)
 	{
-		auto &audioComponent = pEntity->CreateAudioComponent();
+		auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 		const ICommunicationManager::WWiseConfiguration& wiseConfigutation = gEnv->pAISystem->GetCommunicationManager()->GetWiseConfiguration();
 

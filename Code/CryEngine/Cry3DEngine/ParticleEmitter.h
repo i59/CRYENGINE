@@ -25,6 +25,8 @@
 #include "ParticleSubEmitter.h"
 #include "ParticleManager.h"
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 #undef PlaySound
 
 class CParticle;
@@ -74,7 +76,7 @@ public:
 	virtual void             SetPhysics(IPhysicalEntity*)      {}
 
 	virtual void             Render(SRendParams const& rParam, const SRenderingPassInfo& passInfo);
-	virtual void             OnEntityEvent(IEntity* pEntity, SEntityEvent const& event);
+	virtual void             OnEntityEvent(IEntity* pEntity, const SEntityEvent& event);
 	virtual void             OnPhysAreaChange() { m_PhysEnviron.m_nNonUniformFlags &= ~EFF_LOADED; }
 
 	virtual void             GetMemoryUsage(ICrySizer* pSizer) const;

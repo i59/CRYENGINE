@@ -34,14 +34,11 @@ void CClipVolumeComponent::Reset()
 
 void CClipVolumeComponent::ProcessEvent(const SEntityEvent& event)
 {
-	if (m_pEntity != NULL)
+	if (event.event == ENTITY_EVENT_XFORM ||
+		event.event == ENTITY_EVENT_HIDE ||
+		event.event == ENTITY_EVENT_UNHIDE)
 	{
-		if (event.event == ENTITY_EVENT_XFORM ||
-		    event.event == ENTITY_EVENT_HIDE ||
-		    event.event == ENTITY_EVENT_UNHIDE)
-		{
-			gEnv->p3DEngine->UpdateClipVolume(m_pClipVolume, m_pRenderMesh, m_pBspTree, m_pEntity->GetWorldTM(), !m_pEntity->IsHidden(), m_nFlags, m_pEntity->GetName());
-		}
+		gEnv->p3DEngine->UpdateClipVolume(m_pClipVolume, m_pRenderMesh, m_pBspTree, m_pEntity->GetWorldTM(), !m_pEntity->IsHidden(), m_nFlags, m_pEntity->GetName());
 	}
 }
 
@@ -93,6 +90,10 @@ void CClipVolumeComponent::Initialize(IEntity &entity)
 	// Doesn't look like anything is sending this data?
 	//if (params.pUserData)
 	//	m_GeometryFileName = static_cast<const char*>(params.pUserData);
+
+	EnableEvent(ENTITY_EVENT_XFORM, 0, true);
+	EnableEvent(ENTITY_EVENT_HIDE, 0, true);
+	EnableEvent(ENTITY_EVENT_UNHIDE, 0, true);
 }
 
 void CClipVolumeComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)

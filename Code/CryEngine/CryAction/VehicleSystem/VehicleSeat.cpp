@@ -12,7 +12,6 @@
 
 *************************************************************************/
 #include "StdAfx.h"
-#include "GameObjects/GameObject.h"
 #include "IActorSystem.h"
 #include "IAnimatedCharacter.h"
 #include "IVehicleSystem.h"
@@ -430,7 +429,8 @@ void CVehicleSeat::Reset()
 	m_lockStatus = m_lockDefault;
 	m_passengerId = 0;
 
-	CHANGED_NETWORK_STATE(m_pVehicle, CVehicle::ASPECT_SEAT_PASSENGER);
+	if(auto *pGameObject = m_pVehicle->GetEntity()->QueryComponent<IGameObject>())
+		pGameObject->ChangedNetworkState(CVehicle::ASPECT_SEAT_PASSENGER);
 }
 
 //------------------------------------------------------------------------
@@ -558,7 +558,9 @@ bool CVehicleSeat::Enter(EntityId actorId, bool isTransitionEnabled)
 	// Link to Vehicle.
 	m_passengerId = actorId;
 	pActor->LinkToVehicle(m_pVehicle->GetEntityId());
-	CHANGED_NETWORK_STATE(m_pVehicle, CVehicle::ASPECT_SEAT_PASSENGER);
+
+	if (auto *pGameObject = m_pVehicle->GetEntity()->QueryComponent<IGameObject>())
+		pGameObject->ChangedNetworkState(CVehicle::ASPECT_SEAT_PASSENGER);
 
 	if (!doTransition)
 	{
@@ -596,9 +598,6 @@ bool CVehicleSeat::Enter(EntityId actorId, bool isTransitionEnabled)
 		SitDown();
 	}
 
-	// adjust the vehicle update slot to start calling the seat update function
-	m_pVehicle->GetGameObject()->EnableUpdateSlot(m_pVehicle, IVehicle::eVUS_PassengerIn);
-
 	if (gEnv->bMultiplayer && gEnv->bServer)
 		m_pVehicle->KillAbandonedTimer();
 
@@ -620,7 +619,8 @@ bool CVehicleSeat::EnterRemotely(EntityId actorId)
 
 	GivesActorSeatFeatures(true, true);
 
-	CHANGED_NETWORK_STATE(m_pVehicle, CVehicle::ASPECT_SEAT_PASSENGER);
+	if (auto *pGameObject = m_pVehicle->GetEntity()->QueryComponent<IGameObject>())
+		pGameObject->ChangedNetworkState(CVehicle::ASPECT_SEAT_PASSENGER);
 
 	return true;
 }
@@ -634,7 +634,9 @@ bool CVehicleSeat::ExitRemotely()
 	GivesActorSeatFeatures(false, true);
 
 	m_passengerId = 0;
-	CHANGED_NETWORK_STATE(m_pVehicle, CVehicle::ASPECT_SEAT_PASSENGER);
+
+	if (auto *pGameObject = m_pVehicle->GetEntity()->QueryComponent<IGameObject>())
+		pGameObject->ChangedNetworkState(CVehicle::ASPECT_SEAT_PASSENGER);
 
 	m_transitionType = eVT_None;
 
@@ -735,7 +737,8 @@ bool CVehicleSeat::SitDown()
 	eventParams.entityId = m_passengerId;
 	m_pVehicle->BroadcastVehicleEvent(eVE_PassengerEnter, eventParams);
 
-	CHANGED_NETWORK_STATE(m_pVehicle, CVehicle::ASPECT_SEAT_PASSENGER);
+	if (auto *pGameObject = m_pVehicle->GetEntity()->QueryComponent<IGameObject>())
+		pGameObject->ChangedNetworkState(CVehicle::ASPECT_SEAT_PASSENGER);
 
 	if (pActor->IsClient())
 	{
@@ -1100,16 +1103,14 @@ bool CVehicleSeat::StandUp()
 	}
 #endif
 
-	// downgrade the vehicle update slot
-	m_pVehicle->GetGameObject()->DisableUpdateSlot(m_pVehicle, IVehicle::eVUS_PassengerIn);
-
 	// broadcast an event about the passenger exiting
 	SVehicleEventParams eventParams;
 	eventParams.iParam = m_seatId;
 	eventParams.entityId = pActor->GetEntityId();
 	m_pVehicle->BroadcastVehicleEvent(eVE_PassengerExit, eventParams);
 
-	CHANGED_NETWORK_STATE(m_pVehicle, CVehicle::ASPECT_SEAT_PASSENGER);
+	if (auto *pGameObject = m_pVehicle->GetEntity()->QueryComponent<IGameObject>())
+		pGameObject->ChangedNetworkState(CVehicle::ASPECT_SEAT_PASSENGER);
 
 	if (!gEnv->pSystem->IsSerializingFile()) //serialization will fix that automatically
 	{
@@ -1402,7 +1403,8 @@ void CVehicleSeat::ChangedNetworkState(NetworkAspectType aspects)
 {
 	if (m_pSerializer && gEnv->pEntitySystem->GetEntity(m_serializerId))
 	{
-		CHANGED_NETWORK_STATE(m_pSerializer, aspects);
+		if (auto *pGameObject = m_pSerializer->GetEntity()->QueryComponent<IGameObject>())
+			pGameObject->ChangedNetworkState(aspects);
 	}
 }
 
@@ -1928,7 +1930,8 @@ void CVehicleSeat::NetSetPassengerId(EntityId passengerId)
 			m_prevTransitionType = m_transitionType;
 		}
 
-		CHANGED_NETWORK_STATE(m_pVehicle, CVehicle::ASPECT_SEAT_PASSENGER);
+		if (auto *pGameObject = m_pVehicle->GetEntity()->QueryComponent<IGameObject>())
+			pGameObject->ChangedNetworkState(CVehicle::ASPECT_SEAT_PASSENGER);
 	}
 }
 
@@ -2013,7 +2016,6 @@ void CVehicleSeat::Serialize(TSerialize ser, EEntityAspects aspects)
 			m_transitionType = transitionType;
 			m_queuedTransition = queueTransitionType;
 			m_passengerId = passengerId;
-			m_pVehicle->GetGameObject()->EnableUpdateSlot(m_pVehicle, IVehicle::eVUS_PassengerIn);
 		}
 
 		TVehicleViewId view = m_currentView;
@@ -2275,7 +2277,8 @@ void CVehicleSeat::UnlinkPassenger(bool ragdoll)
 	if (pActor->IsClient())
 		StopSounds();
 
-	CHANGED_NETWORK_STATE(m_pVehicle, CVehicle::ASPECT_SEAT_PASSENGER);
+	if (auto *pGameObject = m_pVehicle->GetEntity()->QueryComponent<IGameObject>())
+		pGameObject->ChangedNetworkState(CVehicle::ASPECT_SEAT_PASSENGER);
 }
 
 //------------------------------------------------------------------------

@@ -48,6 +48,8 @@
 #include "Network/GameStatsConfig.h"
 #include "Network/NetworkStallTicker.h"
 
+#include "EntityComponents/EntityComponentRMIDispatch.h"
+
 #include "AI/AIProxyManager.h"
 #include "AI/BehaviorTreeNodes_Action.h"
 #include <CryAISystem/ICommunicationManager.h>
@@ -87,7 +89,7 @@
 #include "MaterialEffects/MaterialEffects.h"
 #include "MaterialEffects/MaterialEffectsCVars.h"
 #include "MaterialEffects/ScriptBind_MaterialEffects.h"
-#include "GameObjects/GameObjectSystem.h"
+#include "EntityComponents/GameObject.h"
 #include "ViewSystem/ViewSystem.h"
 #include "GameplayRecorder/GameplayRecorder.h"
 #include "Analyst.h"
@@ -112,7 +114,7 @@
 #include "UIDraw/UIDraw.h"
 #include "GameRulesSystem.h"
 #include "ActionGame.h"
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
 #include "CallbackTimer.h"
 #include "PersistantDebug.h"
 #include <CrySystem/ITextModeConsole.h>
@@ -306,7 +308,6 @@ CCryAction::CCryAction()
 	m_pGameplayAnalyst(0),
 	m_pGameRulesSystem(0),
 	m_pFlowSystem(0),
-	m_pGameObjectSystem(0),
 	m_pScriptRMI(0),
 	m_pUIDraw(0),
 	m_pAnimationGraphCvars(0),
@@ -1867,7 +1868,6 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 	m_pTimeDemoRecorder = new CTimeDemoRecorder();
 
 	CScriptRMI::RegisterCVars();
-	CGameObject::CreateCVars();
 	m_pScriptRMI = new CScriptRMI();
 
 	// initialize subsystems
@@ -1901,31 +1901,9 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 		m_pGameplayAnalyst = new CGameplayAnalyst();
 
 	InlineInitializationProcessing("CCryAction::Init CGameplayAnalyst");
-	m_pGameObjectSystem = new CGameObjectSystem();
-	if (!m_pGameObjectSystem->Init())
-		return false;
-	else
-	{
-		// init game object events of CryAction
-		m_pGameObjectSystem->RegisterEvent(eGFE_PauseGame, "PauseGame");
-		m_pGameObjectSystem->RegisterEvent(eGFE_ResumeGame, "ResumeGame");
-		m_pGameObjectSystem->RegisterEvent(eGFE_OnCollision, "OnCollision");
-		m_pGameObjectSystem->RegisterEvent(eGFE_OnPostStep, "OnPostStep");
-		m_pGameObjectSystem->RegisterEvent(eGFE_OnStateChange, "OnStateChange");
-		m_pGameObjectSystem->RegisterEvent(eGFE_ResetAnimationGraphs, "ResetAnimationGraphs");
-		m_pGameObjectSystem->RegisterEvent(eGFE_OnBreakable2d, "OnBreakable2d");
-		m_pGameObjectSystem->RegisterEvent(eGFE_OnBecomeVisible, "OnBecomeVisible");
-		m_pGameObjectSystem->RegisterEvent(eGFE_PreShatter, "PreShatter");
-		m_pGameObjectSystem->RegisterEvent(eGFE_BecomeLocalPlayer, "BecomeLocalPlayer");
-		m_pGameObjectSystem->RegisterEvent(eGFE_DisablePhysics, "DisablePhysics");
-		m_pGameObjectSystem->RegisterEvent(eGFE_EnablePhysics, "EnablePhysics");
-		m_pGameObjectSystem->RegisterEvent(eGFE_ScriptEvent, "ScriptEvent");
-		m_pGameObjectSystem->RegisterEvent(eGFE_QueueRagdollCreation, "QueueRagdollCreation");
-		m_pGameObjectSystem->RegisterEvent(eGFE_RagdollPhysicalized, "RagdollPhysicalized");
-		m_pGameObjectSystem->RegisterEvent(eGFE_StoodOnChange, "StoodOnChange");
-		m_pGameObjectSystem->RegisterEvent(eGFE_EnableBlendRagdoll, "EnableBlendToRagdoll");
-		m_pGameObjectSystem->RegisterEvent(eGFE_DisableBlendRagdoll, "DisableBlendToRagdoll");
-	}
+	
+	m_pEntityComponentRMIDispatch = new CEntityComponentRMIDispatch();
+
 
 	m_pAnimationGraphCvars = new CAnimationGraphCVars();
 	m_pMannequin = new CMannequinInterface();
@@ -1970,8 +1948,6 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 		m_pVehicleSystem->Init();
 	}
 
-	REGISTER_FACTORY((IGameFramework*)this, "Inventory", CInventory, false);
-
 	if (m_pLevelSystem && m_pItemSystem)
 	{
 		m_pLevelSystem->AddListener(m_pItemSystem);
@@ -1997,34 +1973,13 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 	if (m_pVehicleSystem)
 		m_pVehicleSystem->RegisterVehicles(this);
 
-	#define REGISTER_GAME_OBJECT_EXTENSION(framework, entityClassString, extensionClassName, script)  \
-    {                                                                                               \
-      IEntityClassRegistry::SEntityClassDesc clsDesc;                                               \
-      clsDesc.sName = entityClassString;                                                            \
-      clsDesc.sScriptFile = script;                                                                 \
-      struct C ## extensionClassName ## Creator : public IGameObjectExtensionCreatorBase            \
-      {                                                                                             \
-        IGameObjectExtensionPtr Create()                                                            \
-        {                                                                                           \
-          return ComponentCreate_DeleteWithRelease<C ## extensionClassName>();                      \
-        }                                                                                           \
-        void GetGameObjectExtensionRMIData(void** ppRMI, size_t * nCount)                           \
-        {                                                                                           \
-          C ## extensionClassName::GetGameObjectExtensionRMIData(ppRMI, nCount);                    \
-        }                                                                                           \
-      };                                                                                            \
-      static C ## extensionClassName ## Creator _creator;                                           \
-      framework->GetIGameObjectSystem()->RegisterExtension(entityClassString, &_creator, &clsDesc); \
-    }                                                                                               \
-
-	REGISTER_GAME_OBJECT_EXTENSION(this, "WaterVolume", GameVolume_Water, "Scripts/Entities/Environment/WaterVolume.lua");
-
-	//RegisterEntityWithComponent<CGameVolume_Water>("WaterVolume", "Scripts/Entities/Environment/WaterVolume.lua");
 	RegisterEntityWithComponent<CMannequinObject>("MannequinObject", 0, "Scripts/Entities/Anim/MannequinObject.lua");
 
 	gs_lipSyncExtensionNamesForExposureToEditor.clear();
 	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_TransitionQueue");
 	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_FacialInstance");
+
+	RegisterEntityWithComponent<CGameVolume_Water>("WaterVolume", 0, "Scripts/Entities/Environment/WaterVolume.lua");
 
 	// Hide WaterVolume from the Editor
 	IEntityClass* pItemClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("WaterVolume");
@@ -2037,6 +1992,8 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 	{
 		pGameVolumesEdit->RegisterEntityClass("WaterVolume");
 	}
+
+	RegisterExternalComponent<CGameObject>();
 
 	CGameContext::RegisterExtensions(this);
 
@@ -2391,7 +2348,6 @@ void CCryAction::Shutdown()
 	SAFE_DELETE(m_pGameTokenSystem);
 	SAFE_DELETE(m_pEffectSystem);
 	SAFE_DELETE(m_pAnimationGraphCvars);
-	SAFE_DELETE(m_pGameObjectSystem);
 	SAFE_DELETE(m_pMannequin);
 	SAFE_DELETE(m_pTimeDemoRecorder);
 	SAFE_DELETE(m_pGameSerialize);
@@ -2676,8 +2632,6 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 		if (m_pPersistantDebug)
 			m_pPersistantDebug->PostUpdate(delta);
 
-		if (m_pGameObjectSystem)
-			m_pGameObjectSystem->PostUpdate(delta);
 		gEnv->pEntitySystem->PostUpdate(delta);
 
 		return;
@@ -2754,7 +2708,6 @@ void CCryAction::PostUpdate(bool haveFocus, unsigned int updateFlags)
 	if (gEnv->pFlashUI)
 		gEnv->pFlashUI->Update(deltaUI);
 
-	m_pGameObjectSystem->PostUpdate(delta);
 	gEnv->pEntitySystem->PostUpdate(delta);
 
 	if (m_pSegmentedWorld)
@@ -2879,14 +2832,10 @@ void CCryAction::PauseGame(bool pause, bool force, unsigned int nFadeOutInMS)
 
 		if (m_paused)
 		{
-			SGameObjectEvent evt(eGFE_PauseGame, eGOEF_ToAll);
-			m_pGameObjectSystem->BroadcastEvent(evt);
 			GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_GAME_PAUSED, 0, 0);
 		}
 		else
 		{
-			SGameObjectEvent evt(eGFE_ResumeGame, eGOEF_ToAll);
-			m_pGameObjectSystem->BroadcastEvent(evt);
 			GetISystem()->GetISystemEventDispatcher()->OnSystemEvent(ESYSTEM_EVENT_GAME_RESUMED, 0, 0);
 		}
 	}
@@ -4010,23 +3959,6 @@ CGameContext* CCryAction::GetGameContext()
 	return m_pGame ? m_pGame->GetGameContext() : NULL;
 }
 
-void CCryAction::RegisterFactory(const char* name, IItemCreator* pCreator, bool isAI)
-{
-	if (m_pItemSystem)
-		m_pItemSystem->RegisterItemClass(name, pCreator);
-}
-
-void CCryAction::RegisterFactory(const char* name, IVehicleCreator* pCreator, bool isAI)
-{
-	if (m_pVehicleSystem)
-		m_pVehicleSystem->RegisterVehicleClass(name, pCreator, isAI);
-}
-
-void CCryAction::RegisterFactory(const char* name, IGameObjectExtensionCreator* pCreator, bool isAI)
-{
-	m_pGameObjectSystem->RegisterExtension(name, pCreator, NULL);
-}
-
 IActionMapManager* CCryAction::GetIActionMapManager()
 {
 	return m_pActionMapManager;
@@ -4086,11 +4018,6 @@ IGameplayRecorder* CCryAction::GetIGameplayRecorder()
 IGameRulesSystem* CCryAction::GetIGameRulesSystem()
 {
 	return m_pGameRulesSystem;
-}
-
-IGameObjectSystem* CCryAction::GetIGameObjectSystem()
-{
-	return m_pGameObjectSystem;
 }
 
 IGameTokenSystem* CCryAction::GetIGameTokenSystem()
@@ -4801,7 +4728,6 @@ void CCryAction::GetMemoryUsage(ICrySizer* s) const
 	CHILD_STATISTICS(m_pGameRulesSystem);
 	s->AddObject(m_pFlowSystem);
 	CHILD_STATISTICS(m_pUIDraw);
-	s->AddObject(m_pGameObjectSystem);
 	CHILD_STATISTICS(m_pScriptRMI);
 	if (m_pAnimationGraphCvars)
 		s->Add(*m_pAnimationGraphCvars);
@@ -5117,6 +5043,12 @@ void CCryAction::GoToSegment(int x, int y)
 	{
 		m_pSegmentedWorld->MoveToSegment(x, y);
 	}
+}
+
+void CCryAction::DefineProtocol(bool server, IProtocolBuilder* pBuilder)
+{
+	INetMessageSink* pSink = server ? m_pEntityComponentRMIDispatch->GetServerSink() : m_pEntityComponentRMIDispatch->GetClientSink();
+	pSink->DefineProtocol(pBuilder);
 }
 
 // TypeInfo implementations for CryAction

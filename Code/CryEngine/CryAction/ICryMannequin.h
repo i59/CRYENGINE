@@ -1024,7 +1024,6 @@ class IActionController;
 class IAction;
 typedef _smart_ptr<IAction> IActionPtr;
 class CAnimation;
-struct SGameObjectEvent;
 
 class IScope
 {
@@ -1198,7 +1197,6 @@ private:
 class IActionController
 {
 public:
-	virtual void OnEvent(const SGameObjectEvent& event) = 0;
 	virtual void OnAnimationEvent(ICharacterInstance* pCharacter, const AnimEventInstance& event) = 0;
 
 	// Completely resets the state of the action controller
@@ -1745,7 +1743,6 @@ public:
 	virtual void        OnInitialise()                                                                   {}
 	virtual void        OnActionFinished()                                                               {}
 
-	virtual void        OnEvent(const SGameObjectEvent& event)                                           {}
 	virtual void        OnAnimationEvent(ICharacterInstance* pCharacter, const AnimEventInstance& event) {}
 	virtual void        OnActionEvent(const uint32 eventCRC)                                             {}
 

@@ -301,9 +301,6 @@ public:
 	// returns true if should be let go
 	bool Update();
 
-	void AddGlobalPhysicsCallback(int event, void (*)(const EventPhys*, void*), void*);
-	void RemoveGlobalPhysicsCallback(int event, void (*)(const EventPhys*, void*), void*);
-
 	void     Serialize(TSerialize ser);
 	void     SerializeBreakableObjects(TSerialize ser);
 	void     FlushBreakableObjects();
@@ -368,8 +365,6 @@ private:
 	static int   OnPhysEntityDeleted(const EventPhys* pEvent);
 
 	static int   OnCollisionImmediate(const EventPhys* pEvent);
-	static int   OnPostStepImmediate(const EventPhys* pEvent);
-	static int   OnStateChangeImmediate(const EventPhys* pEvent);
 	static int   OnCreatePhysicalEntityImmediate(const EventPhys* pEvent);
 	static int   OnUpdateMeshImmediate(const EventPhys* pEvent);
 
@@ -457,18 +452,6 @@ private:
 	IGameTokenSystem*   m_pGameTokenSystem;
 	IPhysicalWorld*     m_pPhysicalWorld;
 	IMaterialEffects*   m_pMaterialEffects;
-
-	typedef std::pair<void (*)(const EventPhys*, void*), void*> TGlobalPhysicsCallback;
-	typedef std::set<TGlobalPhysicsCallback>                    TGlobalPhysicsCallbackSet;
-	struct SPhysCallbacks
-	{
-		TGlobalPhysicsCallbackSet collision[2];
-		TGlobalPhysicsCallbackSet postStep[2];
-		TGlobalPhysicsCallbackSet stateChange[2];
-		TGlobalPhysicsCallbackSet createEntityPart[2];
-		TGlobalPhysicsCallbackSet updateMesh[2];
-
-	}                                            m_globalPhysicsCallbacks;
 
 	std::vector<SProcBrokenObjRec>               m_brokenObjs;
 	std::vector<SBreakEvent>                     m_breakEvents;

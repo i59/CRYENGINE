@@ -16,7 +16,6 @@
 #include "CryAction.h"
 #include "IActorSystem.h"
 #include "ItemSystem.h"
-#include "GameObjects/GameObject.h"
 #include "Inventory.h"
 #include "IGameRulesSystem.h"
 

@@ -155,10 +155,10 @@ public:
 	virtual void OnSpawn(IEntity* pEntity, SEntitySpawnParams&);
 	virtual bool OnRemove(IEntity* pEntity);
 	virtual void OnReused(IEntity* pEntity, SEntitySpawnParams& entitySpawnParams) {}
-	virtual void OnEvent(IEntity* pEntity, SEntityEvent& entityEvent)              {}
+	virtual void OnEvent(IEntity* pEntity, const SEntityEvent& entityEvent)              {}
 
 	// IEntityEventListener
-	virtual void OnEntityEvent(IEntity* pEntity, SEntityEvent& event);
+	virtual void OnEntityEvent(IEntity* pEntity, const SEntityEvent& event);
 	// End of IEntityEventListener
 
 	// Expose for DebugDraw

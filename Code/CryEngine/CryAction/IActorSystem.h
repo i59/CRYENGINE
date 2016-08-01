@@ -21,8 +21,7 @@
 #include <CryEntitySystem/IEntity.h>
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryScriptSystem/IScriptSystem.h>
-#include "IGameObjectSystem.h"
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
 
 enum EActorPhysicalization
 {

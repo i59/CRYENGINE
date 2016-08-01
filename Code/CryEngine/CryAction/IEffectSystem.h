@@ -119,7 +119,7 @@ struct IEffectSystem
 	virtual bool           BindEffect(const char* name, IEffect* pEffect) = 0;
 	virtual IGroundEffect* CreateGroundEffect(IEntity* pEntity) = 0;
 
-	DECLARE_GAMEOBJECT_FACTORY(IEffect);
+	DECLARE_FACTORY(IEffect);
 };
 
 #endif //__IEFFECTSYSTEM_H__

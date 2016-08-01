@@ -85,8 +85,7 @@ public:
 			{
 				IGameFramework* const pGameFramework = gEnv->pGame->GetIGameFramework();
 				const EntityId entityId = pActInfo->pEntity ? pActInfo->pEntity->GetId() : 0;
-				auto *pGameObject = pActInfo->pEntity ? pActInfo->pEntity->QueryComponent<IGameObject>() : nullptr;
-				IAnimatedCharacter* const pAnimChar = pGameObject ? (IAnimatedCharacter*) pGameObject->QueryExtension("AnimatedCharacter") : NULL;
+				auto *pAnimChar = pActInfo->pEntity ? pActInfo->pEntity->QueryComponent<IAnimatedCharacter>() : nullptr;
 				bool bSuccess = false;
 				if (IsPortActive(pActInfo, EIP_Play))
 				{
@@ -245,18 +244,16 @@ public:
 			break;
 		case eFE_Activate:
 			IGameFramework* const pGameFramework = gEnv->pGame->GetIGameFramework();
-			auto *pGameObject = pActInfo->pEntity->QueryComponent<IGameObject>();
-
+			
 			if (IsPortActive(pActInfo, EIP_Enslave) || IsPortActive(pActInfo, EIP_UnEnslave))
 			{
-				IAnimatedCharacter* const pAnimChar = pGameObject ? (IAnimatedCharacter*) pGameObject->QueryExtension("AnimatedCharacter") : NULL;
+				auto *pAnimChar = pActInfo->pEntity->QueryComponent<IAnimatedCharacter>();
 				if (pAnimChar && pAnimChar->GetActionController())
 				{
 					const EntityId slaveChar = GetPortEntityId(pActInfo, EIP_Slave);
 					if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity(slaveChar))
 					{
-						auto *pSlaveGameObject = pEntity->QueryComponent<IGameObject>();
-						IAnimatedCharacter* pSlaveAnimChar = pSlaveGameObject ? (IAnimatedCharacter*)pSlaveGameObject->QueryExtension("AnimatedCharacter") : NULL;
+						auto *pSlaveAnimChar = pEntity->QueryComponent<IAnimatedCharacter>();
 
 						if (pSlaveAnimChar && pSlaveAnimChar->GetActionController())
 						{
@@ -466,8 +463,7 @@ private:
 		IGameFramework* const pGameFramework = gEnv->pGame->GetIGameFramework();
 		if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity(entityId))
 		{
-			IGameObject *pGameObject = pGameFramework ? pEntity->QueryComponent<IGameObject>() : nullptr;
-			IAnimatedCharacter* const pAnimChar = pGameObject ? (IAnimatedCharacter*)pGameObject->QueryExtension("AnimatedCharacter") : NULL;
+			auto *pAnimChar = pGameFramework ? pEntity->QueryComponent<IAnimatedCharacter>() : nullptr;
 			IActionController* const pActionController = pAnimChar ? pAnimChar->GetActionController() : NULL;
 			if (pActionController)
 			{

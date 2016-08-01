@@ -1723,21 +1723,6 @@ void CActionController::Requeue(IAction& action)
 	PushOntoQueue(action);
 }
 
-void CActionController::OnEvent(const SGameObjectEvent& event)
-{
-	UpdateValidity();
-
-	for (uint32 i = 0; i < m_scopeCount; i++)
-	{
-		CActionScope& scope = m_scopeArray[i];
-		IAction* const pAction = scope.m_pAction.get();
-		if (pAction && (&pAction->GetRootScope() == &scope))
-		{
-			pAction->OnEvent(event);
-		}
-	}
-}
-
 void CActionController::OnAnimationEvent(ICharacterInstance* pCharacter, const AnimEventInstance& event)
 {
 	UpdateValidity();

@@ -506,8 +506,8 @@
       }
     ],
     "CryEntitySystem":[
-      "CryEntitySystem/IComponent.h",
 	  "CryEntitySystem/IEntityComponent.h",
+	  "CryEntitySystem/INetworkedEntityComponent.h",
       "CryEntitySystem/IEntitySystem.h",
       "CryEntitySystem/IEntity.h",
       "CryEntitySystem/IEntityAttributesProxy.h",
@@ -613,7 +613,6 @@
       "CrySerialization/DynArray.h",
       "CrySerialization/DynArrayImpl.h",
       "CrySerialization/Enum.h",
-      "CrySerialization/Gap.h",
       "CrySerialization/IArchive.h",
       "CrySerialization/IArchiveHost.h",
       "CrySerialization/IClassFactory.h",
@@ -673,7 +672,8 @@
       "CryAction/ILipSyncProvider.h",
       "CryAction/IDebugHistory.h",
       "CryAction/InterpolationHelpers.h",
-      "CryAction/IMaterialEffects.h"
+      "CryAction/IMaterialEffects.h",
+	  "CryAction/IGameObject.h"
     ],
     "CryFlowGraph":[
       "CryFlowGraph/IFlowGraphDebugger.h",

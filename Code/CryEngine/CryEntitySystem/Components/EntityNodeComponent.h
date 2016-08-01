@@ -18,15 +18,12 @@
 #include "EntitySystem.h"
 #include <CryNetwork/ISerialize.h>
 
-class CEntityNodeComponent : public IEntityComponent
+class CEntityNodeComponent : public IEntityNodeComponent
 {
 public:
-	DECLARE_COMPONENT("EntityNodeComponent", 0x3592CE70D61B47FF, 0xBCC75AA894E236F7)
-
 	// IEntityComponent
+	virtual void PostInitialize() override;
 	virtual void ProcessEvent(const SEntityEvent& event) override;
-
-	virtual void Serialize(TSerialize ser) override {}
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{

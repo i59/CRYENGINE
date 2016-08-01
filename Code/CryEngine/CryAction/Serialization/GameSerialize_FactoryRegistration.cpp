@@ -79,5 +79,4 @@ void CGameSerialize::RegisterFactories(IGameFramework* pFW)
 
 	pFW->RegisterFactory("xml", CLoadGameCurrentUser, false);
 	pFW->RegisterFactory("xml", CSaveGameCurrentUser, false);
-
 }

@@ -318,7 +318,7 @@ struct IRenderNode : public IShadowCaster
 	//	virtual float GetLodForDistance(float fDistance) { return 0; }
 
 	virtual void  OnRenderNodeBecomeVisible(const SRenderingPassInfo& passInfo) {}
-	virtual void  OnEntityEvent(IEntity* pEntity, SEntityEvent const& event)    {}
+	virtual void  OnEntityEvent(IEntity* pEntity, const SEntityEvent& event)    {}
 
 	virtual bool  IsMovableByGame() const                                       { return false; }
 

@@ -187,7 +187,7 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	void ExecuteOnProxy(IEntity* const pEntity, AudioControlId const nTriggerID, EPlayMode const ePlayMode)
 	{
-		auto &audioComponent = pEntity->CreateAudioComponent();
+		auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 		switch (ePlayMode)
 		{

@@ -13,9 +13,8 @@
 *************************************************************************/
 #include "StdAfx.h"
 #include "CryAction.h"
-#include "GameObjects/GameObject.h"
 #include "IActorSystem.h"
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
 #include "IItem.h"
 #include "IItemSystem.h"
 #include "IVehicleSystem.h"

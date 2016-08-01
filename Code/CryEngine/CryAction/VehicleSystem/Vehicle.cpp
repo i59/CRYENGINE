@@ -24,6 +24,9 @@
 
 #include "IGameRulesSystem.h"
 
+#include "Inventory.h"
+#include "EntityComponents/GameObject.h"
+
 #include "VehicleSystem.h"
 #include "ScriptBind_Vehicle.h"
 #include "ScriptBind_VehicleSeat.h"
@@ -66,25 +69,6 @@ int CVehicle::s_vehicleDestructionTypeId = 0;
 
 const static string s_vehicleImplXmlDir = "Scripts/Entities/Vehicles/Implementations/Xml/";
 
-namespace Veh
-{
-void RegisterEvents(IGameObjectExtension& goExt, IGameObject& gameObject)
-{
-	const int eventToRegister[] =
-	{
-		eGFE_OnPostStep,
-		eGFE_OnCollision,
-		eGFE_OnStateChange,
-		eGFE_OnBecomeVisible,
-		eGFE_PreShatter,
-		eGFE_StoodOnChange
-	};
-
-	gameObject.UnRegisterExtForEvents(&goExt, NULL, 0);
-	gameObject.RegisterExtForEvents(&goExt, eventToRegister, sizeof(eventToRegister) / sizeof(int));
-}
-}
-
 //------------------------------------------------------------------------
 CVehicle::CVehicle() :
 	m_mass(0.0f),
@@ -116,7 +100,8 @@ CVehicle::CVehicle() :
 	m_hasAuthority(false),
 	m_smoothedPing(0.0f),
 	m_clientSmoothedPosition(IDENTITY),
-	m_clientPositionError(IDENTITY)
+	m_clientPositionError(IDENTITY),
+	m_bVisible(false)
 {
 	m_gravity.zero();
 	m_physUpdateTime = 0.f;
@@ -248,7 +233,6 @@ CVehicle::~CVehicle()
 
 	if (m_pMovement)
 	{
-		GetGameObject()->EnablePhysicsEvent(false, eEPE_OnPostStepImmediate | eEPE_OnPostStepLogged);
 		SAFE_RELEASE(m_pMovement);
 	}
 
@@ -256,14 +240,9 @@ CVehicle::~CVehicle()
 	{
 		if (gEnv->bServer)
 			m_pInventory->Destroy();
-
-		GetGameObject()->ReleaseExtension("Inventory");
 	}
 
 	CCryAction::GetCryAction()->GetIVehicleSystem()->RemoveVehicle(GetEntityId());
-
-	GetGameObject()->EnablePhysicsEvent(false, eEPE_OnCollisionLogged | eEPE_OnStateChangeLogged);
-	//GetGameObject()->DisablePostUpdates(this);
 
 	for (TVehicleAnimationsVector::iterator it = m_animations.begin(); it != m_animations.end(); ++it)
 	{
@@ -346,15 +325,6 @@ XmlNodeRef LoadXmlForClass(const char* className, const string& xmlDir)
 }
 }
 
-//------------------------------------------------------------------------
-void CVehicle::SerializeSpawnInfo(TSerialize ser)
-{
-	CRY_ASSERT(ser.IsReading());
-	ser.Value("modifications", m_modifications);
-	ser.Value("paint", m_paintName);
-	ser.Value("parentId", m_ParentId, 'eid');
-}
-
 namespace CVehicleGetSpawnInfo
 {
 struct SInfo : public ISerializableInfo
@@ -381,16 +351,13 @@ ISerializableInfoPtr CVehicle::GetSpawnInfo()
 }
 
 //------------------------------------------------------------------------
-bool CVehicle::Init(IGameObject* pGameObject)
+void CVehicle::PostInitialize()
 {
-	CryLog("Init vehicle: %s", pGameObject->GetEntity()->GetEntityTextDescription().c_str());
+	CryLog("Init vehicle: %s", GetEntity()->GetEntityTextDescription().c_str());
 	INDENT_LOG_DURING_SCOPE();
 
-	SetGameObject(pGameObject);
-
 	IEntity* pEntity = GetEntity();
-	CRY_ASSERT(pEntity == pGameObject->GetEntity());
-
+	
 	if (s_disableCollisionsHitTypeId == 0 || s_repairHitTypeId == 0 || s_collisionHitTypeId == 0
 	    || s_normalHitTypeId == 0 || s_fireHitTypeId == 0 || s_punishHitTypeId == 0)
 	{
@@ -409,16 +376,11 @@ bool CVehicle::Init(IGameObject* pGameObject)
 
 	if (gEnv->bMultiplayer && (CCryActionCVars::Get().g_multiplayerEnableVehicles == 0))
 	{
-		static IEntityClass* pMPGunshipClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("MP_PerkAlienGunship");
-
-		if (pMPGunshipClass != pEntity->GetClass())
-		{
-			GameWarning("!Vehicles disabled in multiplayer, not spawning entity '%s'", pEntity->GetName());
-			return false;
-		}
+		GameWarning("!Vehicles disabled in multiplayer, not spawning entity '%s'", pEntity->GetName());
+		return;
 	}
 
-	m_pIEntityAudioProxy = &pEntity->CreateAudioComponent();
+	m_pIEntityAudioProxy = &pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 	m_pVehicleSystem = CCryAction::GetCryAction()->GetIVehicleSystem();
 	m_engineSlotBySpeed = true;
@@ -429,7 +391,7 @@ bool CVehicle::Init(IGameObject* pGameObject)
 	CCryAction::GetCryAction()->GetIVehicleSystem()->AddVehicle(GetEntityId(), this);
 	CCryAction::GetCryAction()->GetVehicleScriptBind()->AttachTo(this);
 
-	m_pInventory = static_cast<IInventory*>(GetGameObject()->AcquireExtension("Inventory"));
+	m_pInventory = &GetEntity()->AcquireComponent<CInventory>();
 
 	InitRespawn();
 
@@ -441,7 +403,7 @@ bool CVehicle::Init(IGameObject* pGameObject)
 	if (!vehicleXmlData)
 	{
 		GameWarning("<%s>: failed loading xml file (directory %s), aborting initialization", pEntity->GetName(), s_vehicleImplXmlDir.c_str());
-		return false;
+		return;
 	}
 
 	// if modification is used, merge its elements with main tree
@@ -600,7 +562,7 @@ bool CVehicle::Init(IGameObject* pGameObject)
 			if (CVehicleParams moveTable = movementsTable.getChild(i))
 			{
 				if (!SetMovement(moveTable.getTag(), moveTable))
-					return false;
+					return;
 			}
 		}
 	}
@@ -787,21 +749,92 @@ bool CVehicle::Init(IGameObject* pGameObject)
 	for (TVehicleSeatVector::iterator it = m_seats.begin(); it != m_seats.end(); ++it)
 		CCryAction::GetCryAction()->GetVehicleSeatScriptBind()->AttachTo(this, GetSeatId(it->second));
 
+	auto &gameObject = GetEntity()->AcquireComponent<CGameObject>();
+	gameObject.AddListener(this);
+
 	if (0 == (pEntity->GetFlags() & (ENTITY_FLAG_CLIENT_ONLY | ENTITY_FLAG_SERVER_ONLY)))
 	{
-		if (!GetGameObject()->BindToNetwork())
+		if (!gameObject.BindToNetwork())
 		{
 			GameWarning("<%s> BindToNetwork failed", pEntity->GetName());
-			return false;
+			return;
 		}
 	}
 
 	if (VehicleCVars().v_serverControlled)
 	{
-		pGameObject->EnableDelegatableAspect(eEA_Physics, false);
+		gameObject.EnableDelegatableAspect(eEA_Physics, false);
 	}
 
-	return true;
+	EnableEvent(ENTITY_EVENT_PREPHYSICSUPDATE, 0, true);
+	EnableEvent(ENTITY_EVENT_RESET, 0, true);
+	EnableEvent(ENTITY_EVENT_DONE, 0, true);
+	EnableEvent(ENTITY_EVENT_TIMER, 0, true);
+	EnableEvent(ENTITY_EVENT_MATERIAL_LAYER, 0, true);
+	EnableEvent(ENTITY_EVENT_HIDE, 0, true);
+	EnableEvent(ENTITY_EVENT_UNHIDE, 0, true);
+	EnableEvent(ENTITY_EVENT_ANIM_EVENT, 0, true);
+	EnableEvent(ENTITY_EVENT_PREPHYSICSUPDATE, 0, true);
+	EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
+	EnableEvent(ENTITY_EVENT_PHYS_POSTSTEP, 0, true);
+	EnableEvent(ENTITY_EVENT_PHYSICS_CHANGE_STATE, 0, true);
+
+	if (GetMovement())
+		GetMovement()->PostInit();
+
+	for (TVehiclePartVector::iterator ite = m_parts.begin(); ite != m_parts.end(); ++ite)
+	{
+		IVehiclePart* part = ite->second;
+		part->PostInit();
+	}
+
+	// not needed anymore - was required previously to make sure vehicle is not disabled when player drives
+	//  for (int i=0; i<MAX_UPDATE_SLOTS_PER_EXTENSION; ++i)
+	//    pGameObject->SetUpdateSlotEnableCondition(this, i, eUEC_WithoutAI);
+
+	if (!gEnv->bServer)
+	{
+		m_slotUpdatePolicies[eVUS_Always] = EEntityUpdatePolicy_InRange | EEntityUpdatePolicy_Visible;
+		m_slotUpdatePolicies[eVUS_EnginePowered] = EEntityUpdatePolicy_InRange | EEntityUpdatePolicy_Visible;
+		m_slotUpdatePolicies[eVUS_PassengerIn] = EEntityUpdatePolicy_InRange | EEntityUpdatePolicy_Visible;
+	}
+
+	GetEntity()->SetUpdatePolicy(m_slotUpdatePolicies[eVUS_Always]);
+
+	m_slotUpdatePolicies[eVUS_Visible] = EEntityUpdatePolicy_Visible;
+
+	gameObject.SetMovementController(GetMovementController());
+
+	m_initialposition = GetEntity()->GetWorldPos();
+
+	for (TVehicleSeatVector::iterator it = m_seats.begin(), end = m_seats.end(); it != end; ++it)
+	{
+		it->second->PostInit(this);
+	}
+
+	if (!CCryAction::GetCryAction()->IsEditing())
+		NeedsUpdate();
+#if ENABLE_VEHICLE_DEBUG
+	else if (IsDebugDrawing())
+		NeedsUpdate();
+#endif
+
+	//  if (gEnv->bServer)
+	//    SendWeaponSetup(eRMI_ToRemoteClients);
+
+#if ENABLE_VEHICLE_DEBUG
+	DumpParts();
+
+	if (VehicleCVars().v_debug_mem > 0)
+	{
+		ICrySizer* pSizer = gEnv->pSystem->CreateSizer();
+		GetMemoryUsage(pSizer);
+		int vehicleSize = pSizer->GetTotalSize();
+		CryLog("Vehicle initialized: <%s> takes %" PRISIZE_T " bytes.", GetEntity()->GetName(), pSizer->GetTotalSize());
+
+		pSizer->Release();
+	}
+#endif
 }
 
 //------------------------------------------------------------------------
@@ -938,89 +971,10 @@ bool CVehicle::InitActions(const CVehicleParams& vehicleTable)
 }
 
 //------------------------------------------------------------------------
-void CVehicle::PostInit(IGameObject* pGameObject)
-{
-	Veh::RegisterEvents(*this, *pGameObject);
-	RegisterEvent(ENTITY_EVENT_PREPHYSICSUPDATE, IComponent::EComponentFlags_Enable);
-
-	if (GetMovement())
-		GetMovement()->PostInit();
-
-	for (TVehiclePartVector::iterator ite = m_parts.begin(); ite != m_parts.end(); ++ite)
-	{
-		IVehiclePart* part = ite->second;
-		part->PostInit();
-	}
-
-	pGameObject->EnablePhysicsEvent(true, eEPE_OnCollisionLogged | eEPE_OnStateChangeLogged);
-	//pGameObject->EnablePostUpdates(this);
-
-	// not needed anymore - was required previously to make sure vehicle is not disabled when player drives
-	//  for (int i=0; i<MAX_UPDATE_SLOTS_PER_EXTENSION; ++i)
-	//    pGameObject->SetUpdateSlotEnableCondition(this, i, eUEC_WithoutAI);
-
-	if (!gEnv->bServer)
-	{
-		pGameObject->SetUpdateSlotEnableCondition(this, eVUS_Always, eUEC_VisibleOrInRangeIgnoreAI);
-		pGameObject->SetUpdateSlotEnableCondition(this, eVUS_EnginePowered, eUEC_VisibleOrInRangeIgnoreAI);
-		pGameObject->SetUpdateSlotEnableCondition(this, eVUS_PassengerIn, eUEC_VisibleOrInRangeIgnoreAI);
-	}
-
-	pGameObject->SetUpdateSlotEnableCondition(this, eVUS_Visible, eUEC_Visible);
-	pGameObject->EnableUpdateSlot(this, eVUS_Visible);
-
-	pGameObject->SetMovementController(GetMovementController());
-
-	m_initialposition = GetEntity()->GetWorldPos();
-
-	for (TVehicleSeatVector::iterator it = m_seats.begin(), end = m_seats.end(); it != end; ++it)
-	{
-		it->second->PostInit(this);
-	}
-
-	if (!CCryAction::GetCryAction()->IsEditing())
-		NeedsUpdate();
-#if ENABLE_VEHICLE_DEBUG
-	else if (IsDebugDrawing())
-		NeedsUpdate();
-#endif
-
-	//  if (gEnv->bServer)
-	//    SendWeaponSetup(eRMI_ToRemoteClients);
-
-#if ENABLE_VEHICLE_DEBUG
-	DumpParts();
-
-	if (VehicleCVars().v_debug_mem > 0)
-	{
-		ICrySizer* pSizer = gEnv->pSystem->CreateSizer();
-		GetMemoryUsage(pSizer);
-		int vehicleSize = pSizer->GetTotalSize();
-		CryLog("Vehicle initialized: <%s> takes %" PRISIZE_T " bytes.", GetEntity()->GetName(), pSizer->GetTotalSize());
-
-		pSizer->Release();
-	}
-#endif
-
-}
-
-//------------------------------------------------------------------------
 void CVehicle::PostInitClient(int channelId)
 {
 	SendWeaponSetup(eRMI_ToClientChannel, channelId);
 };
-
-//------------------------------------------------------------------------
-bool CVehicle::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
-{
-	ResetGameObject();
-
-	Veh::RegisterEvents(*this, *pGameObject);
-
-	CRY_ASSERT_MESSAGE(false, "CVehicle::ReloadExtension not implemented");
-
-	return false;
-}
 
 #if ENABLE_VEHICLE_DEBUG
 //------------------------------------------------------------------------
@@ -1140,7 +1094,7 @@ void CVehicle::SetAmmoCount(IEntityClass* pAmmoType, int amount)
 	}
 
 	if (gEnv->bServer)
-		GetGameObject()->InvokeRMI(ClSetAmmo(), AmmoParams(pAmmoType->GetName(), amount), eRMI_ToRemoteClients);
+		InvokeRemoteMethod(ClSetAmmo(), AmmoParams(pAmmoType->GetName(), amount), eRMI_ToRemoteClients);
 }
 
 //------------------------------------------------------------------------
@@ -1212,7 +1166,7 @@ void CVehicle::SendWeaponSetup(int where, int channelId)
 		params.seats.push_back(seatparams);
 	}
 
-	GetGameObject()->InvokeRMI(ClSetupWeapons(), params, where, channelId);
+	InvokeRemoteMethod(ClSetupWeapons(), params, where, channelId);
 }
 
 //------------------------------------------------------------------------
@@ -1282,6 +1236,28 @@ void CVehicle::ProcessEvent(const SEntityEvent& entityEvent)
 			{
 				ite->second->PrePhysUpdate(gEnv->pTimer->GetFrameTime());
 			}
+		}
+		break;
+
+		case ENTITY_EVENT_COLLISION:
+		{
+			EventPhysCollision* pCollision = (EventPhysCollision *)entityEvent.nParam[0];
+			OnCollision(pCollision);
+		}
+		break;
+
+		case ENTITY_EVENT_PHYS_POSTSTEP:
+		{
+			EventPhysPostStep* pPostStep = (EventPhysPostStep*)entityEvent.nParam[0];
+
+			OnPhysPostStep(pPostStep, true);
+		}
+		break;
+
+		case ENTITY_EVENT_PHYSICS_CHANGE_STATE:
+		{
+			EventPhysStateChange* pStateChange = (EventPhysStateChange*)entityEvent.nParam[1];
+			OnPhysStateChange(pStateChange);
 		}
 		break;
 	}
@@ -1416,7 +1392,6 @@ void CVehicle::Reset(bool enterGame)
 	// disable engine slot in case it was enabled by speed threshold
 	if (m_customEngineSlot)
 	{
-		GetGameObject()->DisableUpdateSlot(this, eVUS_EnginePowered);
 		m_customEngineSlot = false;
 	}
 
@@ -1479,12 +1454,6 @@ void CVehicle::Reset(bool enterGame)
 	{
 		m_bNeedsUpdate = false;
 
-		for (int i = 0; i < eVUS_Last; ++i)
-		{
-			while (GetGameObject()->GetUpdateSlotEnables(this, i) > 0)
-				GetGameObject()->DisableUpdateSlot(this, i);
-		}
-
 		// Temp Code, testing only
 		AudioControlId engineAudioTriggerId;
 		if (gEnv->pAudioSystem->GetAudioTriggerId("ENGINE_OFF", engineAudioTriggerId))
@@ -1528,7 +1497,7 @@ void CVehicle::DoRequestedPhysicalization()
 }
 
 //------------------------------------------------------------------------
-void CVehicle::Update(SEntityUpdateContext& ctx, int slot)
+void CVehicle::Update(SEntityUpdateContext& ctx)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
 
@@ -1543,105 +1512,109 @@ void CVehicle::Update(SEntityUpdateContext& ctx, int slot)
 		m_lastFrameId = ctx.nFrameID;
 	}
 
-	switch (slot)
+	auto usedUpdatePolicyFlags = GetEntity()->GetLastConditionalUpdateFlags();
+
+	if (usedUpdatePolicyFlags & EEntityUpdatePolicy_Visible)
 	{
-	case eVUS_Always:
-		{
-#if ENABLE_VEHICLE_DEBUG
-			m_debugIndex = 0;
-#endif
-
-			if (!GetEntity()->GetPhysics())
-				return;
-
-			UpdateStatus(frameTime);
-			UpdateDamages(frameTime);
-
-			for (TVehicleObjectUpdateInfoList::iterator ite = m_objectsToUpdate.begin(), end = m_objectsToUpdate.end(); ite != end; ++ite)
-			{
-				SObjectUpdateInfo& updateInfo = *ite;
-				if (updateInfo.updatePolicy == eVOU_AlwaysUpdate)
-					updateInfo.pObject->Update(frameTime);
-			}
-
-			if (m_collisionDisabledTime > 0.0f)
-				m_collisionDisabledTime -= frameTime;
-
-			m_vehicleAnimation.Update(frameTime);
-
-			if (m_hasAuthority && !gEnv->bServer && VehicleCVars().v_serverControlled && VehicleCVars().v_clientPredict)
-			{
-				const INetChannel* pNetChannel = gEnv->pGame->GetIGameFramework()->GetClientChannel();
-				if (pNetChannel)
-				{
-					m_smoothedPing = pNetChannel->GetPing(true);
-				}
-			}
-		}
-		break;
-
-	case eVUS_EnginePowered:
+		if (!m_bVisible)
 		{
 			if (m_pMovement)
 			{
-				NeedsUpdate();
-				m_pMovement->Update(frameTime);
+				SVehicleMovementEventParams params;
+				m_pMovement->OnEvent(IVehicleMovement::eVME_BecomeVisible, params);
 			}
 
-			break;
-		}
-	case eVUS_AIControlled:
-		{
-			NeedsUpdate();
-
-			for (TVehicleSeatVector::iterator ite = m_seats.begin(), end = m_seats.end(); ite != end; ++ite)
-			{
-				CVehicleSeat* seat = ite->second;
-
-				if (CVehicleSeatActionWeapons* weapons = seat->GetSeatActionWeapons())
-				{
-					seat->Update(frameTime);
-				}
-			}
-		}
-		break;
-
-	case eVUS_PassengerIn:
-		{
-			NeedsUpdate();
-
-			for (TVehicleSeatVector::iterator ite = m_seats.begin(), end = m_seats.end(); ite != end; ++ite)
-			{
-				CVehicleSeat* seat = ite->second;
-				seat->Update(frameTime);
-			}
-
-			for (TVehicleObjectUpdateInfoList::iterator ite = m_objectsToUpdate.begin(), end = m_objectsToUpdate.end(); ite != end; ++ite)
-			{
-				SObjectUpdateInfo& updateInfo = *ite;
-				if (updateInfo.updatePolicy == eVOU_PassengerUpdate)
-					updateInfo.pObject->Update(frameTime);
-			}
-
-			break;
-		}
-
-	case eVUS_Visible:
-		{
-			for (TVehicleObjectUpdateInfoList::iterator ite = m_objectsToUpdate.begin(), end = m_objectsToUpdate.end(); ite != end; ++ite)
-			{
-				SObjectUpdateInfo& updateInfo = *ite;
-				if (updateInfo.updatePolicy == eVOU_Visible)
-					updateInfo.pObject->Update(frameTime);
-			}
-
-#if ENABLE_VEHICLE_DEBUG
-			DebugDraw(frameTime);
-#endif
+			m_bVisible = true;
 		}
 	}
+	else if(m_bVisible)
+		m_bVisible = false;
 
-	CheckDisableUpdate(slot);
+	if (m_slotUpdatePolicies[eVUS_Always] & usedUpdatePolicyFlags)
+	{
+#if ENABLE_VEHICLE_DEBUG
+		m_debugIndex = 0;
+#endif
+
+		if (!GetEntity()->GetPhysics())
+			return;
+
+		UpdateStatus(frameTime);
+		UpdateDamages(frameTime);
+
+		for (TVehicleObjectUpdateInfoList::iterator ite = m_objectsToUpdate.begin(), end = m_objectsToUpdate.end(); ite != end; ++ite)
+		{
+			SObjectUpdateInfo& updateInfo = *ite;
+			if (updateInfo.updatePolicy == eVOU_AlwaysUpdate)
+				updateInfo.pObject->Update(frameTime);
+		}
+
+		if (m_collisionDisabledTime > 0.0f)
+			m_collisionDisabledTime -= frameTime;
+
+		m_vehicleAnimation.Update(frameTime);
+
+		if (m_hasAuthority && !gEnv->bServer && VehicleCVars().v_serverControlled && VehicleCVars().v_clientPredict)
+		{
+			const INetChannel* pNetChannel = gEnv->pGame->GetIGameFramework()->GetClientChannel();
+			if (pNetChannel)
+			{
+				m_smoothedPing = pNetChannel->GetPing(true);
+			}
+		}
+	}
+	else if (m_slotUpdatePolicies[eVUS_EnginePowered] & usedUpdatePolicyFlags)
+	{
+		if (m_pMovement)
+		{
+			NeedsUpdate();
+			m_pMovement->Update(frameTime);
+		}
+	}
+	else if (m_slotUpdatePolicies[eVUS_AIControlled] & usedUpdatePolicyFlags)
+	{
+		NeedsUpdate();
+
+		for (TVehicleSeatVector::iterator ite = m_seats.begin(), end = m_seats.end(); ite != end; ++ite)
+		{
+			CVehicleSeat* seat = ite->second;
+
+			if (CVehicleSeatActionWeapons* weapons = seat->GetSeatActionWeapons())
+			{
+				seat->Update(frameTime);
+			}
+		}
+	}
+	else if (m_slotUpdatePolicies[eVUS_PassengerIn] & usedUpdatePolicyFlags)
+	{
+		NeedsUpdate();
+
+		for (TVehicleSeatVector::iterator ite = m_seats.begin(), end = m_seats.end(); ite != end; ++ite)
+		{
+			CVehicleSeat* seat = ite->second;
+			seat->Update(frameTime);
+		}
+
+		for (TVehicleObjectUpdateInfoList::iterator ite = m_objectsToUpdate.begin(), end = m_objectsToUpdate.end(); ite != end; ++ite)
+		{
+			SObjectUpdateInfo& updateInfo = *ite;
+			if (updateInfo.updatePolicy == eVOU_PassengerUpdate)
+				updateInfo.pObject->Update(frameTime);
+		}
+	}
+	else if (m_slotUpdatePolicies[eVUS_Visible] & usedUpdatePolicyFlags)
+	{
+		for (TVehicleObjectUpdateInfoList::iterator ite = m_objectsToUpdate.begin(), end = m_objectsToUpdate.end(); ite != end; ++ite)
+		{
+			SObjectUpdateInfo& updateInfo = *ite;
+			if (updateInfo.updatePolicy == eVOU_Visible)
+				updateInfo.pObject->Update(frameTime);
+		}
+
+#if ENABLE_VEHICLE_DEBUG
+		DebugDraw(frameTime);
+#endif
+	}
 
 	m_physUpdateTime = 0.f;
 }
@@ -1688,12 +1661,6 @@ void CVehicle::NeedsUpdate(int flags, bool bThreadSafe /*=false*/)
 {
 	m_bNeedsUpdate = true;
 
-	if (0 == GetGameObject()->GetUpdateSlotEnables(this, eVUS_Always))
-	{
-		// enable, if necessary
-		GetGameObject()->EnableUpdateSlot(this, eVUS_Always);
-	}
-
 	if (flags & eVUF_AwakePhysics)
 	{
 		if (IPhysicalEntity* pPE = GetEntity()->GetPhysics())
@@ -1703,41 +1670,6 @@ void CVehicle::NeedsUpdate(int flags, bool bThreadSafe /*=false*/)
 			// keep vehicle awake for a bit to keep it from sleeping when it is going from positive to negative acceleration
 			awakeParams.minAwakeTime = 2.0f;
 			pPE->Action(&awakeParams, (int)bThreadSafe);
-		}
-	}
-}
-
-//------------------------------------------------------------------------
-void CVehicle::CheckDisableUpdate(int slot)
-{
-	if (m_bNeedsUpdate)
-		return;
-
-	if (0 == CVehicleCVars::Get().v_autoDisable)
-		return;
-
-#if ENABLE_VEHICLE_DEBUG
-	if (IsDebugDrawing())
-		return;
-#endif
-
-	// check after last updated slot if we can be disabled
-	for (int i = eVUS_Visible - 1; i >= 0; --i)
-	{
-		if (GetGameObject()->GetUpdateSlotEnables(this, i))
-		{
-			if (slot >= i)
-			{
-				if (IPhysicalEntity* pPhysics = GetEntity()->GetPhysics())
-				{
-					pe_status_pos status;
-					if (pPhysics->GetStatus(&status) && status.iSimClass > 1)
-						break;
-				}
-
-				GetGameObject()->DisableUpdateSlot(this, eVUS_Always);
-			}
-			break;
 		}
 	}
 }
@@ -1988,43 +1920,9 @@ void CVehicle::UpdateView(SViewParams& viewParams, EntityId playerId)
 }
 
 //------------------------------------------------------------------------
-void CVehicle::HandleEvent(const SGameObjectEvent& event)
+/*void CVehicle::HandleEvent(const SGameObjectEvent& event)
 {
-	if (event.event == eGFE_OnPostStep)
-	{
-		OnPhysPostStep((EventPhys*)event.ptr, (event.flags & eGOEF_LoggedPhysicsEvent) != 0);
-	}
-	else if (event.event == eGFE_OnCollision)
-	{
-		EventPhysCollision* pCollision = static_cast<EventPhysCollision*>(event.ptr);
-		OnCollision(pCollision);
-	}
-	else if (event.event == eGFE_OnStateChange)
-	{
-		EventPhysStateChange* pStateChange = static_cast<EventPhysStateChange*>(event.ptr);
-		OnPhysStateChange(pStateChange);
-	}
-	else if (event.event == eGFE_OnBecomeVisible)
-	{
-		if (m_pMovement)
-		{
-			SVehicleMovementEventParams params;
-			m_pMovement->OnEvent(IVehicleMovement::eVME_BecomeVisible, params);
-		}
-	}
-	else if (event.event == eGFE_PreShatter)
-	{
-		// evacuate all the passengers
-		for (TVehicleSeatVector::iterator it = m_seats.begin(), end = m_seats.end(); it != end; ++it)
-		{
-			if (it->second->GetPassenger())
-				it->second->Exit(false, true);
-		}
-
-		OnDestroyed();
-		SetDestroyedStatus(true);
-	}
-	else if (event.event == eGFE_StoodOnChange)
+	if (event.event == eGFE_StoodOnChange)
 	{
 		if (m_pMovement)
 		{
@@ -2034,7 +1932,7 @@ void CVehicle::HandleEvent(const SGameObjectEvent& event)
 			m_pMovement->OnEvent(IVehicleMovement::eVME_StoodOnChange, params);
 		}
 	}
-}
+}*/
 
 //------------------------------------------------------------------------
 void CVehicle::UpdateStatus(const float deltaTime)
@@ -2091,12 +1989,10 @@ void CVehicle::UpdateStatus(const float deltaTime)
 			// todo: add a small timer here
 			if (speed > minSpeed && !m_customEngineSlot)
 			{
-				GetGameObject()->EnableUpdateSlot(this, IVehicle::eVUS_EnginePowered);
 				m_customEngineSlot = true;
 			}
 			else if (speed <= minSpeed && m_customEngineSlot)
 			{
-				GetGameObject()->DisableUpdateSlot(this, IVehicle::eVUS_EnginePowered);
 				m_customEngineSlot = false;
 
 				SVehicleMovementEventParams params;
@@ -2549,7 +2445,7 @@ bool CVehicle::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile
 		{
 			uint8 currentProfile = 255;
 			if (ser.IsWriting())
-				currentProfile = GetGameObject()->GetAspectProfile(eEA_Physics);
+				currentProfile = GetEntity()->QueryComponent<IGameObject>()->GetAspectProfile(eEA_Physics);
 			ser.Value("PhysicalizationProfile", currentProfile);
 			return NetSerialize(ser, aspect, currentProfile, flags);
 		}
@@ -2728,7 +2624,7 @@ void CVehicle::OnAction(const TVehicleActionId actionId, int activationMode, flo
 							if (pCurrentSeat->GetSeatGroupIndex() != -1)
 							{
 								pUser->SetStillWaitingOnServerUseResponse(true);
-								GetGameObject()->InvokeRMI(SvRequestChangeSeat(), RequestChangeSeatParams(callerId, seatIndex), eRMI_ToServer);
+								InvokeRemoteMethod(SvRequestChangeSeat(), RequestChangeSeatParams(callerId, seatIndex), eRMI_ToServer);
 							}
 						}
 					}
@@ -3087,7 +2983,7 @@ bool CVehicle::OnUsed(EntityId userId, int index)
 		if (!pUser->IsStillWaitingOnServerUseResponse())
 		{
 			pUser->SetStillWaitingOnServerUseResponse(true);
-			GetGameObject()->InvokeRMI(SvRequestUse(), RequestUseParams(userId, index), eRMI_ToServer);
+			InvokeRemoteMethod(SvRequestUse(), RequestUseParams(userId, index), eRMI_ToServer);
 		}
 	}
 
@@ -3468,10 +3364,9 @@ bool CVehicle::SetMovement(const string& movementName, const CVehicleParams& tab
 }
 
 //------------------------------------------------------------------------
-void CVehicle::OnPhysPostStep(const EventPhys* pEvent, bool logged)
+void CVehicle::OnPhysPostStep(const EventPhysPostStep* eventPhys, bool logged)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
-	const EventPhysPostStep* eventPhys = (const EventPhysPostStep*)pEvent;
 	float deltaTime = eventPhys->dt;
 	if (logged)
 	{
@@ -3667,12 +3562,6 @@ float CVehicle::GetSelfCollisionMult(const Vec3& velocity, const Vec3& normal, i
 	}
 
 	return mult;
-}
-
-//------------------------------------------------------------------------
-bool CVehicle::IsProbablyDistant() const
-{
-	return GetGameObject()->IsProbablyDistant();
 }
 
 //------------------------------------------------------------------------
@@ -4139,7 +4028,7 @@ void CVehicle::ChangeSeat(EntityId actorId, int seatChoice, TVehicleSeatId newSe
 		pNewSeat->SetPasssenger(actorId);
 		pNewSeat->SitDown();
 
-		CHANGED_NETWORK_STATE(this, ASPECT_SEAT_PASSENGER);
+		GetEntity()->QueryComponent<IGameObject>()->ChangedNetworkState(ASPECT_SEAT_PASSENGER);
 
 		SVehicleEventParams eventParams;
 		eventParams.entityId = passengerId;
@@ -4242,29 +4131,11 @@ void CVehicle::BroadcastVehicleEvent(EVehicleEvent event, const SVehicleEventPar
 		break;
 	}
 
-	if (event == eVE_PassengerEnter)
-	{
-		GetGameObject()->EnablePostUpdates(this);
-	}
-	else if (event == eVE_PassengerExit)
+	if (event == eVE_PassengerExit)
 	{
 		IScriptTable* pScriptTable = GetEntity()->GetScriptTable();
 		if (pScriptTable)
 			Script::CallMethod(pScriptTable, "OnPassengerExit", ScriptHandle(params.entityId));
-		uint32 numberOfPassengers = 0;
-
-		for (TVehicleSeatVector::const_iterator iSeat = m_seats.begin(), iEndSeat = m_seats.end(); iSeat != iEndSeat; ++iSeat)
-		{
-			if (iSeat->second->GetPassenger())
-			{
-				++numberOfPassengers;
-			}
-		}
-
-		if (numberOfPassengers <= 1)
-		{
-			GetGameObject()->DisablePostUpdates(this);
-		}
 	}
 }
 
@@ -4653,7 +4524,7 @@ void CVehicle::Physicalize()
 		pPart->Physicalize();
 	}
 
-	GetGameObject()->EnablePhysicsEvent(true, eEPE_OnPostStepImmediate | eEPE_OnPostStepLogged);
+	//GetGameObject()->EnablePhysicsEvent(true, eEPE_OnPostStepImmediate | eEPE_OnPostStepLogged);
 
 	//if (pPhysics->GetParams(&paramsFlags))
 	{
@@ -4852,7 +4723,7 @@ void CVehicle::EnableAbandonedWarnSound(bool enable)
 	}
 
 	if (gEnv->bServer)
-		GetGameObject()->InvokeRMIWithDependentObject(ClAbandonWarning(), AbandonWarningParams(enable), eRMI_ToRemoteClients, GetEntityId());
+		InvokeRemoteMethodWithDependentObject(ClAbandonWarning(), AbandonWarningParams(enable), eRMI_ToRemoteClients, GetEntityId());
 }
 
 //------------------------------------------------------------------------
@@ -5346,7 +5217,7 @@ IMPLEMENT_RMI(CVehicle, SvRequestUse)
 	{
 		if (!pUser->IsClient())
 		{
-			GetGameObject()->InvokeRMI(CVehicle::ClRequestComplete(), CVehicle::RequestCompleteParams(params.actorId), eRMI_ToClientChannel, pUser->GetChannelId());
+			InvokeRemoteMethod(CVehicle::ClRequestComplete(), CVehicle::RequestCompleteParams(params.actorId), eRMI_ToClientChannel, pUser->GetChannelId());
 		}
 	}
 	return true;
@@ -5373,7 +5244,7 @@ IMPLEMENT_RMI(CVehicle, SvRequestChangeSeat)
 	{
 		if (!pUser->IsClient())
 		{
-			GetGameObject()->InvokeRMI(CVehicle::ClRequestComplete(), CVehicle::RequestCompleteParams(params.actorId), eRMI_ToClientChannel, pUser->GetChannelId());
+			InvokeRemoteMethod(CVehicle::ClRequestComplete(), CVehicle::RequestCompleteParams(params.actorId), eRMI_ToClientChannel, pUser->GetChannelId());
 		}
 	}
 	return true;
@@ -5630,7 +5501,7 @@ void CVehicle::ExitVehicleAtPosition(EntityId passengerId, const Vec3& pos)
 		if (pCurrentSeat)
 		{
 			pCurrentSeat->Exit(true, false, params.exitPos);
-			GetGameObject()->InvokeRMI(ClProcessLeave(), params, eRMI_ToRemoteClients);
+			InvokeRemoteMethod(ClProcessLeave(), params, eRMI_ToRemoteClients);
 		}
 	}
 	else
@@ -5640,7 +5511,7 @@ void CVehicle::ExitVehicleAtPosition(EntityId passengerId, const Vec3& pos)
 			if (!pUser->IsStillWaitingOnServerUseResponse())
 			{
 				pUser->SetStillWaitingOnServerUseResponse(true);
-				GetGameObject()->InvokeRMI(SvRequestLeave(), RequestLeaveParams(passengerId, pos), eRMI_ToServer);
+				InvokeRemoteMethod(SvRequestLeave(), RequestLeaveParams(passengerId, pos), eRMI_ToServer);
 			}
 		}
 	}
@@ -5886,16 +5757,6 @@ bool CVehicle::DoExtendedExitTest(Vec3 seatPos, Vec3 firstTestPos, EntityId bloc
 const char* CVehicle::GetModification() const
 {
 	return m_modifications.c_str();
-}
-
-IComponent::ComponentEventPriority CVehicle::GetEventPriority(const int eventID) const
-{
-	switch (eventID)
-	{
-	case ENTITY_EVENT_PREPHYSICSUPDATE:
-		return EEntityEventPriority_Vehicle;
-	}
-	return IGameObjectExtension::GetEventPriority(eventID);
 }
 
 #if ENABLE_VEHICLE_DEBUG

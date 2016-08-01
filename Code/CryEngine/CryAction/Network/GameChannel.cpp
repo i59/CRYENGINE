@@ -14,7 +14,6 @@
 #include "StdAfx.h"
 #include "GameChannel.h"
 #include "PhysicsSync.h"
-#include "GameObjects/GameObject.h"
 #include "CryAction.h"
 #include "GameContext.h"
 

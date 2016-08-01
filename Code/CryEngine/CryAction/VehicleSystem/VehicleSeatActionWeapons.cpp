@@ -5,8 +5,7 @@
 #include "VehicleSeatActionWeapons.h"
 
 #include "CryAction.h"
-#include "GameObjects/GameObject.h"
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
 #include "IVehicleSystem.h"
 #include "Vehicle.h"
 #include "VehiclePartBase.h"
@@ -514,9 +513,8 @@ void CVehicleSeatActionWeapons::DoUpdate(float frameTime)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
 
-	bool distant = m_pVehicle->IsProbablyDistant();
-	bool visible = m_pVehicle->GetGameObject()->IsProbablyVisible();
-	bool updateTM = !gEnv->IsClient() || visible || !distant;
+	// Used to perform distance checks here
+	bool updateTM = true;
 
 	if (m_Forced)
 	{
@@ -558,7 +556,7 @@ void CVehicleSeatActionWeapons::DoUpdate(float frameTime)
 					BindWeaponToNetwork(weapon.weaponEntityId);
 					m_pSeat->SetLocked(eVSLS_Unlocked);
 
-					m_pVehicle->GetGameObject()->InvokeRMIWithDependentObject(CVehicle::ClRespawnWeapon(), CVehicle::RespawnWeaponParams(weapon.weaponEntityId, m_pSeat->GetSeatId(), GetId(), i), eRMI_ToRemoteClients, weapon.weaponEntityId);
+					m_pVehicle->InvokeRemoteMethodWithDependentObject(CVehicle::ClRespawnWeapon(), CVehicle::RespawnWeaponParams(weapon.weaponEntityId, m_pSeat->GetSeatId(), GetId(), i), eRMI_ToRemoteClients, weapon.weaponEntityId);
 				}
 			}
 		}
@@ -1309,7 +1307,8 @@ void CVehicleSeatActionWeapons::OnShoot(IWeapon* pWeapon, EntityId shooterId, En
 			m_weaponIndex = 0;
 	}
 
-	m_pVehicle->GetGameObject()->Pulse('bang');
+	if(auto *pGameObject = m_pVehicle->GetEntity()->QueryComponent<IGameObject>())
+		pGameObject->Pulse('bang');
 }
 
 //------------------------------------------------------------------------

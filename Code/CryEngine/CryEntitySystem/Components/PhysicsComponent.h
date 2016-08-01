@@ -61,6 +61,7 @@ public:
 	~CPhysicsComponent();
 
 	// IEntityComponent
+	virtual void PostInitialize() override;
 	virtual void ProcessEvent(const SEntityEvent& event) override;
 
 	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;

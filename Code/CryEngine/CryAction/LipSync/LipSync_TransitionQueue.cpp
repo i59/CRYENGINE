@@ -393,7 +393,7 @@ CLipSync_TransitionQueue::~CLipSync_TransitionQueue()
 void CLipSync_TransitionQueue::InjectLipSyncProvider()
 {
 	IEntity* pEntity = GetEntity();
-	auto &audioComponent = pEntity->CreateAudioComponent();
+	auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 	m_pLipSyncProvider.reset(new CLipSyncProvider_TransitionQueue(pEntity->GetId()));
 	REINST(add SetLipSyncProvider to interface)
 	//pSoundProxy->SetLipSyncProvider(m_pLipSyncProvider);

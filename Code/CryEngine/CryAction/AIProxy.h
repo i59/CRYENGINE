@@ -21,7 +21,7 @@
 
 #include <CryAISystem/IAIActorProxy.h>
 #include "IWeapon.h"
-#include "IGameObject.h"
+#include <CryAction/IGameObject.h>
 
 struct IAISignalExtraData;
 struct IEntity;
@@ -129,7 +129,7 @@ public:
 	virtual bool                      IsUsingSecondaryVehicleWeapon() const { return m_UseSecondaryVehicleWeapon; }
 	virtual IEntity*                  GetGrabbedEntity() const;
 	virtual bool                      IsUpdateAlways() const                { return m_UpdateAlways; }
-	virtual bool                      IfShouldUpdate()                      { return m_pGameObject->ShouldUpdate(); }
+	virtual bool                      IfShouldUpdate()                      { return true; }
 	virtual bool                      IsAutoDeactivated() const             { return m_autoDeactivated; };
 	virtual void                      NotifyAutoDeactivated()               { m_autoDeactivated = true; };
 

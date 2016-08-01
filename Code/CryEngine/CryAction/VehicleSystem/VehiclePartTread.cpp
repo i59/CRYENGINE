@@ -317,8 +317,7 @@ void CVehiclePartTread::Update(const float frameTime)
 		return;
 	}
 
-	if (frameTime > 0.f &&
-	    (m_damageRatio >= 1.f || !m_pVehicle->GetGameObject()->IsProbablyVisible() || m_pVehicle->IsProbablyDistant()))
+	if (frameTime > 0.f && m_damageRatio >= 1.f)
 	{
 		return;
 	}

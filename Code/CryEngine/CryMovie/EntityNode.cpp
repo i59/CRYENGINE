@@ -722,7 +722,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 		return;
 	}
 
-	pEntity->CreateEntityNodeComponent();
+	pEntity->AcquireExternalComponent<IEntityNodeComponent>();
 	
 	// Here in Animate always get local pos, rot, scale value instead of pEntity->GetScale, to avoid comparing Track View value, to Track View value, which will always be the same.
 	// pEntity->GetPos,pEntity->GetRotation, pEntity->GetScale are updated before this, by delegated mode, from Track View key value
@@ -1016,7 +1016,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 						{
 							if (audioFileInfo.audioKeyStart < audioFileKeyNum)
 							{
-								auto &audioComponent = pEntity->CreateAudioComponent();
+								auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 								const SAudioPlayFileInfo audioPlayFileInfo(audioFileKey.m_audioFile, audioFileKey.m_bIsLocalized);
 								audioComponent.PlayFile(audioPlayFileInfo);
@@ -1053,7 +1053,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 					float& prevAudioParameterValue = m_audioParameterTracks[numAudioParameterTracks-1];
 					if (fabs(prevAudioParameterValue - newAudioParameterValue) > FLT_EPSILON)
 					{
-						auto &audioComponent = pEntity->CreateAudioComponent();
+						auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 						audioComponent.SetRtpcValue(audioParameterId, newAudioParameterValue);
 						prevAudioParameterValue = newAudioParameterValue;
@@ -1086,7 +1086,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 							AudioSwitchStateId audioSwitchStateId = audioSwitchKey.m_audioSwitchStateId;
 							if (audioSwitchId != INVALID_AUDIO_CONTROL_ID && audioSwitchStateId != INVALID_AUDIO_SWITCH_STATE_ID)
 							{
-								auto &audioComponent = pEntity->CreateAudioComponent();
+								auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 								audioComponent.SetSwitchState(audioSwitchId, audioSwitchStateId);
 								prevAudioSwitchKeyNum = newAudioSwitchKeyNum;
@@ -1117,7 +1117,7 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 								sequenceName.Format("SendDrsSignal from Sequence '%s'", animContext.pSequence->GetName());
 								SET_DRS_USER_SCOPED(sequenceName);
 
-								auto &dynamicResponseComponent = pEntity->CreateDynamicResponseComponent();
+								auto &dynamicResponseComponent = pEntity->AcquireExternalComponent<IEntityDynamicResponseComponent>();
 
 								DRS::IVariableCollectionSharedPtr pContextVariableCollection = nullptr;
 
@@ -1154,36 +1154,44 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 
 						const uint32 valueName = CCrc32::ComputeLowercase(manKey.m_fragmentName);
 						
-						if (auto *pGameObject = pEntity->QueryComponent<IGameObject>())
+						if (auto *pAnimChar = pEntity->QueryComponent<IAnimatedCharacter>())
 						{
-							IAnimatedCharacter* pAnimChar = (IAnimatedCharacter*) pGameObject->QueryExtension("AnimatedCharacter");
+							const FragmentID fragID = pAnimChar->GetActionController()->GetContext().controllerDef.m_fragmentIDs.Find(valueName);
 
-							if (pAnimChar)
+							bool isValid = !(FRAGMENT_ID_INVALID == fragID);
+
+							// Find tags
+							string tagName = manKey.m_tags;
+							TagState tagState = TAG_STATE_EMPTY;
+
+							if (!tagName.empty())
 							{
-								const FragmentID fragID = pAnimChar->GetActionController()->GetContext().controllerDef.m_fragmentIDs.Find(valueName);
+								const CTagDefinition* tagDefinition = pAnimChar->GetActionController()->GetTagDefinition(fragID);
+								tagName.append("+");
 
-								bool isValid = !(FRAGMENT_ID_INVALID == fragID);
-
-								// Find tags
-								string tagName = manKey.m_tags;
-								TagState tagState = TAG_STATE_EMPTY;
-
-								if (!tagName.empty())
+								while (tagName.find("+") != string::npos)
 								{
-									const CTagDefinition* tagDefinition = pAnimChar->GetActionController()->GetTagDefinition(fragID);
-									tagName.append("+");
+									string::size_type strPos = tagName.find("+");
 
-									while (tagName.find("+") != string::npos)
+									string rest = tagName.substr(strPos + 1, tagName.size());
+									string curTagName = tagName.substr(0, strPos);
+									bool found = false;
+
+									if (tagDefinition)
 									{
-										string::size_type strPos = tagName.find("+");
+										const uint32 tagCRC = CCrc32::ComputeLowercase(curTagName);
+										const TagID tagID = tagDefinition->Find(tagCRC);
+										found = tagID != TAG_ID_INVALID;
+										tagDefinition->Set(tagState, tagID, true);
+									}
 
-										string rest = tagName.substr(strPos + 1, tagName.size());
-										string curTagName = tagName.substr(0, strPos);
-										bool found = false;
+									if (!found)
+									{
+										const TagID tagID = pAnimChar->GetActionController()->GetContext().state.GetDef().Find(curTagName);
 
 										if (tagDefinition)
 										{
-											const uint32 tagCRC = CCrc32::ComputeLowercase(curTagName);
+											const int tagCRC = CCrc32::ComputeLowercase(curTagName);
 											const TagID tagID = tagDefinition->Find(tagCRC);
 											found = tagID != TAG_ID_INVALID;
 											tagDefinition->Set(tagState, tagID, true);
@@ -1192,33 +1200,20 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 										if (!found)
 										{
 											const TagID tagID = pAnimChar->GetActionController()->GetContext().state.GetDef().Find(curTagName);
-
-											if (tagDefinition)
+											if (tagID != TAG_ID_INVALID)
 											{
-												const int tagCRC = CCrc32::ComputeLowercase(curTagName);
-												const TagID tagID = tagDefinition->Find(tagCRC);
-												found = tagID != TAG_ID_INVALID;
-												tagDefinition->Set(tagState, tagID, true);
-											}
-
-											if (!found)
-											{
-												const TagID tagID = pAnimChar->GetActionController()->GetContext().state.GetDef().Find(curTagName);
-												if (tagID != TAG_ID_INVALID)
-												{
-													pAnimChar->GetActionController()->GetContext().state.Set(tagID, true);
-												}
+												pAnimChar->GetActionController()->GetContext().state.Set(tagID, true);
 											}
 										}
-
-										tagName = rest;
 									}
 
+									tagName = rest;
 								}
 
-								IAction* pAction = new TAction<SAnimationContext>(manKey.m_priority, fragID, tagState, 0u, 0xffffffff);
-								pAnimChar->GetActionController()->Queue(*pAction);
 							}
+
+							IAction* pAction = new TAction<SAnimationContext>(manKey.m_priority, fragID, tagState, 0u, 0xffffffff);
+							pAnimChar->GetActionController()->Queue(*pAction);
 						}
 					}
 
@@ -1867,7 +1862,7 @@ void CAnimEntityNode::ApplyAudioTriggerKey(AudioControlId audioTriggerId, bool c
 		IEntity* const pEntity = GetEntity();
 
 		// Get or create sound proxy if necessary.
-		auto &audioComponent = pEntity->CreateAudioComponent();
+		auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 		if (bPlay)
 		{

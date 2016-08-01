@@ -19,6 +19,8 @@
 #include <CryParticleSystem/IParticles.h>
 #include <CryThreading/IJobManager_JobDelegator.h>
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 #define RENDER_MESH_COLLISION_IGNORE_DISTANCE 30.0f
 #ifndef RENDER_MESH_TEST_DISTANCE
 	#define RENDER_MESH_TEST_DISTANCE           (0.2f)

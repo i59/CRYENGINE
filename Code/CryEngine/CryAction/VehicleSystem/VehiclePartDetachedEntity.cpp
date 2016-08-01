@@ -31,6 +31,9 @@
 void CVehiclePartDetachedEntity::PostInitialize()
 {
 	InitVehiclePart();
+
+	EnableEvent(ENTITY_EVENT_RESET, 0, true);
+	EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
 }
 
 //------------------------------------------------------------------------

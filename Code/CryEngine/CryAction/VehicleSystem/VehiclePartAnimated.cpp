@@ -837,12 +837,7 @@ void CVehiclePartAnimated::FlagSkeleton(ISkeletonPose* pSkeletonPose, IDefaultSk
 //------------------------------------------------------------------------
 void CVehiclePartAnimated::RotationChanged(CVehiclePartAnimatedJoint* pJoint)
 {
-	// craig: cannot drop these changes if the vehicle is on a server
-	bool cull = false;
-	if (gEnv->IsClient())
-		cull = m_pVehicle->IsProbablyDistant();
-
-	if (m_iRotChangedFrameId != gEnv->nMainFrameID && !cull)
+	if (m_iRotChangedFrameId != gEnv->nMainFrameID)
 	{
 		// force skeleton update for this frame (this is intended, contact Ivo)
 		if (m_pCharInstance)

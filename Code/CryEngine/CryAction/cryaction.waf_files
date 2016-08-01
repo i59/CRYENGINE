@@ -397,18 +397,7 @@
       "DialogSystem/DialogQueuesManager.cpp"
     ]
   },
-  "CryAction_game_objects_uber.cpp":{
-    "Game Objects":[
-      "GameObjects/GameObject.cpp",
-      "GameObjects/GameObjectDispatch.cpp",
-      "GameObjects/GameObjectSystem.cpp",
-      "GameObjects/GameObject.h",
-      "GameObjects/GameObjectDispatch.h",
-      "GameObjects/GameObjectSystem.h",
-	  
-	  "GameObjects/CameraSource.cpp",
-	  "GameObjects/CameraSource.h"
-	],
+  "CryAction_entity_components_uber.cpp":{
 	"Entity Components":[
 	  "EntityComponents/WorldQuery.h",
 	  "EntityComponents/WorldQuery.cpp",
@@ -418,7 +407,15 @@
 	  "EntityComponents/RuntimeAreaObject.cpp",
 	  
 	  "EntityComponents/Interactor.h",
-	  "EntityComponents/Interactor.cpp"
+	  "EntityComponents/Interactor.cpp",
+	  
+	  "EntityComponents/CameraSource.h",
+	  "EntityComponents/CameraSource.cpp",
+	  
+	  "EntityComponents/GameObject.h",
+	  "EntityComponents/GameObject.cpp",
+	  "EntityComponents/EntityComponentRMIDispatch.h",
+	  "EntityComponents/EntityComponentRMIDispatch.cpp"
     ],
     "GameRules":[
       "GameRulesSystem.cpp",
@@ -1008,8 +1005,6 @@
       "ICheckPointSystem.h",
       "ICooperativeAnimationManager.h",
       "IForceFeedbackSystem.h",
-      "IGameObject.h",
-      "IGameObjectSystem.h",
       "IGamePhysicsSettings.h",
       "IGameplayRecorder.h",
       "IGameRulesSystem.h",

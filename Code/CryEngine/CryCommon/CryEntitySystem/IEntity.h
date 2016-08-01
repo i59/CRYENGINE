@@ -2,9 +2,7 @@
 
 #pragma once
 
-#include "IComponent.h"
-
-#include <CryExtension/ICryUnknown.h>
+#include <CryExtension/CryTypeID.h>
 
 #include <CryCore/BitMask.h>
 
@@ -26,14 +24,12 @@ class CDLight;
 struct AIObjectParams;
 struct IParticleEffect;
 struct SpawnParams;
-struct IComponentEventDistributer;
 struct IGeomCacheRenderNode;
 struct ICharacterInstance;
 struct IParticleEmitter;
 struct IStatObj;
 
 //////////////////////////////////////////////////////////////////////////
-struct IGameObject;
 struct IAIObject;
 struct IMaterial;
 //////////////////////////////////////////////////////////////////////////
@@ -427,10 +423,6 @@ enum EEntityEvent
 	//! Sent when triggering entity enters or leaves an area so all active areas of same group get notified. This event is sent to all target entities of the area.
 	ENTITY_EVENT_CROSS_AREA,
 
-	//! Sent when an entity with pef_monitor_poststep receives a poststep notification (the hamdler should be thread safe!)
-	//! fParam[0] = time interval
-	ENTITY_EVENT_PHYS_POSTSTEP,
-
 	//! Sent when Breakable object is broken in physics.
 	ENTITY_EVENT_PHYS_BREAK,
 
@@ -446,6 +438,9 @@ enum EEntityEvent
 
 	//! Physical collision.
 	ENTITY_EVENT_COLLISION,
+
+	//! Sent when an entity with pef_monitor_poststep receives a poststep notification
+	ENTITY_EVENT_PHYS_POSTSTEP,
 
 	//! Called when entity is rendered (Only if ENTITY_FLAG_SEND_RENDER_EVENT is set).
 	//! nParam[0] is a pointer to the current rendering SRenderParams structure.
@@ -890,12 +885,6 @@ struct IEntity
 	//! Check if the entity is active now.
 	virtual bool IsActive() const = 0;
 
-	//! Activates entity, if entity is active it will be updated every frame.
-	virtual void PrePhysicsActivate(bool bActive) = 0;
-
-	//! Check if the entity is active now.
-	virtual bool IsPrePhysicsActive() = 0;
-
 	//////////////////////////////////////////////////////////////////////////
 
 	//! Saves or loads entity parameters to/from stream using serialization context class.
@@ -952,6 +941,10 @@ struct IEntity
 	//! \param eUpdatePolicy - Update policy flags from the EEntityUpdatePolicy enums.
 	virtual void SetUpdatePolicy(unsigned int eUpdatePolicy) = 0;
 
+	//! Gets the entity update policy flags generated during the last frame
+	// For example, if the object was visible last frame this will return EEntityUpdatePolicy_Visible
+	virtual unsigned int GetLastConditionalUpdateFlags() = 0;
+
 	//! Retrieves the entity update policy.
 	virtual unsigned int GetUpdatePolicy() const = 0;
 
@@ -963,6 +956,7 @@ struct IEntity
 	}
 
 	// Returns the pointer to a component, creates it if it doesn't exist already
+	// Note that this only works if the constructor for type T is available inside this library, for external components see AcquireExternalComponent
 	template <typename T>
 	T &AcquireComponent()
 	{
@@ -981,27 +975,25 @@ struct IEntity
 	// Returns the pointer to a component registered with the entity system
 	// If the component did not already exist one will be created via factory passed to IEntitySystem::RegisterComponentFactory
 	template <typename T>
-	T &AcquireExternalComponent(const char *name)
+	T &AcquireExternalComponent()
 	{
 		if (auto *pComponent = QueryComponent<T>())
 		{
 			return *pComponent;
 		}
 
-		return *static_cast<T>(CreateComponentByTypeId(cryiidof<T>()));
+		return *static_cast<T *>(CreateComponentByTypeId(cryiidof<T>()));
 	}
 
 	virtual IEntityComponent *GetComponentByTypeId(const CryInterfaceID &interfaceID) const = 0;
 
-	//! Register or unregisters a component with the entity.
-	//! \param pComponent The target component.
-	//! \param flags IComponent contains the relevent flags to control registration behaviour.
-	virtual void RegisterComponent(IComponentPtr pComponent, const int flags) = 0;
 	// Creates a new instance of a component by name, assumes that its factory was registered via IEntitySystem::RegisterComponentFactory
 	// The component will be automatically registered as if RegisterComponent was called
 	virtual IEntityComponent *CreateComponentByTypeId(const CryInterfaceID &interfaceID) = 0;
 
 	virtual void RegisterComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent) = 0;
+
+	virtual void EnableEvent(bool bEnable, IEntityComponent &component, EEntityEvent event, uint32 priority) = 0;
 
 	//! Sends event to the entity and its components.
 	//! \param event Event description (event id, parameters).
@@ -1020,16 +1012,6 @@ struct IEntity
 	virtual void             UpdateSlotPhysics(int slot) = 0;
 
 	virtual void             SetPhysicsState(XmlNodeRef& physicsState) = 0;
-
-	// Creates a new physics component
-	// Use Physicalize if you want a mesh loaded, this only creates an instance of CPhysicsComponent
-	virtual struct IEntityPhysicsComponent &CreatePhysicsComponent() = 0;
-	virtual struct IEntityTriggerComponent &CreateTriggerComponent() = 0;
-	virtual struct IEntityAudioComponent &CreateAudioComponent() = 0;
-	virtual struct IEntitySubstitutionComponent &CreatSubstitutionComponent() = 0;
-	virtual struct IEntityAreaComponent &CreateAreaComponent() = 0;
-	virtual struct IEntityDynamicResponseComponent &CreateDynamicResponseComponent() = 0;
-	virtual void CreateEntityNodeComponent() = 0;
 
 	// Custom entity material.
 
@@ -1225,51 +1207,3 @@ struct IEntity
 
 	// </interfuscator:shuffle>
 };
-
-//////////////////////////////////////////////////////////////////////////
-// CryComponent helpers: has to be here due to circular dependancy.
-
-template<typename TYPE>
-struct DeleteWithRelease
-{
-	void operator()(TYPE* p) { p->Release(); }
-};
-
-template<typename TYPE>
-std::shared_ptr<TYPE> ComponentCreate()
-{
-	std::shared_ptr<TYPE> p(new TYPE);
-	return p;
-}
-
-template<typename TYPE>
-std::shared_ptr<TYPE> ComponentCreate_DeleteWithRelease()
-{
-	std::shared_ptr<TYPE> p(new TYPE, DeleteWithRelease<TYPE>());
-	return p;
-}
-
-template<typename TYPE>
-std::shared_ptr<TYPE> ComponentCreateAndRegister(const IComponent::SComponentInitializer& componentInitializer, const int flags = 0)
-{
-	CRY_ASSERT(componentInitializer.m_pEntity);
-	std::shared_ptr<TYPE> pComponent;
-	pComponent = ComponentCreate<TYPE>();
-	componentInitializer.m_pEntity->RegisterComponent(pComponent, flags | IComponent::EComponentFlags_Enable);
-	pComponent->Initialize(componentInitializer);
-	return pComponent;
-}
-
-template<typename TYPE>
-std::shared_ptr<TYPE> ComponentCreateAndRegister_DeleteWithRelease(const IComponent::SComponentInitializer& componentInitializer, const int flags = 0)
-{
-	CRY_ASSERT(componentInitializer.m_pEntity);
-	std::shared_ptr<TYPE> pComponent;
-	pComponent = ComponentCreate_DeleteWithRelease<TYPE>();
-	componentInitializer.m_pEntity->RegisterComponent(pComponent, flags | IComponent::EComponentFlags_Enable);
-	pComponent->Initialize(componentInitializer);
-	return pComponent;
-}
-
-template<typename DST, typename SRC>
-DST crycomponent_cast(SRC pComponent) { return std::static_pointer_cast<typename DST::element_type>(pComponent); }

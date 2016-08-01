@@ -5283,7 +5283,7 @@ void CAISystem::SerializeInternal(TSerialize ser)
 }
 
 // notifies that entity has changed its position, which is important for smart objects
-void CAISystem::NotifyAIObjectMoved(IEntity* pEntity, SEntityEvent event)
+void CAISystem::NotifyAIObjectMoved(IEntity* pEntity, const SEntityEvent event)
 {
 	if (!IsEnabled())
 		return;
