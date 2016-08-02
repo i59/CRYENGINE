@@ -47,7 +47,7 @@ void CSubstitutionComponent::SetSubstitute(IRenderNode* pSubstitute)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CSubstitutionComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CSubstitutionComponent::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	m_pSubstitute = 0;
 }

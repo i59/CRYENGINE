@@ -161,7 +161,7 @@ void CRenderComponent::PostInitialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRenderComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CRenderComponent::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	m_nFlags = 0;
 

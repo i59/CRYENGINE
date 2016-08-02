@@ -89,7 +89,7 @@ void CScriptComponent::PostInitialize()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CScriptComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CScriptComponent::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 

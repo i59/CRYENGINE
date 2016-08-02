@@ -114,7 +114,7 @@ void CPhysicsComponent::PostInitialize()
 	EnableEvent(ENTITY_EVENT_MATERIAL, 0, true);
 }
 
-void CPhysicsComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CPhysicsComponent::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	m_nFlags = 0;
 	m_timeLastSync = -100;

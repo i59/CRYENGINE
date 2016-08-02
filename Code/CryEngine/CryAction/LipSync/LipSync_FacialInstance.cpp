@@ -124,7 +124,7 @@ void CLipSync_FacialInstance::PostInitialize()
 	InjectLipSyncProvider();
 }
 
-void CLipSync_FacialInstance::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CLipSync_FacialInstance::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	InjectLipSyncProvider();
 }

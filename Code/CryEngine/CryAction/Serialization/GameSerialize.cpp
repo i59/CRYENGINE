@@ -1816,7 +1816,7 @@ void CGameSerialize::LoadGameData(SLoadEnvironment& loadEnv)
 				{
 					XmlNodeRef dummyNode;
 
-					pAudioComponent->Reload(dummySpawnParams, dummyNode);
+					pAudioComponent->OnEntityReload(dummySpawnParams, dummyNode);
 				}
 			}
 		}

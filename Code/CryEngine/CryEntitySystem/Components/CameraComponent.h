@@ -30,7 +30,7 @@ public:
 	// IEntityComponent
 	virtual void Initialize(IEntity &entity) override;
 	virtual void ProcessEvent(const SEntityEvent& event) override;
-	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
+	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 
 	virtual void Serialize(TSerialize ser) override {}
 

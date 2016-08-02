@@ -106,7 +106,7 @@ void CFlowGraphComponent::Update(SEntityUpdateContext& ctx)
 	//		m_pFlowGraph->Update();
 }
 
-void CFlowGraphComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CFlowGraphComponent::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	SAFE_RELEASE(m_pFlowGraph);
 

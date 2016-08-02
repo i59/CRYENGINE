@@ -27,7 +27,7 @@ void CCameraComponent::Initialize(IEntity &entity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CCameraComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CCameraComponent::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	UpdateMaterialCamera();
 }

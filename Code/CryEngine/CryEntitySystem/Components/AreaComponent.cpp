@@ -51,7 +51,7 @@ void CAreaComponent::Initialize(IEntity &entity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CAreaComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CAreaComponent::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	CRY_ASSERT(m_pArea);
 	if (m_pArea)

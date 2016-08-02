@@ -31,7 +31,7 @@ public:
 	virtual void PostInitialize() override;
 
 	virtual void ProcessEvent(const SEntityEvent& event) override;
-	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
+	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 
 	virtual void Update(SEntityUpdateContext& ctx) override;
 

@@ -306,7 +306,7 @@ void CAnimatedCharacter::PostInitialize()
 	EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
 }
 
-void CAnimatedCharacter::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CAnimatedCharacter::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 #ifdef ANIMCHAR_MEM_DEBUG
 	CCryAction::GetCryAction()->DumpMemInfo("CAnimatedCharacter::ReloadExtension %p start", this);

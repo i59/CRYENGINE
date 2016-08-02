@@ -54,7 +54,7 @@ void CInventory::PostInitialize()
 }
 
 //------------------------------------------------------------------------
-void CInventory::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CInventory::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	// attach script bind
 	CCryAction* pCryAction = static_cast<CCryAction*>(gEnv->pGame->GetIGameFramework());

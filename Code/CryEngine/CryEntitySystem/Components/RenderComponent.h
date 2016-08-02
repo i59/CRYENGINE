@@ -81,7 +81,7 @@ public:
 
 	virtual void ProcessEvent(const SEntityEvent& event) override;
 
-	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
+	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 	virtual void Update(SEntityUpdateContext& ctx) override;
 
 	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) override;

@@ -413,7 +413,7 @@ void CLipSync_TransitionQueue::PostInitialize()
 	InjectLipSyncProvider();
 }
 
-void CLipSync_TransitionQueue::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CLipSync_TransitionQueue::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	InjectLipSyncProvider();
 }

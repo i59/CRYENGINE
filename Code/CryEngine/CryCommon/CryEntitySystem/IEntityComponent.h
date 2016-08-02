@@ -39,7 +39,7 @@ struct IEntityComponent
 
 	virtual void ProcessEvent(const SEntityEvent& event) {}
 
-	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode) {}
+	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) {}
 	virtual void Update(SEntityUpdateContext& ctx) {}
 	virtual void PostUpdate(float frameTime) {}
 

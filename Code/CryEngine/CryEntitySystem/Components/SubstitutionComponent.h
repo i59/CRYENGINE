@@ -26,7 +26,7 @@ public:
 	virtual ~CSubstitutionComponent();
 
 	// IEntityComponent
-	virtual void Reload(SEntitySpawnParams& params, XmlNodeRef entityNode);
+	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode);
 
 	virtual void Serialize(TSerialize ser) override;
 	virtual bool NeedSerialize() override;

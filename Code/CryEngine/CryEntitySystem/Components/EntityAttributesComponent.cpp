@@ -26,7 +26,7 @@ void CEntityAttributesComponent::Initialize(IEntity &entity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntityAttributesComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CEntityAttributesComponent::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	if (params.pArchetype)
 	{

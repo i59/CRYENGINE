@@ -96,7 +96,7 @@ void CClipVolumeComponent::Initialize(IEntity &entity)
 	EnableEvent(ENTITY_EVENT_UNHIDE, 0, true);
 }
 
-void CClipVolumeComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CClipVolumeComponent::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	Reset();
 }

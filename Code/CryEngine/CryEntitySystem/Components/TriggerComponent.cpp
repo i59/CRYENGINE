@@ -48,7 +48,7 @@ CEntity *CTriggerComponent::GetCEntity() const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CTriggerComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CTriggerComponent::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	assert(m_pProximityTrigger);
 	if (m_pProximityTrigger)

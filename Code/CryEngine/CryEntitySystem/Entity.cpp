@@ -264,7 +264,7 @@ bool CEntity::ReloadEntity(SEntityLoadParams& loadParams)
 		// Reload all components
 		for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 		{
-			it->second->Reload(params, entityNode);
+			it->second->OnEntityReload(params, entityNode);
 		}
 
 		// Make sure position is registered.

@@ -76,7 +76,7 @@ void CGameObject::Initialize(IEntity &entity)
 }
 
 //------------------------------------------------------------------------
-void CGameObject::Reload(SEntitySpawnParams& spawnParams, XmlNodeRef entityNode)
+void CGameObject::OnEntityReload(SEntitySpawnParams& spawnParams, XmlNodeRef entityNode)
 {
 	m_entityId = m_pEntity->GetId();
 	m_pMovementController = NULL;

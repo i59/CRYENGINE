@@ -58,7 +58,7 @@ void CRopeComponent::Initialize(IEntity &entity)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CRopeComponent::Reload(SEntitySpawnParams& params, XmlNodeRef entityNode)
+void CRopeComponent::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	assert(m_pRopeRenderNode);
 	if (m_pRopeRenderNode)
