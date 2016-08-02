@@ -1,6 +1,9 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
+#include <CryEntitySystem/IEntityClass.h>
+#include <CryEntitySystem/IEntitySystem.h>
+
 #include <CryNetwork/ISerialize.h>
 #include <CryAudio/IAudioSystem.h>
 
