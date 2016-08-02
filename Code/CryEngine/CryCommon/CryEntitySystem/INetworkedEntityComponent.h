@@ -9,6 +9,26 @@ class CNetworkedEntityComponent
 	, public IGameObjectNetListener
 {
 public:
+	// IEntityComponent
+	virtual void Initialize(IEntity &entity)
+	{
+		T_Parent::Initialize(entity);
+
+		auto &gameObject = entity.AcquireExternalComponent<IGameObject>();
+		gameObject.BindToNetwork();
+
+		gameObject.AddListener(this);
+	}
+	// ~IEntityComponent
+
+	virtual ~CNetworkedEntityComponent()
+	{
+		if (auto *pGameObject = GetEntity()->QueryComponent<IGameObject>())
+		{
+			pGameObject->RemoveListener(this);
+		}
+	}
+
 	static void GetGameObjectExtensionRMIData(void** ppRMI, size_t* nCount)
 	{
 		*ppRMI = ms_statics.m_vMessages;
