@@ -945,6 +945,9 @@ struct IEntity
 	// For example, if the object was visible last frame this will return EEntityUpdatePolicy_Visible
 	virtual unsigned int GetLastConditionalUpdateFlags() = 0;
 
+	inline bool WasVisibleLastFrame() { return (GetLastConditionalUpdateFlags() & EEntityUpdatePolicy_Visible) != 0; }
+	inline bool WasInRangeLastFrame() { return (GetLastConditionalUpdateFlags() & EEntityUpdatePolicy_InRange) != 0; }
+
 	//! Retrieves the entity update policy.
 	virtual unsigned int GetUpdatePolicy() const = 0;
 
