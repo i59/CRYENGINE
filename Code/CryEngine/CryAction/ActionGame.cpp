@@ -1762,6 +1762,15 @@ int CActionGame::OnCollisionLogged(const EventPhys* pEvent)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ACTION);
 
+	IGameRules* pGameRules = s_this->m_pGameContext->GetFramework()->GetIGameRulesSystem()->GetCurrentGameRules();
+	if (pGameRules)
+	{
+		const EventPhysCollision* pCollision = static_cast<const EventPhysCollision*>(pEvent);
+
+		if (!pGameRules->ApproveCollision(pCollision))
+			return 0;
+	}
+
 	OnCollisionLogged_Breakable(pEvent);
 	OnCollisionLogged_MaterialFX(pEvent);
 

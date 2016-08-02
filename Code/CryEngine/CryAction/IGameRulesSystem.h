@@ -691,6 +691,12 @@ struct IGameRules : public CNetworkedEntityComponent<IEntityComponent>
 	//   AddHitListener
 	virtual void RemoveHitListener(IHitListener* pHitListener) = 0;
 
+	// Summary
+	//		Gets called when two entities collide, return false to skip passing the collision onwards to breakable and material FX
+	// Parameters
+	//  collision - physics event containing the necessary info
+	virtual bool ApproveCollision(const EventPhysCollision& collision) = 0;
+
 	// allows gamerules to extend the 'status' command
 	virtual void ShowStatus() = 0;
 
