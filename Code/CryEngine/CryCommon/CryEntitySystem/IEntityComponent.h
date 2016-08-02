@@ -110,8 +110,7 @@ void RegisterExternalComponent()
 		return cid; \
 	}
 
-template <typename T>
-void RegisterEntityWithComponent(const char *name, int flags = 0, const char *luaScriptPath = "")
+inline void RegisterEntityWithComponent(const char *name, const CryInterfaceID &componentInterfaceId, int flags = 0, const char *luaScriptPath = "")
 {
 	IEntityClassRegistry::SEntityClassDesc entityClassDesc;
 	entityClassDesc.sName = name;
@@ -122,13 +121,23 @@ void RegisterEntityWithComponent(const char *name, int flags = 0, const char *lu
 	{
 		static void CreateComponent(IEntity& entity, SEntitySpawnParams& params, void* pUserData)
 		{
-			entity.AcquireComponent<T>();
+			auto *pComponentInterfaceId = (CryInterfaceID *)pUserData;
+
+			entity.CreateComponentByTypeId(*pComponentInterfaceId);
+			delete pComponentInterfaceId;
 		}
 	};
 
 	entityClassDesc.pEntitySpawnCallback = SSpawnCallback::CreateComponent;
+	entityClassDesc.pEntitySpawnCallbackData = new CryInterfaceID(componentInterfaceId);
 
 	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(entityClassDesc);
+}
+
+template <typename T>
+inline void RegisterEntityWithComponent(const char *name, int flags = 0, const char *luaScriptPath = "")
+{
+	RegisterEntityWithComponent(name, T::IID(), flags, luaScriptPath);
 }
 
 // TODO: Check if we should move out default components below to another file

@@ -48,7 +48,10 @@ public:
 	// IItemSystem
 	virtual void                   Reload();
 	virtual void                   Reset();
+
+	virtual bool				   RegisterItemClass(const char* itemName, const CryInterfaceID &componentInterfaceID) override;
 	virtual void                   Scan(const char* folderName);
+
 	virtual IItemParamsNode*       CreateParams() { return new CItemParamsNode; };
 	virtual const IItemParamsNode* GetItemParams(const char* itemName) const;
 	virtual int                    GetItemParamsCount() const;
@@ -177,6 +180,9 @@ private:
 
 	typedef std::map<string, ICharacterInstance*> TCharacterCache;
 	typedef TCharacterCache::iterator             TCharacterCacheIt;
+
+	typedef std::unordered_map<string, const CryInterfaceID, stl::hash_strcmp<string>> TItemClassMap;
+	TItemClassMap m_classMap;
 
 	typedef struct SItemParamsDesc
 	{

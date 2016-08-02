@@ -363,7 +363,10 @@ struct IItemSystem
 	virtual void                   Reload() = 0;
 	virtual void                   PreReload() = 0;
 	virtual void                   PostReload() = 0;
+
+	virtual bool				   RegisterItemClass(const char* itemName, const CryInterfaceID &componentInterfaceID) = 0;
 	virtual void                   Scan(const char* folderName) = 0;
+
 	virtual IItemParamsNode*       CreateParams() = 0;
 	virtual const IItemParamsNode* GetItemParams(const char* itemName) const = 0;
 	virtual const char*            GetItemParamsDescriptionFile(const char* itemName) const = 0;

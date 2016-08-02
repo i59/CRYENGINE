@@ -18,6 +18,8 @@
 
 #include <IActionMapManager.h>
 
+#include <CryEntitySystem/INetworkedEntityComponent.h>
+
 enum EViewMode
 {
 	eIVM_Hidden      = 0,
@@ -30,7 +32,7 @@ struct IInventory;
 
 // Summary
 //   Interface to implement a new Item class
-struct IItem : public IEntityComponent
+struct IItem : public CNetworkedEntityComponent<IEntityComponent>
 {
 	enum eItemBackAttachment
 	{

@@ -403,6 +403,13 @@ void CItemSystem::Reset()
 }
 
 //------------------------------------------------------------------------
+bool CItemSystem::RegisterItemClass(const char* itemName, const CryInterfaceID &componentInterfaceID)
+{
+	m_classMap.insert(TItemClassMap::value_type(itemName, componentInterfaceID));
+	return true;
+}
+
+//------------------------------------------------------------------------
 void CItemSystem::Scan(const char* folderName)
 {
 	string folder = folderName;
@@ -505,30 +512,34 @@ bool CItemSystem::ScanXML(XmlNodeRef& root, const char* xmlFile)
 
 	INDENT_LOG_DURING_SCOPE(true, "Item system parsing '%s' file (name='%s' class='%s')", xmlFile, name, className);
 
+	TItemClassMap::iterator it = m_classMap.find(CONST_TEMP_STRING(className));
+	if (it == m_classMap.end())
+	{
+		CryFixedStringT<128> errorBuffer;
+		errorBuffer.Format("Unknown item class '%s'! Skipping...", className);
+		ItemSystemErrorMessage(xmlFile, errorBuffer.c_str(), true);
+		return false;
+	}
+
 	TItemParamsMap::iterator dit = m_params.find(CONST_TEMP_STRING(name));
 
 	if (dit == m_params.end())
 	{
 		const char* scriptName = root->getAttr("script");
-		IEntityClassRegistry::SEntityClassDesc classDesc;
-		classDesc.sName = name;
-		if (scriptName && scriptName[0])
-			classDesc.sScriptFile = scriptName;
-		else
+		
+		if (scriptName == nullptr || scriptName[0] == 0)
 		{
-			classDesc.sScriptFile = DEFAULT_ITEM_SCRIPT;
+			scriptName = DEFAULT_ITEM_SCRIPT;
 			CreateItemTable(name);
 		}
 
-		int invisible = 0;
-		root->getAttr("invisible", invisible);
-
-		REINST("Item class logic")
-		/*classDesc.pEntitySpawnCallback = (IEntityClass::EntitySpawnCallback)it->second.pCreator;
-		classDesc.flags |= invisible ? ECLF_INVISIBLE : 0;
-
 		if (!m_reloading)
-			CCryAction::GetCryAction()->GetIGameObjectSystem()->RegisterExtension(name, it->second.pCreator, &classDesc);*/
+		{
+			int invisible = 0;
+			root->getAttr("invisible", invisible);
+
+			RegisterEntityWithComponent(name, it->second, invisible ? ECLF_INVISIBLE : 0, scriptName);
+		}
 
 		std::pair<TItemParamsMap::iterator, bool> result = m_params.insert(TItemParamsMap::value_type(name, SItemParamsDesc()));
 		dit = result.first;
