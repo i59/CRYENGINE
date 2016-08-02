@@ -21,9 +21,12 @@ struct IInteractor : public IEntityComponent
 	DECLARE_COMPONENT("Interactor", 0x7ACBFF9E0948452B, 0xB04EF07FC31F8AA8)
 
 	virtual bool IsUsable(EntityId entityId) const = 0;
+
+	virtual void Lock(EntityId lockId, bool bLock) = 0;
 	virtual bool IsLocked() const = 0;
 	virtual int  GetLockIdx() const = 0;
 	virtual int  GetLockedEntityId() const = 0;
+
 	virtual void SetQueryMethods(char* pMethods) = 0;
 	virtual int  GetOverEntityId() const = 0;
 	virtual int  GetOverSlotIdx() const = 0;

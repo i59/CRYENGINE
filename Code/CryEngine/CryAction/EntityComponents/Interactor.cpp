@@ -563,6 +563,32 @@ void CInteractor::UpdateTimers(EntityId newOverId, int usableIdx)
 	}
 }
 
+void CInteractor::Lock(EntityId lockId, bool bLock)
+{
+	if (lockId)
+	{
+		if (m_lockedByEntityId && lockId != m_lockedByEntityId)
+		{
+			GameWarning("Attempt to change lock status by an entity that did not lock us originally");
+		}
+		else
+		{
+			if (lockId && bLock)
+			{
+				m_lockedByEntityId = lockId;
+				m_lockEntityId = lockId;
+				m_lockIdx = 1;
+			}
+			else
+			{
+				m_lockedByEntityId = 0;
+				m_lockEntityId = 0;
+				m_lockIdx = 0;
+			}
+		}
+	}
+}
+
 void CInteractor::Serialize(TSerialize ser)
 {
 	ser.Value("useHoverTime", m_useHoverTime);

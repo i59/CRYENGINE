@@ -29,9 +29,12 @@ public:
 
 	// IInteractor
 	virtual bool IsUsable(EntityId entityId) const;
+
+	virtual void Lock(EntityId lockId, bool bLock) override;
 	virtual bool IsLocked() const                { return m_lockEntityId != 0; };
 	virtual int  GetLockIdx() const              { return m_lockIdx; };
 	virtual int  GetLockedEntityId() const       { return m_lockEntityId; };
+
 	virtual void SetQueryMethods(char* pMethods) { m_queryMethods = pMethods; };
 	virtual int  GetOverEntityId() const         { return m_overId; };
 	virtual int  GetOverSlotIdx() const          { return m_overIdx; };
