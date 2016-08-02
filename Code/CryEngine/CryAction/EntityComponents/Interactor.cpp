@@ -69,7 +69,7 @@ void CInteractor::PostInitialize()
 
 	m_queryMethods = (m_funcAreUsable) ? "m" : "rb";  //m is optimized for Crysis2, "rb" is Crysis1 compatible
 
-	GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Always);
+	SetUpdatePolicy(EEntityUpdatePolicy_Always);
 
 	EnableEvent(ENTITY_EVENT_POST_SERIALIZE, 0, true);
 }

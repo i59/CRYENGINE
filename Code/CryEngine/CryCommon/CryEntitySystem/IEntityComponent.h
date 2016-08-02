@@ -24,6 +24,9 @@ struct IEntityComponent
 
 	virtual ~IEntityComponent() {}
 
+	// Implemented by DECLARE_COMPONENT
+	virtual const CryInterfaceID &GetInterfaceId() const = 0;
+
 	virtual void Initialize(IEntity &entity)
 	{
 		m_pEntity = &entity;
@@ -35,6 +38,11 @@ struct IEntityComponent
 	void EnableEvent(EEntityEvent event, uint32 priority, bool bEnable)
 	{
 		m_pEntity->EnableEvent(bEnable, *this, event, priority);
+	}
+
+	void SetUpdatePolicy(unsigned int updateFlags)
+	{
+		m_pEntity->SetComponentUpdatePolicy(*this, updateFlags);
 	}
 
 	virtual void ProcessEvent(const SEntityEvent& event) {}
@@ -111,6 +119,10 @@ void RegisterExternalComponent()
 	{ \
 		static const CryInterfaceID cid = { (uint64) iidHigh ## LL, (uint64) iidLow ## LL };   \
 		return cid; \
+	} \
+	virtual const CryInterfaceID &GetInterfaceId() const override \
+	{ \
+		return IID(); \
 	}
 
 inline void RegisterEntityWithComponent(const char *name, const CryInterfaceID &componentInterfaceId, int flags = 0, const char *luaScriptPath = "")

@@ -71,7 +71,7 @@ void CGameVolume_Water::PostInitialize()
 	/// For debugging purposes
 	if (gEnv->IsEditor())
 	{
-		GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Always);
+		SetUpdatePolicy(EEntityUpdatePolicy_Always);
 	}
 
 	EnableEvent(ENTITY_EVENT_EDITOR_PROPERTY_CHANGED, 0, true);

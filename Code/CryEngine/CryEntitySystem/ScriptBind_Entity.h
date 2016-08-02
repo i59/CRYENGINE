@@ -570,27 +570,6 @@ protected:
 	//!	</returns>
 	int IsActive(IFunctionHandler* pH);
 
-	//! <code>Entity.SetUpdatePolicy( nUpdatePolicy )</code>
-	//! <description>
-	//!    Changes update policy for the entity.
-	//!    Update policy controls when entity becomes active or inactive (ex. when visible, when in close proximity, etc...).
-	//!    All active entities will be updated every frame, having too many active entities can affect performance.
-	//!      <para>
-	//!          Update Policy                    Meaning
-	//!          -------------                    -----------
-	//!          ENTITY_UPDATE_NEVER              Never update this entity.
-	//!          ENTITY_UPDATE_IN_RANGE           Activate entity when in specified radius.
-	//!          ENTITY_UPDATE_POT_VISIBLE        Activate entity when potentially visible.
-	//!          ENTITY_UPDATE_VISIBLE            Activate entity when visible in frustum.
-	//!          ENTITY_UPDATE_PHYSICS            Activate entity when physics awakes, deactivate when physics go to sleep.
-	//!          ENTITY_UPDATE_PHYSICS_VISIBLE    Same as ENTITY_UPDATE_PHYSICS, but also activates when visible.
-	//!          ENTITY_UPDATE_ALWAYS             Entity is always active and updated every frame.
-	//!       </para>
-	//! </description>
-	//!		<param name="nUpdatePolicy">Update policy type.</param>
-	//! <remarks>Use SetUpdateRadius for update policy that require a radius.</remarks>
-	int SetUpdatePolicy(IFunctionHandler* pH, int nUpdatePolicy);
-
 	//////////////////////////////////////////////////////////////////////////
 
 	//! <code>Entity.SetLocalBBox( vMin, vMax )</code>

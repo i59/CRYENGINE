@@ -285,7 +285,6 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 	SCRIPT_REG_FUNC(GetUpdateRadius);
 	SCRIPT_REG_TEMPLFUNC(Activate, "bActive");
 	SCRIPT_REG_TEMPLFUNC(IsActive, "");
-	SCRIPT_REG_TEMPLFUNC(SetUpdatePolicy, "nUpdatePolicy");
 	SCRIPT_REG_FUNC(SetPublicParam);
 	SCRIPT_REG_TEMPLFUNC(SetAnimationEvent, "nSlot,sAnimation");
 	SCRIPT_REG_TEMPLFUNC(SetAnimationTime, "nSlot,nLayer,fTime");
@@ -4861,14 +4860,6 @@ int CScriptBind_Entity::IsActive(IFunctionHandler* pH)
 	GET_ENTITY;
 	bool bActive = pEntity->IsActive();
 	return pH->EndFunction(bActive);
-}
-
-//////////////////////////////////////////////////////////////////////////
-int CScriptBind_Entity::SetUpdatePolicy(IFunctionHandler* pH, int nUpdatePolicy)
-{
-	GET_ENTITY;
-	pEntity->SetUpdatePolicy(nUpdatePolicy);
-	return pH->EndFunction();
 }
 
 //////////////////////////////////////////////////////////////////////////

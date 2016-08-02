@@ -1767,7 +1767,7 @@ int CActionGame::OnCollisionLogged(const EventPhys* pEvent)
 	{
 		const EventPhysCollision* pCollision = static_cast<const EventPhysCollision*>(pEvent);
 
-		if (!pGameRules->ApproveCollision(pCollision))
+		if (!pGameRules->ApproveCollision(*pCollision))
 			return 0;
 	}
 

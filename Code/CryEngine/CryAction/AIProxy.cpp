@@ -526,11 +526,11 @@ bool CAIProxy::CheckUpdateStatus()
 	// (this will result in an infinite-ish loop)
 	if (gEnv->pAISystem->GetUpdateAllAlways() || m_UpdateAlways)
 	{
-		m_pGameObject->GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Always);
+		m_pGameObject->SetUpdatePolicy(EEntityUpdatePolicy_Always);
 	}
 	else
 	{
-		m_pGameObject->GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_InRange | EEntityUpdatePolicy_Visible);
+		m_pGameObject->SetUpdatePolicy(EEntityUpdatePolicy_InRange | EEntityUpdatePolicy_Visible);
 	}
 
 	return m_pGameObject->GetEntity()->GetLastConditionalUpdateFlags() != 0;
@@ -1305,7 +1305,7 @@ void CAIProxy::Reset(EObjectResetType type)
 
 	//if (gEnv->IsEditor())
 	if (m_pGameObject)
-		m_pGameObject->GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Visible | EEntityUpdatePolicy_InRange); // we suppose the first update will set this properly.
+		m_pGameObject->SetUpdatePolicy(EEntityUpdatePolicy_Visible | EEntityUpdatePolicy_InRange); // we suppose the first update will set this properly.
 
 	if (m_commHandler.get())
 		m_commHandler->Reset();

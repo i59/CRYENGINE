@@ -293,7 +293,7 @@ void CAnimatedCharacter::PostInitialize()
 
 	m_proxiesInitialized = true;
 
-	GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Visible);
+	SetUpdatePolicy(EEntityUpdatePolicy_Visible);
 
 	EnableEvent(ENTITY_EVENT_PRE_SERIALIZE, 0, true);
 	EnableEvent(ENTITY_EVENT_POST_SERIALIZE, 0, true);

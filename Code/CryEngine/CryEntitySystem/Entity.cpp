@@ -92,8 +92,8 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	m_pGridLocation = 0;
 	m_pProximityEntity = 0;
 
-	m_updatePolicy = (uint)EEntityUpdatePolicy_Never;
 	m_lastConditionalUpdateFlags = 0;
+	m_numUpdatedComponents = 0;
 
 	m_pBinds = NULL;
 	m_aiObjectID = INVALID_AIOBJECTID;
@@ -264,7 +264,7 @@ bool CEntity::ReloadEntity(SEntityLoadParams& loadParams)
 		// Reload all components
 		for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 		{
-			it->second->OnEntityReload(params, entityNode);
+			it->second.pComponent->OnEntityReload(params, entityNode);
 		}
 
 		// Make sure position is registered.
@@ -314,7 +314,7 @@ bool CEntity::Init(SEntitySpawnParams& params)
 
 	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 	{
-		it->second->PostInitialize();
+		it->second.pComponent->PostInitialize();
 	}
 
 	m_bInitialized = true;
@@ -330,36 +330,31 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 	if (m_bHidden && !CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN))
 		return;
 
-	if (m_updatePolicy != 0)
+	m_lastConditionalUpdateFlags = EEntityUpdatePolicy_Never;
+
+	if (m_numUpdatedComponents != 0)
 	{
-		if (m_updatePolicy != EEntityUpdatePolicy_Always)
+		AABB worldBounds;
+		GetWorldBounds(worldBounds);
+
+		auto &viewCamera = gEnv->pSystem->GetViewCamera();
+		
+		if (worldBounds.GetDistance(viewCamera.GetPosition()) < 150.f)
 		{
-			AABB worldBounds;
-			GetWorldBounds(worldBounds);
-
-			auto &viewCamera = gEnv->pSystem->GetViewCamera();
-			m_lastConditionalUpdateFlags = 0;
-
-			if ((m_updatePolicy & EEntityUpdatePolicy_InRange) != 0
-				&& worldBounds.GetDistance(viewCamera.GetPosition()) < 150.f)
-			{
-				m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_InRange;
-			}
-			if ((m_updatePolicy & EEntityUpdatePolicy_Visible) != 0
-				&& viewCamera.IsAABBVisible_FH(worldBounds))
-			{
-				m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_Visible;
-			}
+			m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_InRange;
 		}
-		else
-			m_lastConditionalUpdateFlags = EEntityUpdatePolicy_Always;
-
-		if ((m_updatePolicy & m_lastConditionalUpdateFlags) != 0)
+		if (viewCamera.IsAABBVisible_FH(worldBounds))
 		{
-			// Update all our components
-			for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+			m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_Visible;
+		}
+
+		// Update all our components
+		for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+		{
+			// Check if the entity is allowed to render
+			if ((it->second.updatePolicy & m_lastConditionalUpdateFlags) != 0)
 			{
-				it->second->Update(ctx);
+				it->second.pComponent->Update(ctx);
 			}
 		}
 	}
@@ -384,7 +379,10 @@ void CEntity::PostUpdate(float frameTime)
 
 	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 	{
-		it->second->PostUpdate(frameTime);
+		if ((it->second.updatePolicy & m_lastConditionalUpdateFlags) != 0)
+		{
+			it->second.pComponent->PostUpdate(frameTime);
+		}
 	}
 }
 
@@ -1060,11 +1058,31 @@ void CEntity::Invisible(bool bInvisible)
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::SetUpdatePolicy(unsigned int eUpdatePolicy)
+void CEntity::SetComponentUpdatePolicy(IEntityComponent &component, unsigned int updatePolicy)
 {
-	m_updatePolicy = eUpdatePolicy;
+	auto it = m_entityComponentMap.find(component.GetInterfaceId());
+	CRY_ASSERT(it != m_entityComponentMap.end());
 
-	SetUpdateStatus();
+	if (it->second.updatePolicy != 0)
+	{
+		if (updatePolicy == EEntityUpdatePolicy_Never)
+		{
+			m_numUpdatedComponents--;
+		}
+	}
+	else if(updatePolicy != EEntityUpdatePolicy_Never)
+	{
+		m_numUpdatedComponents++;
+
+		// Automatically activate the entity if updates are possible
+		// Otherwise Update won't be called.
+		if (!IsActive())
+		{
+			Activate(true);
+		}
+	}
+
+	it->second.updatePolicy = updatePolicy;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1078,7 +1096,7 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bFromInit)
 {
 	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 	{
-		it->second->SerializeXML(node, bLoading, bFromInit);
+		it->second.pComponent->SerializeXML(node, bLoading, bFromInit);
 	}
 }
 
@@ -1088,7 +1106,7 @@ IEntityComponent *CEntity::GetComponentByTypeId(const CryInterfaceID &interfaceI
 	auto it = m_entityComponentMap.find(interfaceID);
 	if (it != m_entityComponentMap.end())
 	{
-		return it->second.get();
+		return it->second.pComponent.get();
 	}
 
 	return nullptr;
@@ -1112,7 +1130,7 @@ void CEntity::RegisterComponent(const CryInterfaceID &interfaceID, IEntityCompon
 {
 	pComponent->Initialize(*this);
 
-	m_entityComponentMap.insert(TEntityComponentMap::value_type(interfaceID, std::shared_ptr<IEntityComponent>(pComponent)));
+	m_entityComponentMap.insert(TEntityComponentMap::value_type(interfaceID, pComponent));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1435,7 +1453,7 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 		{
 			for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 			{
-				if (it->second->NeedSerialize())
+				if (it->second.pComponent->NeedSerialize())
 				{
 					bSaveComponents = true;
 					break;
@@ -1459,7 +1477,9 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 
 			for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 			{
-				it->second->Serialize(ser);
+				ser.Value("updateState", it->second.updatePolicy);
+
+				it->second.pComponent->Serialize(ser);
 			}
 
 			ser.EndGroup();
@@ -1502,8 +1522,6 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 		if (auto *pScriptComponent = static_cast<CScriptComponent *>(QueryComponent<IEntityScriptComponent>()))
 			pScriptComponent->SerializeProperties(ser);
 	}
-
-	ser.Value("updateState", m_updatePolicy);
 
 	m_bDirtyForwardDir = true;
 
@@ -2343,7 +2361,7 @@ void CEntity::GetMemoryUsage(ICrySizer* pSizer) const
 	
 	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 	{
-		it->second->GetMemoryUsage(pSizer);
+		it->second.pComponent->GetMemoryUsage(pSizer);
 	}
 }
 

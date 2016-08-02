@@ -72,7 +72,7 @@ void CAnimatedCharacter::UpdateSimpleMovementConditions()
 		m_forceDisableSlidingContactEvents = forceDisableSlidingContactEvents;
 		m_simplifyMovement = simplifyMovement;
 
-		GetEntity()->SetUpdatePolicy(m_simplifyMovement ? EEntityUpdatePolicy_Never : EEntityUpdatePolicy_Always);
+		SetUpdatePolicy(m_simplifyMovement ? EEntityUpdatePolicy_Never : EEntityUpdatePolicy_Always);
 
 		IEntity* pEntity = GetEntity();
 		//string name = pEntity->GetName();

@@ -39,7 +39,7 @@ void CVehiclePartDetachedEntity::PostInitialize()
 //------------------------------------------------------------------------
 void CVehiclePartDetachedEntity::InitVehiclePart()
 {
-	GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Visible | EEntityUpdatePolicy_InRange);
+	SetUpdatePolicy(EEntityUpdatePolicy_Visible | EEntityUpdatePolicy_InRange);
 
 	if (IPhysicalEntity* pPhysics = GetEntity()->GetPhysics())
 	{

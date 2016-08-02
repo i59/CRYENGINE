@@ -932,25 +932,6 @@ struct IEntity
 	virtual bool        RegisterInAISystem(const AIObjectParams& params) = 0;
 	//////////////////////////////////////////////////////////////////////////
 
-	//! Changes the entity update policy.
-	//! Update policy of entity defines the automatic activation rules for the entity.
-	//! For example. when a physical object awakens it will activate the entity, and when will go to sleep
-	//! again will deactivate it.
-	//! Or entity can become active every time that it becomes visible, and deactivated when goes out of view.
-	//! There are multiple such predefined update policies exist, consider EEntityUpdatePolicy enum.
-	//! \param eUpdatePolicy - Update policy flags from the EEntityUpdatePolicy enums.
-	virtual void SetUpdatePolicy(unsigned int eUpdatePolicy) = 0;
-
-	//! Gets the entity update policy flags generated during the last frame
-	// For example, if the object was visible last frame this will return EEntityUpdatePolicy_Visible
-	virtual unsigned int GetLastConditionalUpdateFlags() = 0;
-
-	inline bool WasVisibleLastFrame() { return (GetLastConditionalUpdateFlags() & EEntityUpdatePolicy_Visible) != 0; }
-	inline bool WasInRangeLastFrame() { return (GetLastConditionalUpdateFlags() & EEntityUpdatePolicy_InRange) != 0; }
-
-	//! Retrieves the entity update policy.
-	virtual unsigned int GetUpdatePolicy() const = 0;
-
 	// Query a component, return pointer if available, otherwise nullptr
 	template <typename T>
 	T *QueryComponent() const
@@ -1001,6 +982,19 @@ struct IEntity
 	//! Sends event to the entity and its components.
 	//! \param event Event description (event id, parameters).
 	virtual bool SendEvent(const SEntityEvent& event) = 0;
+
+	//! Changes the entity update policy per component
+	//! This determines when each component will have Update and PostUpdate called, for example if the update policy is 'visible' the entity won't be updated if not on screen.
+	//! Multiple policies can be applied at the same time via bit flags, consider EEntityUpdatePolicy enum.
+	//! \param eUpdatePolicy - Update policy flags from the EEntityUpdatePolicy enums.
+	virtual void SetComponentUpdatePolicy(IEntityComponent &component, unsigned int eUpdatePolicy) = 0;
+
+	//! Gets the entity update policy flags generated during the last frame
+	// For example, if the object was visible last frame this will return EEntityUpdatePolicy_Visible
+	virtual unsigned int GetLastConditionalUpdateFlags() = 0;
+
+	inline bool WasVisibleLastFrame() { return (GetLastConditionalUpdateFlags() & EEntityUpdatePolicy_Visible) != 0; }
+	inline bool WasInRangeLastFrame() { return (GetLastConditionalUpdateFlags() & EEntityUpdatePolicy_InRange) != 0; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Physics.

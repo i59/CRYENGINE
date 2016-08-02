@@ -1107,7 +1107,6 @@ bool CGameSerialize::SaveEntities(SSaveEnvironment& savEnv)
 				}
 				bed.scale = pEntity->GetScale();
 				bed.flags = flags;
-				bed.updatePolicy = pEntity->GetUpdatePolicy();
 				bed.isHidden = pEntity->IsHidden();
 				bed.isActive = pEntity->IsActive();
 				bed.isInvisible = pEntity->IsInvisible();
@@ -1722,14 +1721,12 @@ void CGameSerialize::LoadGameData(SLoadEnvironment& loadEnv)
 
 		pEntity->SetFlags(iter->flags);
 
-		// unhide and activate so that physicalization works (will be corrected after extra entity data is loaded)
-		pEntity->SetUpdatePolicy(iter->updatePolicy);
-
 		if (IEntityPhysicsComponent* pPhysicalProxy = (IEntityPhysicsComponent*)pEntity->QueryComponent<IEntityPhysicsComponent>())
 		{
 			pPhysicalProxy->EnablePhysics(true);
 		}
 
+		// unhide and activate so that physicalization works (will be corrected after extra entity data is loaded)
 		pEntity->Hide(false);
 		pEntity->Invisible(false);
 		pEntity->Activate(true);

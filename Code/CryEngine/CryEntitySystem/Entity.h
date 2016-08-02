@@ -167,10 +167,6 @@ public:
 	void UpdateAIObject();
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void                SetUpdatePolicy(unsigned int eUpdatePolicy) override;
-	virtual unsigned int GetUpdatePolicy() const override { return m_updatePolicy; }
-	virtual unsigned int GetLastConditionalUpdateFlags() override { return m_lastConditionalUpdateFlags; }
-
 	virtual void RegisterComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent) override;
 	virtual IEntityComponent *GetComponentByTypeId(const CryInterfaceID &interfaceID) const override;
 
@@ -178,6 +174,9 @@ public:
 
 	virtual void EnableEvent(bool bEnable, IEntityComponent &component, EEntityEvent event, uint32 priority) override;
 	virtual bool SendEvent(const SEntityEvent& event) override;
+
+	virtual void SetComponentUpdatePolicy(IEntityComponent &component, unsigned int eUpdatePolicy) override;
+	virtual unsigned int GetLastConditionalUpdateFlags() override { return m_lastConditionalUpdateFlags; }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Physics.
@@ -289,7 +288,7 @@ public:
 	void ActivateForNumUpdates(int numUpdates);
 	void SetUpdateStatus();
 	// Get status if entity need to be update every frame or not.
-	bool GetUpdateStatus() const { return (m_bActive || m_nUpdateCounter || m_updatePolicy != 0) && (!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN)); }
+	bool GetUpdateStatus() const { return (m_bActive || m_nUpdateCounter) && (!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN)); }
 
 	//////////////////////////////////////////////////////////////////////////
 	// Description:
@@ -388,8 +387,6 @@ private:
 	                                                // Usually used for Physical Triggers.
 	                                                // When update counter is set, and entity is activated, it will automatically
 	                                                // deactivate after this counter reaches zero
-	unsigned int m_updatePolicy;					// Update policy defines in which cases to call
-	                                                // entity update function every frame.
 	unsigned int m_lastConditionalUpdateFlags;
 
 	unsigned int m_bInvisible           : 1;        // Set if this entity is invisible.
@@ -444,9 +441,25 @@ private:
 	// Custom entity material.
 	_smart_ptr<IMaterial> m_pMaterial;
 
-	typedef std::unordered_map<const CryInterfaceID, std::shared_ptr<IEntityComponent>, stl::hash_guid> TEntityComponentMap;
+	struct SComponentInfo
+	{
+		SComponentInfo(IEntityComponent *pEntComponent)
+			: pComponent(pEntComponent)
+			, updatePolicy(EEntityUpdatePolicy_Never)
+		{
+		}
+
+		std::unique_ptr<IEntityComponent> pComponent;
+		unsigned int updatePolicy;
+		bool bShouldPostUpdate;
+	};
+
+	typedef std::unordered_map<const CryInterfaceID, SComponentInfo, stl::hash_guid> TEntityComponentMap;
 	// Store components in map for lookup by type id
 	TEntityComponentMap m_entityComponentMap;
+
+	// Number of components that have set their update policy to something other than 0
+	uint m_numUpdatedComponents;
 
 	// Entity Links.
 	IEntityLink* m_pEntityLinks;

@@ -87,7 +87,7 @@ void CWorldQuery::PostInitialize()
 		GameWarning("WorldQuery extension only available for actors");
 	}
 
-	GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Always);
+	SetUpdatePolicy(EEntityUpdatePolicy_Always);
 }
 
 void CWorldQuery::Serialize(TSerialize ser)

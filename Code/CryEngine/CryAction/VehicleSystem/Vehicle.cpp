@@ -799,7 +799,7 @@ void CVehicle::PostInitialize()
 		m_slotUpdatePolicies[eVUS_PassengerIn] = EEntityUpdatePolicy_InRange | EEntityUpdatePolicy_Visible;
 	}
 
-	GetEntity()->SetUpdatePolicy(m_slotUpdatePolicies[eVUS_Always]);
+	SetUpdatePolicy(m_slotUpdatePolicies[eVUS_Always]);
 
 	m_slotUpdatePolicies[eVUS_Visible] = EEntityUpdatePolicy_Visible;
 
