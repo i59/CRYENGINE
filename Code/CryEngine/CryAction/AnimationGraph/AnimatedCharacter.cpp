@@ -1498,12 +1498,16 @@ void CAnimatedCharacter::KickOffRagdoll()
 		pp.bCopyJointVelocities = !gEnv->pSystem->IsSerializingFile();
 		pp.nFlagsOR = pef_log_poststep;
 		GetEntity()->Physicalize(pp);
+
+		GetEntity()->SendComponentEvent(eGFE_RagdollPhysicalized, &m_ragdollParams);
 	}
 	m_bPendingRagdoll = false;
 
 	if (m_blendFromRagollizeParams.m_bPendingBlend)
 	{
 		m_groundAlignmentParams.SetFlag(eGA_Enable, true);
+
+		GetEntity()->SendComponentEvent(eGFE_DisableBlendRagdoll);
 
 		/*		ICharacterInstance *pCharacter=GetEntity()->GetCharacter(0);
 		    if (pCharacter && pCharacter->GetISkeletonAnim())

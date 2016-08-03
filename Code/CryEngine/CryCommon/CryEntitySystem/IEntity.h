@@ -996,6 +996,11 @@ struct IEntity
 	inline bool WasVisibleLastFrame() { return (GetLastConditionalUpdateFlags() & EEntityUpdatePolicy_Visible) != 0; }
 	inline bool WasInRangeLastFrame() { return (GetLastConditionalUpdateFlags() & EEntityUpdatePolicy_InRange) != 0; }
 
+	//! Sends a custom game-specific event to all components in this entity
+	//! The identifier is custom, and should be set up in a custom enumeration to ensure that id's aren't duplicated
+	//! User data can be anything, and then cast by components parsing the data
+	virtual void SendComponentEvent(uint32 eventId, void *pUserData = nullptr) = 0;
+
 	//////////////////////////////////////////////////////////////////////////
 	// Physics.
 	//////////////////////////////////////////////////////////////////////////

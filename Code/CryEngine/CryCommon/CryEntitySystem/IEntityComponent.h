@@ -46,6 +46,7 @@ struct IEntityComponent
 	}
 
 	virtual void ProcessEvent(const SEntityEvent& event) {}
+	virtual void OnComponentEvent(uint32 eventId, void *pUserData) {}
 
 	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) {}
 	virtual void Update(SEntityUpdateContext& ctx) {}

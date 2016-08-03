@@ -262,7 +262,10 @@ bool CEntity::ReloadEntity(SEntityLoadParams& loadParams)
 		}
 
 		// Reload all components
-		for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+		static TEntityComponentMap tempComponentMap;
+		tempComponentMap = m_entityComponentMap;
+
+		for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
 		{
 			it->second.pComponent->OnEntityReload(params, entityNode);
 		}
@@ -312,7 +315,10 @@ bool CEntity::Init(SEntitySpawnParams& params)
 	if (!m_bWasRelocated)
 		OnRellocate(ENTITY_XFORM_POS);
 
-	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+	static TEntityComponentMap tempComponentMap;
+	tempComponentMap = m_entityComponentMap;
+
+	for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
 	{
 		it->second.pComponent->PostInitialize();
 	}
@@ -349,7 +355,10 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 		}
 
 		// Update all our components
-		for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+		static TEntityComponentMap tempComponentMap;
+		tempComponentMap = m_entityComponentMap;
+
+		for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
 		{
 			// Check if the entity is allowed to render
 			if ((it->second.updatePolicy & m_lastConditionalUpdateFlags) != 0)
@@ -377,7 +386,10 @@ void CEntity::PostUpdate(float frameTime)
 	if (m_lastConditionalUpdateFlags == 0)
 		return;
 
-	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+	static TEntityComponentMap tempComponentMap;
+	tempComponentMap = m_entityComponentMap;
+
+	for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
 	{
 		if ((it->second.updatePolicy & m_lastConditionalUpdateFlags) != 0)
 		{
@@ -1085,6 +1097,17 @@ void CEntity::SetComponentUpdatePolicy(IEntityComponent &component, unsigned int
 	it->second.updatePolicy = updatePolicy;
 }
 
+void CEntity::SendComponentEvent(uint32 eventId, void *pUserData)
+{
+	static TEntityComponentMap tempComponentMap;
+	tempComponentMap = m_entityComponentMap;
+
+	for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
+	{
+		it->second.pComponent->OnComponentEvent(eventId, pUserData);
+	}
+}
+
 //////////////////////////////////////////////////////////////////////////
 string CEntity::GetEntityTextDescription() const
 {
@@ -1451,7 +1474,10 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 		bool bSaveComponents = ser.GetSerializationTarget() == eST_Network; // always save for network stream
 		if (!bSaveComponents && !ser.IsReading())
 		{
-			for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+			static TEntityComponentMap tempComponentMap;
+			tempComponentMap = m_entityComponentMap;
+
+			for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
 			{
 				if (it->second.pComponent->NeedSerialize())
 				{

@@ -404,6 +404,9 @@ struct IAnimatedCharacter : public IEntityComponent
 	virtual void AddDebugVelocity(const QuatT& movement, const float frameTime, const char* szComment, const ColorF& colorF, const bool pastMovement = false) const = 0;
 	virtual bool DebugVelocitiesEnabled() const = 0;
 #endif
+
+	virtual void SetBlendFromRagdollizeParams(bool bPendingBlend) = 0;
+	virtual void SetRagdollizeParams(const SRagdollizeParams &params) = 0;
 };
 
 //--------------------------------------------------------------------------------

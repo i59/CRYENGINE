@@ -283,6 +283,9 @@ public:
 	virtual void AddDebugVelocity(const QuatT& movement, const float frameTime, const char* szComment, const ColorF& colorF, const bool pastMovement = false) const;
 	virtual bool DebugVelocitiesEnabled() const;
 #endif
+
+	virtual void SetBlendFromRagdollizeParams(bool bPendingBlend) override;
+	virtual void SetRagdollizeParams(const SRagdollizeParams &params) override;
 	// ~IAnimatedCharacter
 
 	// IAnimationGraphStateListener
@@ -409,8 +412,6 @@ private:
 	void UpdateCharacterPtrs();
 	void ValidateCharacterPtrs();
 
-	void SetBlendFromRagdollizeParams(bool bPendingBlend);
-	void SetRagdollizeParams(const SRagdollizeParams &params);
 	void KickOffRagdoll();
 	bool StartAnimationProcessing(const QuatT& entityLocation) const;
 	void StartAnimationProcessing() const;

@@ -178,6 +178,8 @@ public:
 	virtual void SetComponentUpdatePolicy(IEntityComponent &component, unsigned int eUpdatePolicy) override;
 	virtual unsigned int GetLastConditionalUpdateFlags() override { return m_lastConditionalUpdateFlags; }
 
+	virtual void SendComponentEvent(uint32 eventId, void *pUserData = nullptr) override;
+
 	//////////////////////////////////////////////////////////////////////////
 	// Physics.
 	//////////////////////////////////////////////////////////////////////////
@@ -449,7 +451,7 @@ private:
 		{
 		}
 
-		std::unique_ptr<IEntityComponent> pComponent;
+		std::shared_ptr<IEntityComponent> pComponent;
 		unsigned int updatePolicy;
 		bool bShouldPostUpdate;
 	};

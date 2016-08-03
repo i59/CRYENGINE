@@ -37,6 +37,14 @@ struct ICustomEventManager;
 struct ISerializeHelper;
 struct IGameVolumes;
 
+enum EGameFrameworkEntityComponentEvents
+{
+	eGFE_DisableBlendRagdoll = 0,
+	eGFE_RagdollPhysicalized,
+
+	eGFE_End
+};
+
 //! Define to control the logging of breakability code.
 #define BREAK_LOGGING 0
 
