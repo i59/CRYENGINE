@@ -682,6 +682,21 @@ struct SChildAttachParams
 //! Interface to entity object.
 struct IEntity
 {
+	// Helper template to determine at compile-time if a component has implemented the static IID function
+	// This way we give immediate context-sensitive compiler errors instead of telling the user to look in ICryUnknown.h
+	template <typename T>
+	class IsComponentDeclared
+	{
+		typedef char one;
+		typedef struct { char b[2]; } two;
+
+		template <typename C> static one test(decltype(&C::IID));
+		template <typename C> static two test(...);
+
+	public:
+		enum { Check = sizeof(test<T>(0)) == sizeof(char) };
+	};
+
 	enum EEntityLoadFlags
 	{
 		EF_AUTO_PHYSICALIZE = 0x0001,
@@ -936,6 +951,8 @@ struct IEntity
 	template <typename T>
 	T *QueryComponent() const
 	{
+		STATIC_ASSERT(IsComponentDeclared<T>::Check, "Tried to query component that was not declared with DECLARE_COMPONENT!");
+
 		return static_cast<T *>(GetComponentByTypeId(cryiidof<T>()));
 	}
 

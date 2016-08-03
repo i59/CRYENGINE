@@ -76,6 +76,8 @@ struct IEntityComponent
 	template <typename T>
 	static T *QueryComponent(EntityId id)
 	{
+		STATIC_ASSERT(IEntity::IsComponentDeclared<T>::Check, "Tried to query component that was not declared with DECLARE_COMPONENT!");
+
 		if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity(id))
 		{
 			return pEntity->QueryComponent<T>();
