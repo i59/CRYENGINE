@@ -961,6 +961,8 @@ struct IEntity
 	template <typename T>
 	T &AcquireComponent()
 	{
+		STATIC_ASSERT(!std::is_abstract<T>(), "Tried to acquire abstract component, did you mean to use AcquireExternalComponent?");
+
 		if (auto *pComponent = QueryComponent<T>())
 		{
 			return *pComponent;
