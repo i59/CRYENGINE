@@ -556,7 +556,7 @@ void CVehicleSeatActionWeapons::DoUpdate(float frameTime)
 					BindWeaponToNetwork(weapon.weaponEntityId);
 					m_pSeat->SetLocked(eVSLS_Unlocked);
 
-					m_pVehicle->InvokeRemoteMethodWithDependentObject(CVehicle::ClRespawnWeapon(), CVehicle::RespawnWeaponParams(weapon.weaponEntityId, m_pSeat->GetSeatId(), GetId(), i), eRMI_ToRemoteClients, weapon.weaponEntityId);
+					m_pVehicle->InvokeRMIWithDependentObject(CVehicle::ClRespawnWeapon(), CVehicle::RespawnWeaponParams(weapon.weaponEntityId, m_pSeat->GetSeatId(), GetId(), i), eRMI_ToRemoteClients, weapon.weaponEntityId);
 				}
 			}
 		}

@@ -228,7 +228,7 @@ int CScriptBind_Inventory::SetAmmoCount(IFunctionHandler* pH, const char* ammoNa
 		pInventory->SetAmmoCount(pClass, count);
 		if (gEnv->bServer)
 		{
-			pInventory->InvokeRemoteMethod(CInventory::Cl_SetAmmoCount(), TRMIInventory_Ammo(ammoName, count), eRMI_ToRemoteClients);
+			pInventory->InvokeRMI(CInventory::Cl_SetAmmoCount(), TRMIInventory_Ammo(ammoName, count), eRMI_ToRemoteClients);
 		}
 	}
 	else

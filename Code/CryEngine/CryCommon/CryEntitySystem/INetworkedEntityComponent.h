@@ -43,17 +43,17 @@ public:
 	// WARNING: there *MUST* be at least one frame between spawning ent and using this function to send an RMI if
 	// that RMI is _FAST, otherwise the dependent entity is ignored
 	template<class MI, class T>
-	void InvokeRemoteMethodWithDependentObject(const MI method, const T& params, unsigned where, EntityId ent, int channel = -1) const
+	void InvokeRMIWithDependentObject(const MI method, const T& params, unsigned where, EntityId ent, int channel = -1) const
 	{
 		if(auto *pGameObject = GetEntity()->QueryComponent<IGameObject>())
-			pGameObject->InvokeRemoteMethod_Primitive(method, params, where, 0, 0, channel, ent);
+			pGameObject->InvokeRMI_Primitive(method, params, where, 0, 0, channel, ent);
 	}
 
 	template<class MI, class T>
-	void InvokeRemoteMethod(const MI method, const T& params, unsigned where, int channel = -1) const
+	void InvokeRMI(const MI method, const T& params, unsigned where, int channel = -1) const
 	{
 		if (auto *pGameObject = GetEntity()->QueryComponent<IGameObject>())
-			pGameObject->InvokeRemoteMethod_Primitive(method, params, where, 0, 0, channel, 0);
+			pGameObject->InvokeRMI_Primitive(method, params, where, 0, 0, channel, 0);
 	}
 
 protected:

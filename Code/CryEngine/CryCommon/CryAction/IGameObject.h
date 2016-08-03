@@ -253,7 +253,7 @@ public:
 #endif
 
 	template<class MI, class T>
-	void InvokeRemoteMethod_Primitive(const MI method, const T& params, unsigned where, IRMIListener* pListener, int userId, int channel, EntityId dependentId) const
+	void InvokeRMI_Primitive(const MI method, const T& params, unsigned where, IRMIListener* pListener, int userId, int channel, EntityId dependentId) const
 	{
 		method.Verify(params);
 

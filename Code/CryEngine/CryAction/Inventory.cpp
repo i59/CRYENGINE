@@ -1298,7 +1298,7 @@ void CInventory::RMIReqToServer_RemoveAllItems() const
 {
 	TRMIInventory_Dummy Info;
 
-	InvokeRemoteMethod(SvReq_RemoveAllItems(), Info, eRMI_ToServer);
+	InvokeRMI(SvReq_RemoveAllItems(), Info, eRMI_ToServer);
 }
 
 // RMI receiver in the server to remove all items from the inventory. changes are automatically propagated to the clients
@@ -1318,7 +1318,7 @@ IMPLEMENT_RMI(CInventory, SvReq_RemoveAllItems)
 	if (gEnv->bMultiplayer)
 	{
 		TRMIInventory_Dummy Info;
-		InvokeRemoteMethod(Cl_RemoveAllAmmo(), Info, eRMI_ToAllClients);
+		InvokeRMI(Cl_RemoveAllAmmo(), Info, eRMI_ToAllClients);
 	}
 	else
 	{
@@ -1334,7 +1334,7 @@ void CInventory::RMIReqToServer_AddItem(const char* _pszItemClass) const
 {
 	TRMIInventory_Item Info(_pszItemClass);
 
-	InvokeRemoteMethod(SvReq_AddItem(), Info, eRMI_ToServer);
+	InvokeRMI(SvReq_AddItem(), Info, eRMI_ToServer);
 }
 
 // RMI receiver in the server to add an item to the inventory. change is automatically propagated to the clients
@@ -1353,7 +1353,7 @@ void CInventory::RMIReqToServer_RemoveItem(const char* _pszItemClass) const
 {
 	TRMIInventory_Item Info(_pszItemClass);
 
-	InvokeRemoteMethod(SvReq_RemoveItem(), Info, eRMI_ToServer);
+	InvokeRMI(SvReq_RemoveItem(), Info, eRMI_ToServer);
 }
 
 // RMI receiver in the server to remove an item from the inventory. change is automatically propagated to the clients
@@ -1396,7 +1396,7 @@ void CInventory::RMIReqToServer_SetAmmoCount(const char* _pszAmmoClass, int _iAm
 {
 	TRMIInventory_Ammo Info(_pszAmmoClass, _iAmount);
 
-	InvokeRemoteMethod(SvReq_SetAmmoCount(), Info, eRMI_ToServer);
+	InvokeRMI(SvReq_SetAmmoCount(), Info, eRMI_ToServer);
 }
 
 // RMI receiver in the server to set the ammo count for an ammo class in the inventory.
@@ -1404,7 +1404,7 @@ IMPLEMENT_RMI(CInventory, SvReq_SetAmmoCount)
 {
 	TRMIInventory_Ammo Info(params);
 
-	InvokeRemoteMethod(Cl_SetAmmoCount(), Info, eRMI_ToAllClients);
+	InvokeRMI(Cl_SetAmmoCount(), Info, eRMI_ToAllClients);
 	return true;
 }
 
@@ -1432,7 +1432,7 @@ void CInventory::RMIReqToServer_AddEquipmentPack(const char* _pszEquipmentPack, 
 {
 	TRMIInventory_EquipmentPack Info(_pszEquipmentPack, _bAdd, _bPrimary);
 
-	InvokeRemoteMethod(SvReq_AddEquipmentPack(), Info, eRMI_ToServer);
+	InvokeRMI(SvReq_AddEquipmentPack(), Info, eRMI_ToServer);
 }
 
 // RMI receiver in the server to add an equipment pack to the inventory. change is automatically propagated to the clients

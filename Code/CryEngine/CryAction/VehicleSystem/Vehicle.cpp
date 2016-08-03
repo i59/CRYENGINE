@@ -1094,7 +1094,7 @@ void CVehicle::SetAmmoCount(IEntityClass* pAmmoType, int amount)
 	}
 
 	if (gEnv->bServer)
-		InvokeRemoteMethod(ClSetAmmo(), AmmoParams(pAmmoType->GetName(), amount), eRMI_ToRemoteClients);
+		InvokeRMI(ClSetAmmo(), AmmoParams(pAmmoType->GetName(), amount), eRMI_ToRemoteClients);
 }
 
 //------------------------------------------------------------------------
@@ -1166,7 +1166,7 @@ void CVehicle::SendWeaponSetup(int where, int channelId)
 		params.seats.push_back(seatparams);
 	}
 
-	InvokeRemoteMethod(ClSetupWeapons(), params, where, channelId);
+	InvokeRMI(ClSetupWeapons(), params, where, channelId);
 }
 
 //------------------------------------------------------------------------
@@ -2624,7 +2624,7 @@ void CVehicle::OnAction(const TVehicleActionId actionId, int activationMode, flo
 							if (pCurrentSeat->GetSeatGroupIndex() != -1)
 							{
 								pUser->SetStillWaitingOnServerUseResponse(true);
-								InvokeRemoteMethod(SvRequestChangeSeat(), RequestChangeSeatParams(callerId, seatIndex), eRMI_ToServer);
+								InvokeRMI(SvRequestChangeSeat(), RequestChangeSeatParams(callerId, seatIndex), eRMI_ToServer);
 							}
 						}
 					}
@@ -2983,7 +2983,7 @@ bool CVehicle::OnUsed(EntityId userId, int index)
 		if (!pUser->IsStillWaitingOnServerUseResponse())
 		{
 			pUser->SetStillWaitingOnServerUseResponse(true);
-			InvokeRemoteMethod(SvRequestUse(), RequestUseParams(userId, index), eRMI_ToServer);
+			InvokeRMI(SvRequestUse(), RequestUseParams(userId, index), eRMI_ToServer);
 		}
 	}
 
@@ -4723,7 +4723,7 @@ void CVehicle::EnableAbandonedWarnSound(bool enable)
 	}
 
 	if (gEnv->bServer)
-		InvokeRemoteMethodWithDependentObject(ClAbandonWarning(), AbandonWarningParams(enable), eRMI_ToRemoteClients, GetEntityId());
+		InvokeRMIWithDependentObject(ClAbandonWarning(), AbandonWarningParams(enable), eRMI_ToRemoteClients, GetEntityId());
 }
 
 //------------------------------------------------------------------------
@@ -5217,7 +5217,7 @@ IMPLEMENT_RMI(CVehicle, SvRequestUse)
 	{
 		if (!pUser->IsClient())
 		{
-			InvokeRemoteMethod(CVehicle::ClRequestComplete(), CVehicle::RequestCompleteParams(params.actorId), eRMI_ToClientChannel, pUser->GetChannelId());
+			InvokeRMI(CVehicle::ClRequestComplete(), CVehicle::RequestCompleteParams(params.actorId), eRMI_ToClientChannel, pUser->GetChannelId());
 		}
 	}
 	return true;
@@ -5244,7 +5244,7 @@ IMPLEMENT_RMI(CVehicle, SvRequestChangeSeat)
 	{
 		if (!pUser->IsClient())
 		{
-			InvokeRemoteMethod(CVehicle::ClRequestComplete(), CVehicle::RequestCompleteParams(params.actorId), eRMI_ToClientChannel, pUser->GetChannelId());
+			InvokeRMI(CVehicle::ClRequestComplete(), CVehicle::RequestCompleteParams(params.actorId), eRMI_ToClientChannel, pUser->GetChannelId());
 		}
 	}
 	return true;
@@ -5501,7 +5501,7 @@ void CVehicle::ExitVehicleAtPosition(EntityId passengerId, const Vec3& pos)
 		if (pCurrentSeat)
 		{
 			pCurrentSeat->Exit(true, false, params.exitPos);
-			InvokeRemoteMethod(ClProcessLeave(), params, eRMI_ToRemoteClients);
+			InvokeRMI(ClProcessLeave(), params, eRMI_ToRemoteClients);
 		}
 	}
 	else
@@ -5511,7 +5511,7 @@ void CVehicle::ExitVehicleAtPosition(EntityId passengerId, const Vec3& pos)
 			if (!pUser->IsStillWaitingOnServerUseResponse())
 			{
 				pUser->SetStillWaitingOnServerUseResponse(true);
-				InvokeRemoteMethod(SvRequestLeave(), RequestLeaveParams(passengerId, pos), eRMI_ToServer);
+				InvokeRMI(SvRequestLeave(), RequestLeaveParams(passengerId, pos), eRMI_ToServer);
 			}
 		}
 	}
