@@ -150,7 +150,7 @@ public:
 	virtual void     UpdateView(SViewParams& viewParams);
 	virtual void     PostUpdateView(SViewParams& viewParams);
 	virtual bool     CanUpdateView() const { return m_pViewDelegate != NULL; }
-	IGameObjectView* GetViewDelegate()     { return m_pViewDelegate; }
+	virtual IGameObjectView* GetViewDelegate()     { return m_pViewDelegate; }
 
 #if GAME_OBJECT_SUPPORTS_CUSTOM_USER_DATA
 	virtual void* GetUserData() const;

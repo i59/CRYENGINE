@@ -236,6 +236,7 @@ public:
 	// for extensions to register for special things
 	virtual bool                       CaptureView(IGameObjectView* pGOV) = 0;
 	virtual void                       ReleaseView(IGameObjectView* pGOV) = 0;
+	virtual IGameObjectView* GetViewDelegate() = 0;
 	virtual bool                       CaptureActions(IActionListener* pAL) = 0;
 	virtual void                       ReleaseActions(IActionListener* pAL) = 0;
 	virtual bool                       CaptureProfileManager(IGameObjectProfileManager* pPH) = 0;
