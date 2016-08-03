@@ -635,6 +635,20 @@ struct IEntitySystem
 	// Registers a factory that can create entity components outside of its primary engine module
 	// The component can be created by its interface id.
 	virtual void RegisterComponentFactory(const CryInterfaceID &id, struct IEntityComponentFactory *pFactory) = 0;
+
+	// Template function used to query a component by entity id
+	template <typename T>
+	T *QueryComponent(EntityId id)
+	{
+		STATIC_ASSERT(IEntity::IsComponentDeclared<T>::Check, "Tried to query component that was not declared with DECLARE_COMPONENT!");
+
+		if (IEntity *pEntity = GetEntity(id))
+		{
+			return pEntity->QueryComponent<T>();
+		}
+
+		return nullptr;
+	}
 	// </interfuscator:shuffle>
 };
 

@@ -72,20 +72,6 @@ struct IEntityComponent
 		GetEntity()->SendEvent(evnt);
 	}
 
-	// Template function used to query a component by entity id
-	template <typename T>
-	static T *QueryComponent(EntityId id)
-	{
-		STATIC_ASSERT(IEntity::IsComponentDeclared<T>::Check, "Tried to query component that was not declared with DECLARE_COMPONENT!");
-
-		if (IEntity *pEntity = gEnv->pEntitySystem->GetEntity(id))
-		{
-			return pEntity->QueryComponent<T>();
-		}
-
-		return nullptr;
-	}
-
 protected:
 	IEntity *m_pEntity;
 	EntityId m_entityId;
