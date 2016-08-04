@@ -119,6 +119,8 @@ void RegisterExternalComponent()
 
 inline void RegisterEntityWithComponent(const char *name, const CryInterfaceID &componentInterfaceId, int flags = 0, const char *luaScriptPath = "")
 {
+	CRY_ASSERT_MESSAGE(gEnv->pEntitySystem->IsComponentFactoryRegistered(componentInterfaceId), "Attempted to register entity component by id without having called RegisterExternalComponent<T>!");
+
 	IEntityClassRegistry::SEntityClassDesc entityClassDesc;
 	entityClassDesc.sName = name;
 	entityClassDesc.sScriptFile = luaScriptPath;
