@@ -23,6 +23,8 @@
 #include <CryScriptSystem/IScriptSystem.h>
 #include <CryAction/IGameObject.h>
 
+#include <CryEntitySystem/INetworkedEntityComponent.h>
+
 enum EActorPhysicalization
 {
 	eAP_NotPhysicalized,
@@ -51,7 +53,7 @@ struct pe_params_rope;
 
 typedef int ActorClass;
 
-struct IActor : public IEntityComponent
+struct IActor : public CNetworkedEntityComponent<IEntityComponent>
 {
 	virtual ~IActor(){}
 	virtual void                  SetHealth(float health) = 0;
@@ -124,8 +126,6 @@ struct IActor : public IEntityComponent
 	virtual uint8    GetFlyMode() const                               { return 0; };
 
 	//virtual void SendRevive(const Vec3& position, const Quat& orientation, int team, bool clearInventory) = 0;
-
-	virtual void                      Release() = 0;
 
 	virtual bool                      IsPlayer() const = 0;
 	virtual bool                      IsClient() const = 0;
