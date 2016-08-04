@@ -67,7 +67,7 @@
 //------------------------------------------------------------------------
 void CVehicleSystem::RegisterVehicles(IGameFramework* gameFramework)
 {
-	RegisterEntityWithComponent<CVehiclePartDetachedEntity>("SEntityClassDesc", ECLF_INVISIBLE);
+	RegisterEntityWithComponent<CVehicleSeatSerializer>("VehicleSeatSerializer", ECLF_INVISIBLE);
 
 	// register the detached part entity
 	RegisterEntityWithComponent<CVehiclePartDetachedEntity>("VehiclePartDetached", ECLF_INVISIBLE, "Scripts/Entities/Vehicles/VehiclePartDetached.lua");

@@ -32,7 +32,7 @@ struct IInventory;
 
 // Summary
 //   Interface to implement a new Item class
-struct IItem : public CNetworkedEntityComponent<IEntityComponent>
+struct IItem : public CNetworkedEntityComponent<IItem, IEntityComponent>
 {
 	enum eItemBackAttachment
 	{

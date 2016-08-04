@@ -177,7 +177,7 @@ private:
 	}
 };
 
-struct IInventory : public CNetworkedEntityComponent<IEntityComponent>
+struct IInventory : public CNetworkedEntityComponent<IInventory, IEntityComponent>
 {
 	DECLARE_COMPONENT("Inventory", 0xF3E752025845404B, 0xA9F56A62BD36F6AD)
 

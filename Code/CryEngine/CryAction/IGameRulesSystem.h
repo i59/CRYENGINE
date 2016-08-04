@@ -502,7 +502,7 @@ struct IHitListener
 
 // Summary
 //   Interface used to implement the game rules
-struct IGameRules : public CNetworkedEntityComponent<IEntityComponent>
+struct IGameRules : public CNetworkedEntityComponent<IGameRules, IEntityComponent>
 {
 	// Summary
 	//   Returns wether the disconnecting client should be kept for a few more moments or not.

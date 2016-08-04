@@ -3,7 +3,7 @@
 
 #include <CryAction/IGameObject.h>
 
-template<class T_Parent, size_t MAX_RMI_MESSAGES = 64>
+template<class T_Derived, class T_Parent, size_t MAX_RMI_MESSAGES = 64>
 class CNetworkedEntityComponent 
 	: public T_Parent
 	, public IGameObjectNetListener
@@ -79,8 +79,8 @@ private:
 	static Statics ms_statics;
 };
 
-template<class U, size_t N>
-typename CNetworkedEntityComponent<U, N>::Statics CNetworkedEntityComponent<U, N>::ms_statics;
+template<class D, class U, size_t N>
+typename CNetworkedEntityComponent<D, U, N>::Statics CNetworkedEntityComponent<D, U, N>::ms_statics;
 
 #define DECLARE_RMI(name, params, reliability, attachment, isServer, lowDelay)                              \
   public:                                                                                                   \

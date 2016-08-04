@@ -21,9 +21,10 @@
 class CVehicle;
 class CVehicleSeat;
 
-class CVehicleSeatSerializer : public CNetworkedEntityComponent<IEntityComponent>
+class CVehicleSeatSerializer : public CNetworkedEntityComponent<CVehicleSeatSerializer, IEntityComponent>
 {
 public:
+	DECLARE_COMPONENT("VehicleSeatSerializer", 0xBE5D6187A05A42DB, 0xBDAE7A1335EAF4F9)
 
 	CVehicleSeatSerializer();
 	virtual ~CVehicleSeatSerializer();

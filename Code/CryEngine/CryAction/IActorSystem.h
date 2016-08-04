@@ -53,7 +53,7 @@ struct pe_params_rope;
 
 typedef int ActorClass;
 
-struct IActor : public CNetworkedEntityComponent<IEntityComponent>
+struct IActor : public CNetworkedEntityComponent<IActor, IEntityComponent>
 {
 	virtual ~IActor(){}
 	virtual void                  SetHealth(float health) = 0;

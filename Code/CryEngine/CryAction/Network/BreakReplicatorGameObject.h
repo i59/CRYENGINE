@@ -12,7 +12,7 @@
    class: CBreakRepGameObject
    =====================================================================
  */
-class CBreakRepGameObject : public CNetworkedEntityComponent<IEntityComponent>
+class CBreakRepGameObject : public CNetworkedEntityComponent<CBreakRepGameObject, IEntityComponent>
 {
 public:
 	DECLARE_COMPONENT("BreakRepGameObject", 0xB00AA92D13BE4B86, 0x9B2586787383B0C3)
