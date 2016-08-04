@@ -2045,6 +2045,8 @@ void CEntitySystem::RegisterComponentFactory(const CryInterfaceID &id, struct IE
 IEntityComponent *CEntitySystem::CreateComponentInstance(const CryInterfaceID &id)
 {
 	auto factoryIt = m_componentFactoryMap.find(id);
+	CRY_ASSERT(factoryIt != m_componentFactoryMap.end());
+
 	if (factoryIt == m_componentFactoryMap.end())
 	{
 		EntityWarning("Tried to create instance of entity component that was not registered via IEntitySystem::RegisterComponentFactory!");
