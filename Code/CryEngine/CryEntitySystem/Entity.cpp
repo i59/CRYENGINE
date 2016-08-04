@@ -318,12 +318,12 @@ bool CEntity::Init(SEntitySpawnParams& params)
 	static TEntityComponentMap tempComponentMap;
 	tempComponentMap = m_entityComponentMap;
 
+	m_bInitialized = true;
+
 	for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
 	{
 		it->second.pComponent->PostInitialize();
 	}
-
-	m_bInitialized = true;
 
 	return true;
 }
@@ -1152,6 +1152,11 @@ IEntityComponent *CEntity::CreateComponentByTypeId(const CryInterfaceID &interfa
 void CEntity::RegisterComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent)
 {
 	pComponent->Initialize(*this);
+
+	if (m_bInitialized)
+	{
+		pComponent->PostInitialize();
+	}
 
 	m_entityComponentMap.insert(TEntityComponentMap::value_type(interfaceID, pComponent));
 }
