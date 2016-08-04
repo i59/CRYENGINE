@@ -35,7 +35,7 @@ struct IEntityComponent
 
 	virtual void PostInitialize() {}
 
-	void EnableEvent(EEntityEvent event, uint32 priority, bool bEnable)
+	void EnableEvent(EEntityEvent event, uint32 priority = 0, bool bEnable = true)
 	{
 		m_pEntity->EnableEvent(bEnable, *this, event, priority);
 	}
@@ -144,7 +144,22 @@ inline void RegisterEntityWithComponent(const char *name, const CryInterfaceID &
 template <typename T>
 inline void RegisterEntityWithComponent(const char *name, int flags = 0, const char *luaScriptPath = "")
 {
-	RegisterEntityWithComponent(name, T::IID(), flags, luaScriptPath);
+	IEntityClassRegistry::SEntityClassDesc entityClassDesc;
+	entityClassDesc.sName = name;
+	entityClassDesc.sScriptFile = luaScriptPath;
+	entityClassDesc.flags = flags;
+
+	struct SSpawnCallback
+	{
+		static void CreateComponent(IEntity& entity, SEntitySpawnParams& params, void* pUserData)
+		{
+			entity.AcquireComponent<T>();
+		}
+	};
+
+	entityClassDesc.pEntitySpawnCallback = SSpawnCallback::CreateComponent;
+
+	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(entityClassDesc);
 }
 
 // TODO: Check if we should move out default components below to another file
