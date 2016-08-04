@@ -661,7 +661,7 @@ struct IVehicleAction
 //   Vehicle implementation interface
 // Description:
 //   Interface used to implement a vehicle.
-struct IVehicle : public CNetworkedEntityComponent<IEntityComponent>
+struct IVehicle : public CNetworkedEntityComponent<IVehicle, IEntityComponent>
 {
 	DECLARE_COMPONENT("Vehicle", 0xF78F1908C69E4EFF, 0x995228B8B12B066D)
 
@@ -958,6 +958,11 @@ struct IVehicle : public CNetworkedEntityComponent<IEntityComponent>
 	//Used in MP for logically linking associated vehicles together when spawning
 	virtual EntityId GetParentEntityId() const = 0;
 	virtual void     SetParentEntityId(EntityId parentEntityId) = 0;
+
+	inline IGameObject *GetGameObject()
+	{
+		return GetEntity()->QueryComponent<IGameObject>();
+	}
 };
 
 struct SVehicleNetState
