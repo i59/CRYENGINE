@@ -1296,6 +1296,18 @@ bool CEntity::SendEvent(const SEntityEvent& event)
 }
 
 //////////////////////////////////////////////////////////////////////////
+IEntityComponent *CEntity::GetComponentWithRMIBase(const void *pBase) const
+{
+	for (auto it = m_entityComponentMap.cbegin(); it != m_entityComponentMap.cend(); ++it)
+	{
+		if (it->second.pComponent->GetRMIBase() == pBase)
+			return it->second.pComponent.get();
+	}
+
+	return nullptr;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CEntity::Serialize(TSerialize ser, int nFlags)
 {
 	MEMSTAT_CONTEXT(EMemStatContextTypes::MSC_Other, 0, "Entity serialization");

@@ -19,6 +19,8 @@ public:
 
 		gameObject.AddListener(this);
 	}
+
+	virtual void *GetRMIBase() override { return ms_statics.m_vMessages; }
 	// ~IEntityComponent
 
 	virtual ~CNetworkedEntityComponent()
@@ -27,17 +29,6 @@ public:
 		{
 			pGameObject->RemoveListener(this);
 		}
-	}
-
-	static void GetGameObjectExtensionRMIData(void** ppRMI, size_t* nCount)
-	{
-		*ppRMI = ms_statics.m_vMessages;
-		*nCount = ms_statics.m_nMessages;
-	}
-
-	const void* GetRMIBase() const
-	{
-		return ms_statics.m_vMessages;
 	}
 
 	// WARNING: there *MUST* be at least one frame between spawning ent and using this function to send an RMI if

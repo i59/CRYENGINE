@@ -175,6 +175,8 @@ public:
 	virtual void EnableEvent(bool bEnable, IEntityComponent &component, EEntityEvent event, uint32 priority) override;
 	virtual bool SendEvent(const SEntityEvent& event) override;
 
+	virtual IEntityComponent *GetComponentWithRMIBase(const void *pBase) const override;
+
 	virtual void SetComponentUpdatePolicy(IEntityComponent &component, unsigned int eUpdatePolicy) override;
 	virtual unsigned int GetLastConditionalUpdateFlags() override { return m_lastConditionalUpdateFlags; }
 

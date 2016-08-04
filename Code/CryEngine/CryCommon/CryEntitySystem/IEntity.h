@@ -998,6 +998,8 @@ struct IEntity
 
 	virtual void EnableEvent(bool bEnable, IEntityComponent &component, EEntityEvent event, uint32 priority) = 0;
 
+	virtual IEntityComponent *GetComponentWithRMIBase(const void *pBase) const = 0;
+
 	//! Sends event to the entity and its components.
 	//! \param event Event description (event id, parameters).
 	virtual bool SendEvent(const SEntityEvent& event) = 0;

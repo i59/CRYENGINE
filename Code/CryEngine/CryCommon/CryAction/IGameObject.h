@@ -299,10 +299,14 @@ public:
 		{
 			INDENT_LOG_DURING_SCOPE(true, "During game object sync: %s %s", pEntity->GetEntityTextDescription().c_str(), m_pRMI->pMsgDef->description);
 
-			if (auto *pComponent = pEntity->QueryComponent<Obj>())
+			if (auto *pComponent = static_cast<Obj *>(pEntity->GetComponentWithRMIBase(m_pRMI->pBase)))
 			{
 				ok = (pComponent->*m_callback)(m_params, m_pChannel);
 				foundObject = true;
+			}
+			else
+			{
+				cry_sprintf(msg, "Entity %u component for RMI %s not found", m_id, m_pRMI->pMsgDef->description);
 			}
 		}
 		else

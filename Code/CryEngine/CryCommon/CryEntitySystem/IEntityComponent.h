@@ -57,6 +57,9 @@ struct IEntityComponent
 
 	virtual bool NeedSerialize() { return false; }
 	
+	// Returns starting address of the remote messages for this component, if any
+	virtual void *GetRMIBase() { return nullptr; }
+
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const {}
 
 	inline IEntity *GetEntity() const { return m_pEntity; }
