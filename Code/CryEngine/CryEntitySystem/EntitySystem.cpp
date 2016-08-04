@@ -2042,6 +2042,12 @@ void CEntitySystem::RegisterComponentFactory(const CryInterfaceID &id, struct IE
 }
 
 //////////////////////////////////////////////////////////////////////////
+bool CEntitySystem::IsComponentFactoryRegistered(const CryInterfaceID &id)
+{
+	return m_componentFactoryMap.find(id) != m_componentFactoryMap.end();
+}
+
+//////////////////////////////////////////////////////////////////////////
 IEntityComponent *CEntitySystem::CreateComponentInstance(const CryInterfaceID &id)
 {
 	auto factoryIt = m_componentFactoryMap.find(id);

@@ -51,6 +51,8 @@ static void OnGameRulesEntitySpawned(IEntity& entity, SEntitySpawnParams& params
 
 bool CGameRulesSystem::RegisterGameRules(const char* rulesName, const CryInterfaceID& componentInterfaceID, bool bUseScript)
 {
+	CRY_ASSERT_MESSAGE(gEnv->pEntitySystem->IsComponentFactoryRegistered(componentInterfaceID), "Attempted to register game rules without registering component with entity system!");
+
 	IEntityClassRegistry::SEntityClassDesc ruleClass;
 
 	if (bUseScript)

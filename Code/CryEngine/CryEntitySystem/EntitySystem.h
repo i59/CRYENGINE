@@ -288,6 +288,8 @@ public:
 
 	virtual void RegisterComponentFactory(const CryInterfaceID &id, IEntityComponentFactory *pFactory) override;
 	
+	virtual bool IsComponentFactoryRegistered(const CryInterfaceID &id) override;
+
 	IEntityComponent *CreateComponentInstance(const CryInterfaceID &id);
 
 private: // -----------------------------------------------------------------

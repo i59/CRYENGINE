@@ -405,6 +405,8 @@ void CItemSystem::Reset()
 //------------------------------------------------------------------------
 bool CItemSystem::RegisterItemClass(const char* itemName, const CryInterfaceID &componentInterfaceID)
 {
+	CRY_ASSERT_MESSAGE(gEnv->pEntitySystem->IsComponentFactoryRegistered(componentInterfaceID), "Attempted to register item class without registering component with entity system!");
+
 	m_classMap.insert(TItemClassMap::value_type(itemName, componentInterfaceID));
 	return true;
 }

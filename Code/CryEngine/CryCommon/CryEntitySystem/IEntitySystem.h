@@ -636,6 +636,9 @@ struct IEntitySystem
 	// The component can be created by its interface id.
 	virtual void RegisterComponentFactory(const CryInterfaceID &id, struct IEntityComponentFactory *pFactory) = 0;
 
+	// Used to check if a component has been registered for creation
+	virtual bool IsComponentFactoryRegistered(const CryInterfaceID &id) = 0;
+
 	// Template function used to query a component by entity id
 	template <typename T>
 	T *QueryComponent(EntityId id)

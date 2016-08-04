@@ -427,9 +427,9 @@ struct IItemSystem
 	template <typename T>
 	static void RegisterItemClass(const char *name)
 	{
-		gEnv->pGame->GetIGameFramework()->GetIItemSystem()->RegisterItemClass(name, T::IID());
-
 		RegisterExternalComponent<T>();
+
+		gEnv->pGame->GetIGameFramework()->GetIItemSystem()->RegisterItemClass(name, T::IID());
 	}
 
 	template <typename T>
