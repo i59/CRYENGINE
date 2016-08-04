@@ -410,6 +410,14 @@ bool CItemSystem::RegisterItemClass(const char* itemName, const CryInterfaceID &
 }
 
 //------------------------------------------------------------------------
+const CryInterfaceID&  CItemSystem::GetItemClassInterfaceID(const char *itemName)
+{
+	CRY_ASSERT(m_classMap.find(itemName) != m_classMap.end());
+
+	return m_classMap.find(itemName)->second;
+}
+
+//------------------------------------------------------------------------
 void CItemSystem::Scan(const char* folderName)
 {
 	string folder = folderName;

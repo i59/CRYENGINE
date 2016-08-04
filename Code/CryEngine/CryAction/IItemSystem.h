@@ -365,6 +365,8 @@ struct IItemSystem
 	virtual void                   PostReload() = 0;
 
 	virtual bool				   RegisterItemClass(const char* itemName, const CryInterfaceID &componentInterfaceID) = 0;
+	virtual const CryInterfaceID&  GetItemClassInterfaceID(const char *itemName) = 0;
+	
 	virtual void                   Scan(const char* folderName) = 0;
 
 	virtual IItemParamsNode*       CreateParams() = 0;
@@ -421,6 +423,22 @@ struct IItemSystem
 	virtual bool                   IsCompatible(const char* item, const char* attachment) const = 0;
 	virtual bool                   GetItemSocketCompatibility(const char* item, const char* socket) const = 0;
 	virtual bool                   CanSocketBeEmpty(const char* item, const char* socket) const = 0;
+
+	template <typename T>
+	static void RegisterItemClass(const char *name)
+	{
+		gEnv->pGame->GetIGameFramework()->GetIItemSystem()->RegisterItemClass(name, T::IID());
+
+		RegisterExternalComponent<T>();
+	}
+
+	template <typename T>
+	inline T *GetItem(IEntity &entity)
+	{
+		auto &interfaceID = GetItemClassInterfaceID(entity.GetClass()->GetName());
+
+		return static_cast<T *>(entity.GetComponentByTypeId(interfaceID));
+	}
 };
 
 #endif //__IITEMSYSTEM_H__

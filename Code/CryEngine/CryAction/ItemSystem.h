@@ -50,6 +50,8 @@ public:
 	virtual void                   Reset();
 
 	virtual bool				   RegisterItemClass(const char* itemName, const CryInterfaceID &componentInterfaceID) override;
+	virtual const CryInterfaceID&  GetItemClassInterfaceID(const char *itemName) override;
+	
 	virtual void                   Scan(const char* folderName);
 
 	virtual IItemParamsNode*       CreateParams() { return new CItemParamsNode; };
