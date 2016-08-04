@@ -377,20 +377,20 @@ bool CEntitySystem::Init(ISystem* pSystem)
 	m_bLocked = false;
 
 	// Expose internal components for creation outside of this module
-	RegisterExternalComponent<CAreaComponent>();
-	RegisterExternalComponent<CEntityAttributesComponent>();
-	RegisterExternalComponent<CEntityAudioComponent>();
-	RegisterExternalComponent<CCameraComponent>();
-	RegisterExternalComponent<CClipVolumeComponent>();
-	RegisterExternalComponent<CDynamicResponseComponent>();
-	RegisterExternalComponent<CFlowGraphComponent>();
-	RegisterExternalComponent<CPhysicsComponent>();
-	RegisterExternalComponent<CRopeComponent>();
-	RegisterExternalComponent<CRenderComponent>();
-	RegisterExternalComponent<CScriptComponent>();
-	RegisterExternalComponent<CSubstitutionComponent>();
-	RegisterExternalComponent<CEntityNodeComponent>();
-	RegisterExternalComponent<CTriggerComponent>();
+	IEntityComponent::RegisterExternalComponent<CAreaComponent>();
+	IEntityComponent::RegisterExternalComponent<CEntityAttributesComponent>();
+	IEntityComponent::RegisterExternalComponent<CEntityAudioComponent>();
+	IEntityComponent::RegisterExternalComponent<CCameraComponent>();
+	IEntityComponent::RegisterExternalComponent<CClipVolumeComponent>();
+	IEntityComponent::RegisterExternalComponent<CDynamicResponseComponent>();
+	IEntityComponent::RegisterExternalComponent<CFlowGraphComponent>();
+	IEntityComponent::RegisterExternalComponent<CPhysicsComponent>();
+	IEntityComponent::RegisterExternalComponent<CRopeComponent>();
+	IEntityComponent::RegisterExternalComponent<CRenderComponent>();
+	IEntityComponent::RegisterExternalComponent<CScriptComponent>();
+	IEntityComponent::RegisterExternalComponent<CSubstitutionComponent>();
+	IEntityComponent::RegisterExternalComponent<CEntityNodeComponent>();
+	IEntityComponent::RegisterExternalComponent<CTriggerComponent>();
 
 	return true;
 }

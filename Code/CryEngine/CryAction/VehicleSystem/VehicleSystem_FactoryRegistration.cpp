@@ -67,10 +67,10 @@
 //------------------------------------------------------------------------
 void CVehicleSystem::RegisterVehicles(IGameFramework* gameFramework)
 {
-	RegisterEntityWithComponent<CVehicleSeatSerializer>("VehicleSeatSerializer", ECLF_INVISIBLE);
+	IEntityComponent::RegisterEntityWithComponent<CVehicleSeatSerializer>("VehicleSeatSerializer", ECLF_INVISIBLE);
 
 	// register the detached part entity
-	RegisterEntityWithComponent<CVehiclePartDetachedEntity>("VehiclePartDetached", ECLF_INVISIBLE, "Scripts/Entities/Vehicles/VehiclePartDetached.lua");
+	IEntityComponent::RegisterEntityWithComponent<CVehiclePartDetachedEntity>("VehiclePartDetached", ECLF_INVISIBLE, "Scripts/Entities/Vehicles/VehiclePartDetached.lua");
 
 	// register all the vehicles
 
@@ -116,7 +116,7 @@ void CVehicleSystem::RegisterVehicles(IGameFramework* gameFramework)
 								entityClassFlags |= ECLF_INVISIBLE;
 						}
 
-						RegisterEntityWithComponent<CVehicle>(className.c_str(), entityClassFlags, scriptName);
+						IEntityComponent::RegisterEntityWithComponent<CVehicle>(className.c_str(), entityClassFlags, scriptName);
 					}
 					else
 						CryLog("Vehicle <%s> already registered", name);

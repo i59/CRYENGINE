@@ -75,6 +75,38 @@ struct IEntityComponent
 		GetEntity()->SendEvent(evnt);
 	}
 
+public:
+	template <typename T>
+	inline static void RegisterExternalComponent();
+
+	inline static void RegisterEntityWithComponent(const char *name, const CryInterfaceID &componentInterfaceId, int flags = 0, const char *luaScriptPath = "")
+	{
+		CRY_ASSERT_MESSAGE(gEnv->pEntitySystem->IsComponentFactoryRegistered(componentInterfaceId), "Attempted to register entity component by id without having called RegisterExternalComponent<T>!");
+
+		IEntityClassRegistry::SEntityClassDesc entityClassDesc;
+		entityClassDesc.sName = name;
+		entityClassDesc.sScriptFile = luaScriptPath;
+		entityClassDesc.flags = flags;
+
+		struct SSpawnCallback
+		{
+			static void CreateComponent(IEntity& entity, SEntitySpawnParams& params, void* pUserData)
+			{
+				auto *pComponentInterfaceId = (CryInterfaceID *)pUserData;
+
+				entity.CreateComponentByTypeId(*pComponentInterfaceId);
+			}
+		};
+
+		entityClassDesc.pEntitySpawnCallback = SSpawnCallback::CreateComponent;
+		entityClassDesc.pEntitySpawnCallbackData = new CryInterfaceID(componentInterfaceId);
+
+		gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(entityClassDesc);
+	}
+
+	template <typename T>
+	inline static void RegisterEntityWithComponent(const char *name, int flags = 0, const char *luaScriptPath = "");
+
 protected:
 	IEntity *m_pEntity;
 	EntityId m_entityId;
@@ -98,7 +130,7 @@ class CEntityComponentFactory
 };
 
 template <typename T>
-void RegisterExternalComponent()
+inline static void IEntityComponent::RegisterExternalComponent()
 {
 	static CEntityComponentFactory<T> creator;
 	gEnv->pEntitySystem->RegisterComponentFactory(cryiidof<T>(), &creator);
@@ -117,34 +149,8 @@ void RegisterExternalComponent()
 		return IID(); \
 	}
 
-inline void RegisterEntityWithComponent(const char *name, const CryInterfaceID &componentInterfaceId, int flags = 0, const char *luaScriptPath = "")
-{
-	CRY_ASSERT_MESSAGE(gEnv->pEntitySystem->IsComponentFactoryRegistered(componentInterfaceId), "Attempted to register entity component by id without having called RegisterExternalComponent<T>!");
-
-	IEntityClassRegistry::SEntityClassDesc entityClassDesc;
-	entityClassDesc.sName = name;
-	entityClassDesc.sScriptFile = luaScriptPath;
-	entityClassDesc.flags = flags;
-
-	struct SSpawnCallback
-	{
-		static void CreateComponent(IEntity& entity, SEntitySpawnParams& params, void* pUserData)
-		{
-			auto *pComponentInterfaceId = (CryInterfaceID *)pUserData;
-
-			entity.CreateComponentByTypeId(*pComponentInterfaceId);
-			delete pComponentInterfaceId;
-		}
-	};
-
-	entityClassDesc.pEntitySpawnCallback = SSpawnCallback::CreateComponent;
-	entityClassDesc.pEntitySpawnCallbackData = new CryInterfaceID(componentInterfaceId);
-
-	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(entityClassDesc);
-}
-
 template <typename T>
-inline void RegisterEntityWithComponent(const char *name, int flags = 0, const char *luaScriptPath = "")
+inline static void IEntityComponent::RegisterEntityWithComponent(const char *name, int flags, const char *luaScriptPath)
 {
 	IEntityClassRegistry::SEntityClassDesc entityClassDesc;
 	entityClassDesc.sName = name;

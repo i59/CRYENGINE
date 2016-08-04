@@ -25,7 +25,7 @@ void CBreakReplicator::RegisterClasses()
 	{
 		once = false;
 		
-		RegisterEntityWithComponent<CBreakRepGameObject>("BreakRepGameObject", ECLF_INVISIBLE);
+		IEntityComponent::RegisterEntityWithComponent<CBreakRepGameObject>("BreakRepGameObject", ECLF_INVISIBLE);
 	}
 }
 

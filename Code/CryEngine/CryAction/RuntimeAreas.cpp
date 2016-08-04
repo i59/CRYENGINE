@@ -9,7 +9,7 @@ CRuntimeAreaManager::CRuntimeAreaManager()
 {
 	gEnv->pSystem->GetISystemEventDispatcher()->RegisterListener(this);
 
-	RegisterEntityWithComponent<CRuntimeAreaObject>("RuntimeAreaObject");
+	IEntityComponent::RegisterEntityWithComponent<CRuntimeAreaObject>("RuntimeAreaObject");
 
 	FillAudioControls();
 }

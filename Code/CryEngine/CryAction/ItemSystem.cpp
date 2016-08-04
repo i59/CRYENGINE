@@ -548,7 +548,7 @@ bool CItemSystem::ScanXML(XmlNodeRef& root, const char* xmlFile)
 			int invisible = 0;
 			root->getAttr("invisible", invisible);
 
-			RegisterEntityWithComponent(name, it->second, invisible ? ECLF_INVISIBLE : 0, scriptName);
+			IEntityComponent::RegisterEntityWithComponent(name, it->second, invisible ? ECLF_INVISIBLE : 0, scriptName);
 		}
 
 		std::pair<TItemParamsMap::iterator, bool> result = m_params.insert(TItemParamsMap::value_type(name, SItemParamsDesc()));
