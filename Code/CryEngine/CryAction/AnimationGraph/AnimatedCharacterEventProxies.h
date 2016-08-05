@@ -17,7 +17,12 @@ protected:
 
 	explicit CAnimatedCharacterComponent_Base();
 
+	// IEntityComponent
+	virtual void PostInitialize() override;
+
 	virtual void ProcessEvent(const SEntityEvent& event) override;
+	// ~IEntityComponent
+
 	virtual void OnPrePhysicsUpdate(float elapseTime) = 0;
 
 	CAnimatedCharacter* m_pAnimCharacter;

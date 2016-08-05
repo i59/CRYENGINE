@@ -23,6 +23,12 @@ void CAnimatedCharacterComponent_Base::SetAnimatedCharacter(CAnimatedCharacter *
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CAnimatedCharacterComponent_Base::PostInitialize()
+{
+	EnableEvent(ENTITY_EVENT_PREPHYSICSUPDATE);
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CAnimatedCharacterComponent_Base::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
