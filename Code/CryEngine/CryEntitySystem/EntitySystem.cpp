@@ -1287,9 +1287,10 @@ void CEntitySystem::PostUpdate(float frameTime)
 {
 	for (int i = 0, numActive = m_tempActiveEntities.size(); i < numActive; i++)
 	{
-		CEntity* pEntity = GetEntityFromID(m_tempActiveEntities[i]);
-
-		pEntity->PostUpdate(frameTime);
+		if (CEntity* pEntity = GetEntityFromID(m_tempActiveEntities[i]))
+		{
+			pEntity->PostUpdate(frameTime);
+		}
 	}
 }
 
