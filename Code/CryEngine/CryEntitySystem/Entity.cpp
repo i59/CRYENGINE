@@ -502,13 +502,21 @@ void CEntity::ShutDown(bool bRemoveAI /*= true*/, bool bRemoveProxies /*= true*/
 	DeallocBindings();
 
 	//////////////////////////////////////////////////////////////////////////
-	// Release all proxies.
-	// First release UserProxy
+	// Release all components
 	if (bRemoveProxies)
 	{
+		std::shared_ptr<IEntityComponent> pTempComponent;
+
 		// We remove components here instead of in the destructor
 		// This is done since entity deletion may be delayed
-		m_entityComponentMap.clear();
+		for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end();)
+		{
+			pTempComponent = it->second.pComponent;
+			it = m_entityComponentMap.erase(it);
+
+			// We invoke the destructor afterwards to avoid use of invalidated component map iterators
+			pTempComponent.reset();
+		}
 	}
 	//////////////////////////////////////////////////////////////////////////
 
