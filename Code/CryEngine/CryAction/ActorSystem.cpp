@@ -191,11 +191,12 @@ IActor* CActorSystem::CreateActor(uint16 channelId, const char* name, const char
 	{
 		gEnv->pGame->PlayerIdSet(entityId);
 	}
+
+	auto &gameObject = pEntity->AcquireComponent<CGameObject>();
+	gameObject.SetChannelId(channelId);
+
 	if (m_pEntitySystem->InitEntity(pEntity, params))
 	{
-		auto &gameObject = pEntity->AcquireComponent<CGameObject>();
-		gameObject.SetChannelId(channelId);
-
 		return GetActor(entityId);
 	}
 	return NULL;
