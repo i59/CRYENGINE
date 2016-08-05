@@ -924,6 +924,19 @@ struct IEntity
 	//! \param nTimerId Timer ID of the timer started for this entity.
 	virtual void KillTimer(int nTimerId) = 0;
 
+	enum EScheduledRemovalType
+	{
+		eScheduledRemovalType_None = 0,
+
+		// Remove the entity after the specified time span passes
+		eScheduledRemovalType_AfterTime,
+		// Removes the entity after having not been seen for the specified time span
+		eScheduledRemovalType_AfterTimeAndNotVisible,
+	};
+
+	virtual void ScheduleRemoval(float timeToRemoveSeconds, EScheduledRemovalType type) = 0;
+	virtual void CancelScheduledRemoval() = 0;
+
 	//! Hides this entity, makes it invisible and disable its physics.
 	//! \param bHide If true hide the entity, is false unhides it.
 	virtual void Hide(bool bHide) = 0;

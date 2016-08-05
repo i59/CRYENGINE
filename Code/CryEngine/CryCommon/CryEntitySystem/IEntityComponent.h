@@ -19,6 +19,20 @@
 
 struct IEntityComponent
 {
+	// Helper to check for RMI implementation so that we can automatically register it with the RMI dispatcher
+	template <typename T>
+	class IsNetworkedComponent
+	{
+		typedef char one;
+		typedef struct { char b[2]; } two;
+
+		template <typename C> static one test(decltype(&C::GetRMIData));
+		template <typename C> static two test(...);
+
+	public:
+		enum { Check = sizeof(test<T>(0)) == sizeof(char) };
+	};
+
 	IEntityComponent()
 		: m_pEntity(nullptr) {}
 
@@ -76,36 +90,13 @@ struct IEntityComponent
 	}
 
 public:
-	template <typename T>
-	inline static void RegisterExternalComponent();
-
-	inline static void RegisterEntityWithComponent(const char *name, const CryInterfaceID &componentInterfaceId, int flags = 0, const char *luaScriptPath = "")
-	{
-		CRY_ASSERT_MESSAGE(gEnv->pEntitySystem->IsComponentFactoryRegistered(componentInterfaceId), "Attempted to register entity component by id without having called RegisterExternalComponent<T>!");
-
-		IEntityClassRegistry::SEntityClassDesc entityClassDesc;
-		entityClassDesc.sName = name;
-		entityClassDesc.sScriptFile = luaScriptPath;
-		entityClassDesc.flags = flags;
-
-		struct SSpawnCallback
-		{
-			static void CreateComponent(IEntity& entity, SEntitySpawnParams& params, void* pUserData)
-			{
-				auto *pComponentInterfaceId = (CryInterfaceID *)pUserData;
-
-				entity.CreateComponentByTypeId(*pComponentInterfaceId);
-			}
-		};
-
-		entityClassDesc.pEntitySpawnCallback = SSpawnCallback::CreateComponent;
-		entityClassDesc.pEntitySpawnCallbackData = new CryInterfaceID(componentInterfaceId);
-
-		gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(entityClassDesc);
-	}
+	inline static void RegisterEntityWithComponent(const char *name, const CryInterfaceID &componentInterfaceId, int flags = 0, const char *luaScriptPath = "");
 
 	template <typename T>
 	inline static void RegisterEntityWithComponent(const char *name, int flags = 0, const char *luaScriptPath = "");
+
+	template <typename T>
+	inline static void RegisterExternalComponent();
 
 protected:
 	IEntity *m_pEntity;
@@ -130,24 +121,36 @@ class CEntityComponentFactory
 };
 
 template <typename T>
-inline static void IEntityComponent::RegisterExternalComponent()
+inline static typename std::enable_if<!IEntityComponent::IsNetworkedComponent<T>::Check, void>::type
+RegisterExternalComponentImpl()
 {
 	static CEntityComponentFactory<T> creator;
 	gEnv->pEntitySystem->RegisterComponentFactory(cryiidof<T>(), &creator);
 }
 
-// Name is unused for now, but for future compatibility in case we want to instantiate components by name
-// This might be handy from scripts, serialization etc.
-#define DECLARE_COMPONENT(name, iidHigh, iidLow) \
-	static const CryInterfaceID &IID() \
-	{ \
-		static const CryInterfaceID cid = { (uint64) iidHigh ## LL, (uint64) iidLow ## LL };   \
-		return cid; \
-	} \
-	virtual const CryInterfaceID &GetInterfaceId() const override \
-	{ \
-		return IID(); \
+template <typename T>
+inline static typename std::enable_if<IEntityComponent::IsNetworkedComponent<T>::Check, void>::type
+RegisterExternalComponentImpl()
+{
+	if (auto *pRMIDispatch = gEnv->pGame->GetIGameFramework()->GetRMIDispatch())
+	{
+		void* pRMI;
+		size_t nRMI;
+		T::GetRMIData(&pRMI, nRMI);
+
+		pRMIDispatch->RegisterInterface((SRemoteComponentFunction*)pRMI, nRMI);
 	}
+
+	static CEntityComponentFactory<T> creator;
+	gEnv->pEntitySystem->RegisterComponentFactory(cryiidof<T>(), &creator);
+}
+
+template <typename T>
+inline static void IEntityComponent::RegisterExternalComponent()
+{
+	// Select path below, if networked component we go through the path that registers RMI's
+	RegisterExternalComponentImpl<T>();
+}
 
 template <typename T>
 inline static void IEntityComponent::RegisterEntityWithComponent(const char *name, int flags, const char *luaScriptPath)
@@ -165,10 +168,50 @@ inline static void IEntityComponent::RegisterEntityWithComponent(const char *nam
 		}
 	};
 
+	RegisterExternalComponent<T>();
+
 	entityClassDesc.pEntitySpawnCallback = SSpawnCallback::CreateComponent;
 
 	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(entityClassDesc);
 }
+
+inline void IEntityComponent::RegisterEntityWithComponent(const char *name, const CryInterfaceID &componentInterfaceId, int flags, const char *luaScriptPath)
+{
+	CRY_ASSERT_MESSAGE(gEnv->pEntitySystem->IsComponentFactoryRegistered(componentInterfaceId), "Attempted to register entity component by id without having called RegisterExternalComponent<T>!");
+
+	IEntityClassRegistry::SEntityClassDesc entityClassDesc;
+	entityClassDesc.sName = name;
+	entityClassDesc.sScriptFile = luaScriptPath;
+	entityClassDesc.flags = flags;
+
+	struct SSpawnCallback
+	{
+		static void CreateComponent(IEntity& entity, SEntitySpawnParams& params, void* pUserData)
+		{
+			auto *pComponentInterfaceId = (CryInterfaceID *)pUserData;
+
+			entity.CreateComponentByTypeId(*pComponentInterfaceId);
+		}
+	};
+
+	entityClassDesc.pEntitySpawnCallback = SSpawnCallback::CreateComponent;
+	entityClassDesc.pEntitySpawnCallbackData = new CryInterfaceID(componentInterfaceId);
+
+	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(entityClassDesc);
+}
+
+// Name is unused for now, but for future compatibility in case we want to instantiate components by name
+// This might be handy from scripts, serialization etc.
+#define DECLARE_COMPONENT(name, iidHigh, iidLow) \
+	static const CryInterfaceID &IID() \
+	{ \
+		static const CryInterfaceID cid = { (uint64) iidHigh ## LL, (uint64) iidLow ## LL };   \
+		return cid; \
+	} \
+	virtual const CryInterfaceID &GetInterfaceId() const override \
+	{ \
+		return IID(); \
+	}
 
 // TODO: Check if we should move out default components below to another file
 

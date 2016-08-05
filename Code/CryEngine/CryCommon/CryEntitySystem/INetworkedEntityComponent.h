@@ -23,6 +23,12 @@ public:
 	virtual void *GetRMIBase() override { return ms_statics.m_vMessages; }
 	// ~IEntityComponent
 
+	static void GetRMIData(void **pData, size_t &numRMI)
+	{
+		*pData = ms_statics.m_vMessages;
+		numRMI = ms_statics.m_nMessages;
+	}
+
 	virtual ~CNetworkedEntityComponent()
 	{
 		if (auto *pGameObject = GetEntity()->QueryComponent<IGameObject>())
@@ -73,7 +79,7 @@ private:
 	struct Statics
 	{
 		size_t                         m_nMessages;
-		SRemoteComponentFunction        m_vMessages[MAX_RMI_MESSAGES];
+		SRemoteComponentFunction       m_vMessages[MAX_RMI_MESSAGES];
 	};
 
 	static Statics ms_statics;

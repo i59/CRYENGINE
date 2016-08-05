@@ -37,15 +37,21 @@ CInventory::~CInventory()
 }
 
 //------------------------------------------------------------------------
-void CInventory::PostInitialize()
+void CInventory::Initialize(IEntity &entity)
 {
+	IEntityComponent::Initialize(entity);
+
 	// attach script bind
 	CCryAction* pCryAction = static_cast<CCryAction*>(gEnv->pGame->GetIGameFramework());
 	pCryAction->GetInventoryScriptBind()->AttachTo(this);
 
 	m_pGameFrameWork = pCryAction;
+}
 
-	m_pActor = pCryAction->GetIActorSystem()->GetActor(GetEntityId());
+//------------------------------------------------------------------------
+void CInventory::PostInitialize()
+{
+	m_pActor = m_pGameFrameWork->GetIActorSystem()->GetActor(GetEntityId());
 
 	Destroy();
 
@@ -590,7 +596,11 @@ void CInventory::Destroy()
 				pItem->SetOwnerId(0);
 			}
 
-			pEntitySystem->RemoveEntity(entityId);
+			// Delay removal so that possible RMI's can be finished
+			if (auto *pEntity = pEntitySystem->GetEntity(entityId))
+			{
+				pEntity->ScheduleRemoval(10.f, IEntity::eScheduledRemovalType_AfterTime);
+			}
 		}
 	}
 

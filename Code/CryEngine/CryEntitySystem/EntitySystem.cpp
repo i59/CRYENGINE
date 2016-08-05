@@ -2038,7 +2038,9 @@ const SEntitySchedulingProfiles* CEntitySystem::GetEntitySchedulerProfiles(IEnti
 //////////////////////////////////////////////////////////////////////////
 void CEntitySystem::RegisterComponentFactory(const CryInterfaceID &id, struct IEntityComponentFactory *pFactory)
 {
-	m_componentFactoryMap.insert(TEntityComponentFactoryMap::value_type(id, pFactory));
+	auto result = m_componentFactoryMap.insert(TEntityComponentFactoryMap::value_type(id, pFactory));
+
+	//CRY_ASSERT_MESSAGE(result.second, "Entity component registration failed, probably trying to register a component twice!");
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -149,6 +149,9 @@ public:
 	virtual void SetTimer(int nTimerId, int nMilliSeconds) override;
 	virtual void KillTimer(int nTimerId) override;
 
+	virtual void ScheduleRemoval(float timeToRemoveSeconds, EScheduledRemovalType type) override;
+	virtual void CancelScheduledRemoval() override;
+
 	virtual void Hide(bool bHide) override;
 	virtual bool IsHidden() const override { return m_bHidden; }
 
@@ -482,6 +485,10 @@ private:
 	// If this entity is part of a layer that was cloned at runtime, this is the cloned layer
 	// id (not related to the layer id)
 	int m_cloneLayerId;
+
+	// Time in which the entity should be removed
+	float m_scheduledRemovalTime;
+	EScheduledRemovalType m_scheduledRemovalType;
 };
 
 //////////////////////////////////////////////////////////////////////////

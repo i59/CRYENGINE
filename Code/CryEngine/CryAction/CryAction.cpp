@@ -1970,36 +1970,6 @@ bool CCryAction::Init(SSystemInitParams& startupParams)
 	BeginLanQuery();
 #endif
 
-	if (m_pVehicleSystem)
-		m_pVehicleSystem->RegisterVehicles(this);
-
-	IEntityComponent::RegisterEntityWithComponent<CMannequinObject>("MannequinObject", 0, "Scripts/Entities/Anim/MannequinObject.lua");
-
-	gs_lipSyncExtensionNamesForExposureToEditor.clear();
-	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_TransitionQueue");
-	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_FacialInstance");
-
-	IEntityComponent::RegisterEntityWithComponent<CGameVolume_Water>("WaterVolume", 0, "Scripts/Entities/Environment/WaterVolume.lua");
-
-	// Hide WaterVolume from the Editor
-	IEntityClass* pItemClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("WaterVolume");
-	pItemClass->SetFlags(pItemClass->GetFlags() | ECLF_INVISIBLE);
-
-	// Register with the volume system
-	IGameVolumes* pGameVolumes = GetIGameVolumesManager();
-	IGameVolumesEdit* pGameVolumesEdit = pGameVolumes ? pGameVolumes->GetEditorInterface() : NULL;
-	if (pGameVolumesEdit != NULL)
-	{
-		pGameVolumesEdit->RegisterEntityClass("WaterVolume");
-	}
-
-	IEntityComponent::RegisterExternalComponent<CGameObject>();
-	IEntityComponent::RegisterExternalComponent<CAnimatedCharacter>();
-	IEntityComponent::RegisterExternalComponent<CInventory>();
-	IEntityComponent::RegisterExternalComponent<CInteractor>();
-
-	CGameContext::RegisterExtensions(this);
-
 	// Player profile stuff
 	if (m_pPlayerProfileManager)
 	{
@@ -2120,6 +2090,36 @@ bool CCryAction::CompleteInit()
 #endif
 
 	InlineInitializationProcessing("CCryAction::CompleteInit");
+
+	if (m_pVehicleSystem)
+		m_pVehicleSystem->RegisterVehicles(this);
+
+	IEntityComponent::RegisterEntityWithComponent<CMannequinObject>("MannequinObject", 0, "Scripts/Entities/Anim/MannequinObject.lua");
+
+	gs_lipSyncExtensionNamesForExposureToEditor.clear();
+	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_TransitionQueue");
+	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_FacialInstance");
+
+	IEntityComponent::RegisterEntityWithComponent<CGameVolume_Water>("WaterVolume", 0, "Scripts/Entities/Environment/WaterVolume.lua");
+
+	// Hide WaterVolume from the Editor
+	IEntityClass* pItemClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("WaterVolume");
+	pItemClass->SetFlags(pItemClass->GetFlags() | ECLF_INVISIBLE);
+
+	// Register with the volume system
+	IGameVolumes* pGameVolumes = GetIGameVolumesManager();
+	IGameVolumesEdit* pGameVolumesEdit = pGameVolumes ? pGameVolumes->GetEditorInterface() : NULL;
+	if (pGameVolumesEdit != NULL)
+	{
+		pGameVolumesEdit->RegisterEntityClass("WaterVolume");
+	}
+
+	IEntityComponent::RegisterExternalComponent<CGameObject>();
+	IEntityComponent::RegisterExternalComponent<CAnimatedCharacter>();
+	IEntityComponent::RegisterExternalComponent<CInventory>();
+	IEntityComponent::RegisterExternalComponent<CInteractor>();
+
+	CGameContext::RegisterExtensions(this);
 
 	EndGameContext();
 
@@ -4079,6 +4079,11 @@ void CCryAction::PrePhysicsTimeStep(float deltaTime)
 {
 	if (m_pVehicleSystem)
 		m_pVehicleSystem->OnPrePhysicsTimeStep(deltaTime);
+}
+
+IEntityComponentRMIDispatch *CCryAction::GetRMIDispatch()
+{
+	return m_pEntityComponentRMIDispatch;
 }
 
 void CCryAction::RegisterExtension(ICryUnknownPtr pExtension)

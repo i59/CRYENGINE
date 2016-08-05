@@ -121,30 +121,6 @@ CEntity::CEntity(SEntitySpawnParams& params)
 
 	ComputeForwardDir();
 
-	//////////////////////////////////////////////////////////////////////////
-	// Check if entity needs to create a script proxy.
-	IEntityScript* pEntityScript = m_pClass->GetIEntityScript();
-	if (pEntityScript)
-	{
-		auto &scriptComponent = AcquireComponent<CScriptComponent>();
-
-		scriptComponent.InitializeScript(pEntityScript, params.pPropertiesTable);
-	}
-
-	if (IEntityPropertyHandler* pPropertyHandler = m_pClass->GetPropertyHandler())
-	{
-		if (IEntityArchetype* pArchetype = GetArchetype())
-			pPropertyHandler->InitArchetypeEntity(this, pArchetype->GetName(), params);
-	}
-
-	//////////////////////////////////////////////////////////////////////////
-	// Check if entity needs to create a proxy class.
-	IEntityClass::EntitySpawnCallback entitySpawnCallback = m_pClass->GetEntitySpawnCallback();
-	if (entitySpawnCallback)
-	{
-		entitySpawnCallback(*this, params, m_pClass->GetEntitySpawnCallbackData());
-	}
-
 	m_nKeepAliveCounter = 0;
 
 	m_cloneLayerId = -1;
@@ -262,7 +238,7 @@ bool CEntity::ReloadEntity(SEntityLoadParams& loadParams)
 		}
 
 		// Reload all components
-		static TEntityComponentMap tempComponentMap;
+		TEntityComponentMap tempComponentMap;
 		tempComponentMap = m_entityComponentMap;
 
 		for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
@@ -311,19 +287,59 @@ bool CEntity::Init(SEntitySpawnParams& params)
 {
 	MEMSTAT_CONTEXT_FMT(EMemStatContextTypes::MSC_Entity, 0, "Init: %s", params.sName ? params.sName : "(noname)");
 
+	//////////////////////////////////////////////////////////////////////////
+	// Check if entity needs to create a script proxy.
+	IEntityScript* pEntityScript = m_pClass->GetIEntityScript();
+	if (pEntityScript)
+	{
+		auto &scriptComponent = AcquireComponent<CScriptComponent>();
+	}
+
+	if (IEntityPropertyHandler* pPropertyHandler = m_pClass->GetPropertyHandler())
+	{
+		if (IEntityArchetype* pArchetype = GetArchetype())
+			pPropertyHandler->InitArchetypeEntity(this, pArchetype->GetName(), params);
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	// Check if entity needs to create a proxy class.
+	IEntityClass::EntitySpawnCallback entitySpawnCallback = m_pClass->GetEntitySpawnCallback();
+	if (entitySpawnCallback)
+	{
+		entitySpawnCallback(*this, params, m_pClass->GetEntitySpawnCallbackData());
+	}
+
 	// Make sure position is registered.
 	if (!m_bWasRelocated)
 		OnRellocate(ENTITY_XFORM_POS);
 
-	static TEntityComponentMap tempComponentMap;
+	TEntityComponentMap tempComponentMap;
 	tempComponentMap = m_entityComponentMap;
 
 	m_bInitialized = true;
 
+	auto *pScriptComponent = QueryComponent<CScriptComponent>();
+
+	if (pScriptComponent != nullptr)
+	{
+		pScriptComponent->Initialize(*this);
+		pScriptComponent->InitializeScript(pEntityScript, params.pPropertiesTable);
+	}
+
 	for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
 	{
-		it->second.pComponent->PostInitialize();
+		if(it->second.pComponent.get() != pScriptComponent)
+			it->second.pComponent->Initialize(*this);
 	}
+
+	for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
+	{
+		if (it->second.pComponent.get() != pScriptComponent)
+			it->second.pComponent->PostInitialize();
+	}
+
+	if(pScriptComponent != nullptr)
+		pScriptComponent->PostInitialize();
 
 	return true;
 }
@@ -338,7 +354,7 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 
 	m_lastConditionalUpdateFlags = EEntityUpdatePolicy_Never;
 
-	if (m_numUpdatedComponents != 0)
+	if (m_numUpdatedComponents != 0 || m_scheduledRemovalType != eScheduledRemovalType_None)
 	{
 		AABB worldBounds;
 		GetWorldBounds(worldBounds);
@@ -354,8 +370,37 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 			m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_Visible;
 		}
 
+		switch (m_scheduledRemovalType)
+		{
+			case eScheduledRemovalType_AfterTime:
+			{
+				m_scheduledRemovalTime -= ctx.fFrameTime;
+
+				if (isneg(m_scheduledRemovalTime))
+				{
+					m_scheduledRemovalType = eScheduledRemovalType_None;
+					g_pIEntitySystem->RemoveEntity(GetId());
+				}
+			}
+			break;
+			case eScheduledRemovalType_AfterTimeAndNotVisible:
+			{
+				if ((m_lastConditionalUpdateFlags & EEntityUpdatePolicy_Visible) == 0)
+					m_scheduledRemovalTime -= ctx.fFrameTime;
+
+				if (isneg(m_scheduledRemovalTime))
+				{
+					m_scheduledRemovalType = eScheduledRemovalType_None;
+					g_pIEntitySystem->RemoveEntity(GetId());
+				}
+			}
+			break;
+			default:
+				break;
+		}
+
 		// Update all our components
-		static TEntityComponentMap tempComponentMap;
+		TEntityComponentMap tempComponentMap;
 		tempComponentMap = m_entityComponentMap;
 
 		for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
@@ -386,7 +431,7 @@ void CEntity::PostUpdate(float frameTime)
 	if (m_lastConditionalUpdateFlags == 0)
 		return;
 
-	static TEntityComponentMap tempComponentMap;
+	TEntityComponentMap tempComponentMap;
 	tempComponentMap = m_entityComponentMap;
 
 	for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
@@ -1001,6 +1046,19 @@ void CEntity::KillTimer(int nTimerId)
 }
 
 //////////////////////////////////////////////////////////////////////////
+void CEntity::ScheduleRemoval(float timeToRemoveSeconds, EScheduledRemovalType type)
+{
+	m_scheduledRemovalTime = timeToRemoveSeconds;
+	m_scheduledRemovalType = type;
+}
+
+//////////////////////////////////////////////////////////////////////////
+void CEntity::CancelScheduledRemoval()
+{
+	m_scheduledRemovalTime = -1;
+}
+
+//////////////////////////////////////////////////////////////////////////
 void CEntity::Hide(bool bHide)
 {
 	if ((bool)m_bHidden != bHide)
@@ -1099,7 +1157,7 @@ void CEntity::SetComponentUpdatePolicy(IEntityComponent &component, unsigned int
 
 void CEntity::SendComponentEvent(uint32 eventId, void *pUserData)
 {
-	static TEntityComponentMap tempComponentMap;
+	TEntityComponentMap tempComponentMap;
 	tempComponentMap = m_entityComponentMap;
 
 	for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
@@ -1151,14 +1209,13 @@ IEntityComponent *CEntity::CreateComponentByTypeId(const CryInterfaceID &interfa
 //////////////////////////////////////////////////////////////////////////
 void CEntity::RegisterComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent)
 {
-	pComponent->Initialize(*this);
+	m_entityComponentMap.insert(TEntityComponentMap::value_type(interfaceID, pComponent));
 
 	if (m_bInitialized)
 	{
+		pComponent->Initialize(*this);
 		pComponent->PostInitialize();
 	}
-
-	m_entityComponentMap.insert(TEntityComponentMap::value_type(interfaceID, pComponent));
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1491,10 +1548,7 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 		bool bSaveComponents = ser.GetSerializationTarget() == eST_Network; // always save for network stream
 		if (!bSaveComponents && !ser.IsReading())
 		{
-			static TEntityComponentMap tempComponentMap;
-			tempComponentMap = m_entityComponentMap;
-
-			for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
+			for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 			{
 				if (it->second.pComponent->NeedSerialize())
 				{
@@ -1506,23 +1560,51 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 		
 		if (ser.BeginOptionalGroup("EntityComponents", bSaveComponents))
 		{
-			bool bHasSubst;
-			if (!ser.IsReading())
-				ser.Value("bHasSubst", bHasSubst = QueryComponent<CSubstitutionComponent>() != nullptr);
-			else
+			int numComponents;
+			if (!ser.IsReading())		
 			{
-				ser.Value("bHasSubst", bHasSubst);
-				if (bHasSubst)
-				{
-					AcquireComponent<CSubstitutionComponent>();
-				}
+				numComponents = m_entityComponentMap.size();
 			}
 
-			for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
-			{
-				ser.Value("updateState", it->second.updatePolicy);
+			ser.Value("numComponents", numComponents);
+			auto it = m_entityComponentMap.begin();
 
-				it->second.pComponent->Serialize(ser);
+			IEntityComponent *pComponent;
+
+			for(int i = 0; i < numComponents; i++)
+			{
+				if (ser.BeginOptionalGroup("EntityComponent", true))
+				{
+					if (!ser.IsReading())
+					{
+						pComponent = it->second.pComponent.get();
+
+						CryGUID interfaceId = pComponent->GetInterfaceId();
+						ser.Value("componentInterfaceIdHipart", interfaceId.hipart);
+						ser.Value("componentInterfaceIdLopart", interfaceId.lopart);
+
+						++it;
+					}
+					else
+					{
+						CryGUID interfaceId;
+						ser.Value("componentInterfaceIdHipart", interfaceId.hipart);
+						ser.Value("componentInterfaceIdLopart", interfaceId.lopart);
+
+						pComponent = GetComponentByTypeId(interfaceId);
+						
+						if (pComponent == nullptr)
+						{
+							CRY_ASSERT_MESSAGE(g_pIEntitySystem->IsComponentFactoryRegistered(interfaceId), "Tried to deserialize component that was not registered for external creation!");
+
+							pComponent = CreateComponentByTypeId(interfaceId);
+						}
+					}
+
+					pComponent->Serialize(ser);
+
+					ser.EndGroup(); // EntityComponent
+				}
 			}
 
 			ser.EndGroup();

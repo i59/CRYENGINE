@@ -55,9 +55,6 @@ struct IItem : public CNetworkedEntityComponent<IItem, IEntityComponent>
 	virtual EntityId GetOwnerId() const = 0;
 	virtual void     SetOwnerId(EntityId ownerId) = 0;
 
-	virtual void     EnableUpdate(bool enable, int slot = -1) = 0;
-	virtual void     RequireUpdate(int slot) = 0;
-
 	//-------------------- ACTIONS --------------------
 	virtual void ForcePendingActions(uint8 blockedActions = 0) = 0;
 

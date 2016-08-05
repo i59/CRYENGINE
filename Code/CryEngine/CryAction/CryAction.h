@@ -264,6 +264,8 @@ public:
 	virtual void                  PreloadAnimatedCharacter(IScriptTable* pEntityScript);
 	virtual void                  PrePhysicsTimeStep(float deltaTime);
 
+	virtual IEntityComponentRMIDispatch *GetRMIDispatch();
+
 	virtual void                  RegisterExtension(ICryUnknownPtr pExtension);
 	virtual void                  ReleaseExtensions();
 protected:
@@ -352,7 +354,6 @@ public:
 	void                    GoToSegment(int x, int y);
 
 	void DefineProtocol(bool server, IProtocolBuilder* pBuilder);
-	class CEntityComponentRMIDispatch *GetRMIDispatch() const { return m_pEntityComponentRMIDispatch; }
 
 private:
 	void InitScriptBinds();

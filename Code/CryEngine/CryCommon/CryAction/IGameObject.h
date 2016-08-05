@@ -386,4 +386,9 @@ struct IGameObjectProfileManager
 	virtual bool  SetAspectProfile(EEntityAspects aspect, uint8 profile) = 0;
 	virtual uint8 GetDefaultProfile(EEntityAspects aspect) = 0;
 };
+
+struct IEntityComponentRMIDispatch
+{
+	virtual void RegisterInterface(SRemoteComponentFunction* pMessages, size_t nCount) = 0;
+};
 #endif

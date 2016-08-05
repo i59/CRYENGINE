@@ -69,7 +69,7 @@ TNetMessageCallbackResult CEntityComponentRMIDispatch::Trampoline(
   EntityId* pEntityId,
   INetChannel* pNetChannel)
 {
-	const SRemoteComponentFunction* pRMI = CCryAction::GetCryAction()->GetRMIDispatch()->m_messages[userId];
+	const SRemoteComponentFunction* pRMI = static_cast<CEntityComponentRMIDispatch *>(CCryAction::GetCryAction()->GetRMIDispatch())->m_messages[userId];
 	IRMIAtSyncItem* pItem = (IRMIAtSyncItem*) pRMI->decoder(serialize, pEntityId, pNetChannel);
 	if (pItem)
 	{
@@ -98,12 +98,12 @@ void CEntityComponentRMIDispatch::LockSafety()
 
 bool CEntityComponentRMIDispatch::CProtocolDef::IsServer()
 {
-	return this == &CCryAction::GetCryAction()->GetRMIDispatch()->m_serverDef;
+	return this == &static_cast<CEntityComponentRMIDispatch *>(CCryAction::GetCryAction()->GetRMIDispatch())->m_serverDef;
 }
 
 void CEntityComponentRMIDispatch::CProtocolDef::DefineProtocol(IProtocolBuilder* pBuilder)
 {
-	auto *pDispatch = CCryAction::GetCryAction()->GetRMIDispatch();
+	auto *pDispatch = static_cast<CEntityComponentRMIDispatch *>(CCryAction::GetCryAction()->GetRMIDispatch());
 
 	pDispatch->LockSafety();
 
@@ -122,7 +122,7 @@ void CEntityComponentRMIDispatch::CProtocolDef::DefineProtocol(IProtocolBuilder*
 
 bool CEntityComponentRMIDispatch::CProtocolDef::HasDef(const SNetMessageDef* pDef)
 {
-	auto *pDispatch = CCryAction::GetCryAction()->GetRMIDispatch();
+	auto *pDispatch = static_cast<CEntityComponentRMIDispatch *>(CCryAction::GetCryAction()->GetRMIDispatch());
 
 	return
 	  pDef >= &*pDispatch->m_serverCalls.begin() && pDef < &*pDispatch->m_serverCalls.end() ||

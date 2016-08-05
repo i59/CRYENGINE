@@ -155,6 +155,7 @@ public:
 	virtual ~CInventory();
 
 	// IEntityComponent
+	virtual void Initialize(IEntity &entity) override;
 	virtual void PostInitialize() override;
 	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 

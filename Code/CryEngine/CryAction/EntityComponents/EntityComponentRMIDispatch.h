@@ -10,13 +10,15 @@
 #include <vector>
 
 //This file implements dispatching RMI calls in C++ to relevant entity component code
-class CEntityComponentRMIDispatch
+class CEntityComponentRMIDispatch : public IEntityComponentRMIDispatch
 {
 public:
 	CEntityComponentRMIDispatch();
 	~CEntityComponentRMIDispatch();
 
-	void             RegisterInterface(SRemoteComponentFunction* pMessages, size_t nCount);
+	// IEntityComponentRMIDispatch
+	virtual void RegisterInterface(SRemoteComponentFunction* pMessages, size_t nCount) override;
+	// ~IEntityComponentRMIDispatch
 
 	INetMessageSink* GetServerSink() { return &m_serverDef; }
 	INetMessageSink* GetClientSink() { return &m_clientDef; }

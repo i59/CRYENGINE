@@ -41,6 +41,7 @@ enum EGameFrameworkEntityComponentEvents
 {
 	eGFE_DisableBlendRagdoll = 0,
 	eGFE_RagdollPhysicalized,
+	eGFE_ScriptEvent,
 
 	eGFE_End
 };
@@ -841,6 +842,8 @@ struct IGameFramework
 	//! Gets called from the physics thread just before doing a time step.
 	//! \param deltaTime - the time interval that will be simulated.
 	virtual void PrePhysicsTimeStep(float deltaTime) = 0;
+
+	virtual struct IEntityComponentRMIDispatch *GetRMIDispatch() = 0;
 
 	//! Register an extension to the game framework and makes it accessible through it
 	//! \param pExtension Extension to be added to the game framework.
