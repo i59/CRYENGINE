@@ -25,8 +25,6 @@ public:
 	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 	virtual void ProcessEvent(const SEntityEvent& event) override;
 
-	virtual void Release() override { delete this; }
-
 	virtual void Serialize(TSerialize ser) override {}
 	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) override;
 

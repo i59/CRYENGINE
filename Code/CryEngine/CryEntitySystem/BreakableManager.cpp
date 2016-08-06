@@ -1620,8 +1620,6 @@ struct CTimeoutKillComponent : IEntityComponent
 
 	virtual ~CTimeoutKillComponent() {}
 
-	virtual void Release() override { delete this; }
-
 	virtual void ProcessEvent(const SEntityEvent& event) override
 	{
 		if (event.event == ENTITY_EVENT_TIMER || event.event == ENTITY_EVENT_NOT_SEEN_TIMEOUT)

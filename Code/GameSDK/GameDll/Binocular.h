@@ -31,6 +31,7 @@ public:
 	DECLARE_COMPONENT("Binocular", 0xE4698164AC5144EF, 0x80E0469B370B2F58)
 
 	CBinocular();
+	virtual ~CBinocular();
 
 	virtual void OnAction(EntityId actorId, const ActionId& actionId, int activationMode, float value);
 	
@@ -57,9 +58,6 @@ protected:
 	virtual bool ShouldDoPostSerializeReset() const;
 
 private:
-
-	virtual ~CBinocular();
-
 	bool ShouldUseSoundAttenuation(const CActor& ownerActor) const;
 	void SwitchSoundAttenuation(const CActor& ownerActor, const float coneInRadians) const;
 	void UpdateSoundAttenuation(const CActor& ownerActor) const;

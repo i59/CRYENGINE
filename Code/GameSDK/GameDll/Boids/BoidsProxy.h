@@ -35,8 +35,6 @@ struct CBoidsProxy : public IEntityComponent
 	virtual void PostInitialize() override;
 	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 
-	virtual void Release() override { delete this; }
-
 	virtual	void Update(SEntityUpdateContext &ctx) override;
 	virtual	void ProcessEvent(const SEntityEvent &event) override;
 
@@ -73,12 +71,9 @@ struct CBoidObjectProxy : public IEntityComponent
 
 	CBoidObjectProxy();
 	virtual ~CBoidObjectProxy();
-	IEntity* GetEntity() const { return m_pEntity; };
 
 	// IEntityComponent
 	virtual void PostInitialize() override;
-
-	virtual void Release() override { delete this; }
 
 	virtual	void ProcessEvent(const SEntityEvent &event) override;
 	// ~IEntityComponent
@@ -96,8 +91,6 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	// Private member variables.
 	//////////////////////////////////////////////////////////////////////////
-	// Host entity.
-	IEntity *m_pEntity;
 	// Host Flock.
 	CBoidObject *m_pBoid;
 };

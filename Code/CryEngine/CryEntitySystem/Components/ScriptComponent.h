@@ -40,8 +40,6 @@ public:
 
 	virtual void ProcessEvent(const SEntityEvent& event) override;
 
-	virtual void Release() override { delete this; }
-
 	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 	virtual void Update(SEntityUpdateContext& ctx) override;
 

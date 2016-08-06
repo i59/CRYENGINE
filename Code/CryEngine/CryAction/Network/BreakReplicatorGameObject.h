@@ -26,8 +26,6 @@ public:
 		m_wasRemoved = false;
 	}
 
-	virtual void Release() override { delete this; }
-
 	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override
 	{
 		ser.Value("removed", m_removed);

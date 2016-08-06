@@ -42,8 +42,6 @@ struct IEntityComponent
 	// Implemented by DECLARE_COMPONENT
 	virtual const CryInterfaceID &GetInterfaceId() const = 0;
 
-	virtual void Release() = 0;
-
 	virtual void Initialize(IEntity &entity)
 	{
 		m_pEntity = &entity;
@@ -117,7 +115,7 @@ class CEntityComponentFactory
 	// IEntityComponentFactory
 	virtual std::shared_ptr<IEntityComponent> CreateInstance() override
 	{
-		return std::shared_ptr<IEntityComponent>(new T(), DeleteWithRelease<T>());
+		return std::shared_ptr<IEntityComponent>(new T());
 	}
 	// ~IEntityComponentFactory
 };

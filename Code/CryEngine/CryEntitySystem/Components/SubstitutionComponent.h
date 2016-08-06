@@ -31,8 +31,6 @@ public:
 	virtual void Serialize(TSerialize ser) override;
 	virtual bool NeedSerialize() override;
 
-	virtual void Release() override { delete this; }
-
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{
 		pSizer->AddObject(this, sizeof(*this));

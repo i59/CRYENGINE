@@ -37,8 +37,6 @@ public:
 	CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate();
 	virtual ~CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate() {}
 
-	virtual void Release() override { delete this; }
-
 	ILINE void QueueRotation(const Quat& rotation) { m_queuedRotation = rotation; m_hasQueuedRotation = true; }
 	ILINE void ClearQueuedRotation()               { m_hasQueuedRotation = false; }
 
@@ -55,8 +53,6 @@ public:
 
 	virtual ~CAnimatedCharacterComponent_StartAnimProc() {}
 
-	virtual void Release() override { delete this; }
-
 protected:
 
 	virtual void                   OnPrePhysicsUpdate(float elapsedTime);
@@ -68,8 +64,6 @@ public:
 	DECLARE_COMPONENT("CAnimatedCharacterComponent_GenerateMoveRequest", 0x7619F10FD914487E, 0x90F3C423D46D6AA5)
 
 	virtual ~CAnimatedCharacterComponent_GenerateMoveRequest() {}
-
-	virtual void Release() override { delete this; }
 
 protected:
 

@@ -21,8 +21,6 @@ public:
 	// IEntityComponent
 	virtual void PostInitialize() override;
 
-	virtual void Release() override { delete this; }
-
 	virtual void GetMemoryUsage(ICrySizer* s) const override
 	{
 		s->AddObject(this, sizeof(*this));

@@ -682,13 +682,6 @@ struct SChildAttachParams
 	const char* m_target;
 };
 
-// std::shared_ptr helper to call Release instead of deleting
-template<typename TYPE>
-struct DeleteWithRelease
-{
-	void operator()(TYPE* p) { p->Release(); }
-};
-
 //! Interface to entity object.
 struct IEntity
 {
@@ -989,7 +982,7 @@ struct IEntity
 		}
 
 		// Create a new instance of T, note that the entity system takes over responsibility for deleting
-		std::shared_ptr<T> pComponent(new T(), DeleteWithRelease<T>());
+		std::shared_ptr<T> pComponent(new T());
 		RegisterComponent(cryiidof<T>(), pComponent);
 
 		return *pComponent;

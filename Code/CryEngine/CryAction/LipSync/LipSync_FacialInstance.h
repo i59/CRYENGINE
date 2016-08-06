@@ -44,8 +44,6 @@ public:
 	virtual void PostInitialize() override;
 	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 
-	virtual void Release() override { delete this; }
-
 	virtual bool NeedSerialize() override { return true; }
 	virtual void Serialize(TSerialize ser) override;
 

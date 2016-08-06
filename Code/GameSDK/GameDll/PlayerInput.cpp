@@ -204,7 +204,8 @@ CPlayerInput::CPlayerInput( CPlayer * pPlayer ) :
 
 CPlayerInput::~CPlayerInput()
 {
-	m_pPlayer->GetGameObject()->ReleaseActions(this);
+	if(auto *pGameObject = m_pPlayer->GetGameObject())
+		pGameObject->ReleaseActions(this);
 }
 
 void CPlayerInput::Reset()

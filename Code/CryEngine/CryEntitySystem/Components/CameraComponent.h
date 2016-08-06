@@ -34,8 +34,6 @@ public:
 	virtual void ProcessEvent(const SEntityEvent& event) override;
 	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 
-	virtual void Release() override { delete this; }
-
 	virtual void Serialize(TSerialize ser) override {}
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override

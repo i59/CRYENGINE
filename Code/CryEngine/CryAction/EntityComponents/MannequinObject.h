@@ -22,8 +22,6 @@ public:
 	// IEntityComponent
 	virtual void PostInitialize() override;
 	virtual void ProcessEvent(const SEntityEvent& evt) override;
-
-	virtual void Release() override { delete this; }
 	// ~IEntityComponent
 
 protected:
