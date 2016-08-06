@@ -115,7 +115,6 @@ private:
 	SmartScriptTable m_hitTable;
 
 	uint32           m_nCurrStateId           : 8;
-	uint32           m_bUpdateScript          : 1;
 	bool             m_bEnableSoundAreaEvents : 1;
 };
 

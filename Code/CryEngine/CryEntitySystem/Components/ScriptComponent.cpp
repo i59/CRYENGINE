@@ -32,7 +32,6 @@ CScriptComponent::CScriptComponent()
 	, m_fScriptUpdateRate(0.0f)
 	, m_fScriptUpdateTimer(0.0f)
 	, m_nCurrStateId(0)
-	, m_bUpdateScript(false)
 	, m_bEnableSoundAreaEvents(false)
 {}
 
@@ -52,7 +51,14 @@ void CScriptComponent::InitializeScript(IEntityScript *pScript, IScriptTable *pP
 	// New object must be created here.
 	CreateScriptTable(pPropertiesTable);
 
-	m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+	if (CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate))
+	{
+		SetUpdatePolicy(EEntityUpdatePolicy_Always);
+	}
+	else
+	{
+		SetUpdatePolicy(EEntityUpdatePolicy_Never);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -105,7 +111,14 @@ void CScriptComponent::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef ent
 		m_fScriptUpdateTimer = 0;
 		m_bEnableSoundAreaEvents = false;
 
-		m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+		if (CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate))
+		{
+			SetUpdatePolicy(EEntityUpdatePolicy_Always);
+		}
+		else
+		{
+			SetUpdatePolicy(EEntityUpdatePolicy_Never);
+		}
 
 		// New object must be created here.
 		CreateScriptTable(params.pPropertiesTable);
@@ -131,7 +144,14 @@ void CScriptComponent::ChangeScript(IEntityScript* pScript, IScriptTable *pScrip
 		m_fScriptUpdateTimer = 0;
 		m_bEnableSoundAreaEvents = false;
 
-		m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+		if (CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate))
+		{
+			SetUpdatePolicy(EEntityUpdatePolicy_Always);
+		}
+		else
+		{
+			SetUpdatePolicy(EEntityUpdatePolicy_Never);
+		}
 
 		// New object must be created here.
 		CreateScriptTable(pScriptTable);
@@ -201,24 +221,20 @@ void CScriptComponent::CreateScriptTable(IScriptTable *pPropertiesTable)
 //////////////////////////////////////////////////////////////////////////
 void CScriptComponent::Update(SEntityUpdateContext& ctx)
 {
-	// Update`s script function if present.
-	if (m_bUpdateScript)
+	// Shouldn't be the case, but we must not call Lua with a 0 frametime to avoid potential FPE
+	assert(ctx.fFrameTime > FLT_EPSILON);
+
+	if (CVar::pUpdateScript->GetIVal())
 	{
-		// Shouldn't be the case, but we must not call Lua with a 0 frametime to avoid potential FPE
-		assert(ctx.fFrameTime > FLT_EPSILON);
-
-		if (CVar::pUpdateScript->GetIVal())
+		m_fScriptUpdateTimer -= ctx.fFrameTime;
+		if (m_fScriptUpdateTimer <= 0)
 		{
-			m_fScriptUpdateTimer -= ctx.fFrameTime;
-			if (m_fScriptUpdateTimer <= 0)
-			{
-				ENTITY_PROFILER
-				  m_fScriptUpdateTimer = m_fScriptUpdateRate;
+			ENTITY_PROFILER
+				m_fScriptUpdateTimer = m_fScriptUpdateRate;
 
-				//////////////////////////////////////////////////////////////////////////
-				// Script Update.
-				m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnUpdate, ctx.fFrameTime);
-			}
+			//////////////////////////////////////////////////////////////////////////
+			// Script Update.
+			m_pScript->CallStateFunction(CurrentState(), m_pThis, ScriptState_OnUpdate, ctx.fFrameTime);
 		}
 	}
 }
@@ -635,7 +651,14 @@ bool CScriptComponent::GotoState(int nState)
 
 	//////////////////////////////////////////////////////////////////////////
 	// Repeat check if update script function is implemented.
-	m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+	if (CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate))
+	{
+		SetUpdatePolicy(EEntityUpdatePolicy_Always);
+	}
+	else
+	{
+		SetUpdatePolicy(EEntityUpdatePolicy_Never);
+	}
 
 	/*
 	   //////////////////////////////////////////////////////////////////////////
@@ -751,7 +774,14 @@ void CScriptComponent::Serialize(TSerialize ser)
 				if (ser.IsReading())
 				{
 					// Repeat check if update script function is implemented.
-					m_bUpdateScript = CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate);
+					if (CurrentState()->IsStateFunctionImplemented(ScriptState_OnUpdate))
+					{
+						SetUpdatePolicy(EEntityUpdatePolicy_Always);
+					}
+					else
+					{
+						SetUpdatePolicy(EEntityUpdatePolicy_Never);
+					}
 				}
 
 				if (CVar::pEnableFullScriptSave && CVar::pEnableFullScriptSave->GetIVal())
