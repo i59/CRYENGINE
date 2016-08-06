@@ -67,7 +67,8 @@ CRenderComponent::CRenderComponent()
 	m_WSBBox.max=Vec3(ZERO);
 
 	m_pMaterial = NULL;
-  
+	m_bClearedQueuedGeometryChanges = true;
+
   m_nVisionParams = 0;
 	m_nHUDSilhouettesParams = 0; 
   m_nMaterialLayers = 0;
@@ -136,7 +137,6 @@ void CRenderComponent::Initialize(IEntity &entity)
 	EnableEvent(ENTITY_EVENT_MATERIAL, 0, true);
 	EnableEvent(ENTITY_EVENT_ANIM_EVENT, 0, true);
 	EnableEvent(ENTITY_EVENT_RESET, 0, true);
-	EnableEvent(ENTITY_EVENT_PREPHYSICSUPDATE, 0, true);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -681,12 +681,15 @@ void CRenderComponent::ProcessEvent(const SEntityEvent& event)
   case ENTITY_EVENT_RESET:
     OnReset();
     break;
-  case ENTITY_EVENT_PREPHYSICSUPDATE:
-    for (size_t i=0, end=m_queuedGeometryChanges.size(); i<end; ++i)
-      SetSlotGeometry(m_queuedGeometryChanges[i].first, m_queuedGeometryChanges[i].second);
-    m_queuedGeometryChanges.clear(); 
+	  case ENTITY_EVENT_PREPHYSICSUPDATE:
+	  {
+		  for (size_t i = 0, end = m_queuedGeometryChanges.size(); i < end; ++i)
+			  SetSlotGeometry(m_queuedGeometryChanges[i].first, m_queuedGeometryChanges[i].second);
+		  m_queuedGeometryChanges.clear();
+		  m_bClearedQueuedGeometryChanges = true;
 
-    break; 
+		  break;
+	  }
 	}
 }
 
@@ -1119,6 +1122,14 @@ void CRenderComponent::Update(SEntityUpdateContext& ctx)
 {
 	if (!CheckFlags(FLAG_UPDATE))
 		return;
+
+	// Disable prephysics event if we need to
+	if (m_bClearedQueuedGeometryChanges)
+	{
+		EnableEvent(ENTITY_EVENT_PREPHYSICSUPDATE, 0, false);
+
+		m_bClearedQueuedGeometryChanges = false;
+	}
 
 	FUNCTION_PROFILER( GetISystem(),PROFILE_ENTITY );
 
@@ -2577,5 +2588,6 @@ bool CRenderComponent::CanExecuteRenderAsJob()
 void CRenderComponent::QueueSlotGeometryChange(int nSlot, IStatObj* pStatObj)
 {
 	m_queuedGeometryChanges.push_back(std::make_pair(nSlot, pStatObj));
+	m_bClearedQueuedGeometryChanges = false;
 	GetEntity()->EnableEvent(true, *this, ENTITY_EVENT_PREPHYSICSUPDATE, 0);
 }

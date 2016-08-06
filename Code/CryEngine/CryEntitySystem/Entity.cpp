@@ -1238,7 +1238,7 @@ void CEntity::EnableEvent(bool bEnable, IEntityComponent &component, EEntityEven
 
 		// Sorting is "automatic" as we're using std::set with a custom compare implementation.
 		// This ensures that we only need to sort when an event is enabled
-		eventIt->second.m_components.emplace_back(SEventComponentInfo(&component, priority));
+		eventIt->second.m_components.insert(SEventComponentInfo(&component, priority));
 	}
 	else if (eventIt != m_eventComponentListenerMap.end())
 	{
@@ -1384,7 +1384,8 @@ bool CEntity::SendEvent(const SEntityEvent& event)
 			aiObject->EntityEvent(event);
 
 		// Give entity system a chance to check the event, and notify other listeners.
-		if (event.event != ENTITY_EVENT_XFORM || !(nWhyFlags & ENTITY_XFORM_NO_SEND_TO_ENTITY_SYSTEM))
+		// Do not send global events for mass distributed events!
+		if (!g_pIEntitySystem->GetEventDistributor()->IsTrackingEvent(event.event) && (event.event != ENTITY_EVENT_XFORM || !(nWhyFlags & ENTITY_XFORM_NO_SEND_TO_ENTITY_SYSTEM)))
 			g_pIEntitySystem->OnEntityEvent(this, event);
 
 #ifndef _RELEASE

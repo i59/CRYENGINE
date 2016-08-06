@@ -91,7 +91,7 @@ class CEntity : public IEntity
 			}
 		};
 
-		std::vector<SEventComponentInfo> m_components;
+		std::set<SEventComponentInfo, SCompare> m_components;
 	};
 
 	// Entity constructor.

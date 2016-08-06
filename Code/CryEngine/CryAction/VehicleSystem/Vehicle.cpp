@@ -774,7 +774,6 @@ void CVehicle::PostInitialize()
 	EnableEvent(ENTITY_EVENT_HIDE, 0, true);
 	EnableEvent(ENTITY_EVENT_UNHIDE, 0, true);
 	EnableEvent(ENTITY_EVENT_ANIM_EVENT, 0, true);
-	EnableEvent(ENTITY_EVENT_PREPHYSICSUPDATE, 0, true);
 	EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
 	EnableEvent(ENTITY_EVENT_PHYS_POSTSTEP, 0, true);
 	EnableEvent(ENTITY_EVENT_PHYSICS_CHANGE_STATE, 0, true);

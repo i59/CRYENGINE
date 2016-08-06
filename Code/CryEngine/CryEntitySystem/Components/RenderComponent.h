@@ -587,6 +587,7 @@ private:
 	typedef std::pair<int, IStatObj*> SlotGeometry;
 	typedef std::vector<SlotGeometry> SlotGeometries;
 	SlotGeometries m_queuedGeometryChanges;
+	bool m_bClearedQueuedGeometryChanges;
 
 	// Layer effects
 	uint32 m_pLayerEffectParams;

@@ -773,7 +773,6 @@ void CPhysicsComponent::Physicalize(SEntityPhysicalizeParams& params)
 		{
 			pe_status_dynamics sd;
 			m_pPhysicalEntity->GetStatus(&sd);
-			GetEntity()->EnableEvent(true, *this, ENTITY_EVENT_PREPHYSICSUPDATE, 0);
 			v = sd.v;
 			int hideOnly = params.fStiffnessScale > 0;
 			if (hideOnly)
