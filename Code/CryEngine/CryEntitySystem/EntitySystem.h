@@ -31,7 +31,7 @@ class CEntity;
 struct ICVar;
 struct IPhysicalEntity;
 class IComponent;
-class CComponentEventDistributor;
+class CBulkEntityEventDistributor;
 class CEntityClassRegistry;
 class CScriptBind_Entity;
 class CPhysicsEventListener;
@@ -134,7 +134,6 @@ public:
 	virtual void                  RemoveEntity(EntityId entity, bool bForceRemoveNow = false) override;
 	virtual uint32                GetNumEntities() const override;
 	virtual IEntityIt*            GetEntityIterator() override;
-	virtual void                  SendEventViaEntityEvent(IEntity* piEntity, const SEntityEvent& event) override;
 	virtual void                  SendEventToAll(SEntityEvent& event) override;
 	virtual int                   QueryProximity(SEntityProximityQuery& query) override;
 	virtual void                  ResizeProximityGrid(int nWidth, int nHeight) override;
@@ -221,7 +220,7 @@ public:
 	virtual void                      CloneHeldLayerEntities(const char* pLayerName, const Vec3& localOffset, const Matrix34& l2w, const char** pExcludeLayers = NULL, int numExcludeLayers = 0) override;
 	virtual void                      ReleaseHeldEntities() override;
 
-	ILINE CComponentEventDistributor* GetEventDistributor() { return m_pEventDistributor; }
+	ILINE CBulkEntityEventDistributor* GetEventDistributor() { return m_pEventDistributor; }
 
 	virtual bool                      ExtractArcheTypeLoadParams(XmlNodeRef& entityNode, SEntitySpawnParams& spawnParams) const override;
 	virtual bool                      ExtractEntityLoadParams(XmlNodeRef& entityNode, SEntitySpawnParams& spawnParams) const override;
@@ -290,10 +289,9 @@ public:
 	
 	virtual bool IsComponentFactoryRegistered(const CryInterfaceID &id) override;
 
-	IEntityComponent *CreateComponentInstance(const CryInterfaceID &id);
+	std::shared_ptr<IEntityComponent> CreateComponentInstance(const CryInterfaceID &id);
 
 private: // -----------------------------------------------------------------
-	void DoPrePhysicsUpdateFast();
 	void DoUpdateLoop(float fFrameTime);
 
 	void DeleteEntity(CEntity* pEntity);
@@ -358,7 +356,7 @@ private: // -----------------------------------------------------------------
 	CSaltBufferArray<>          m_EntitySaltBuffer;         // used to create new entity ids (with uniqueid=salt)
 	std::vector<EntityId>       m_tempActiveEntities;       // Temporary array of active entities.
 
-	CComponentEventDistributor* m_pEventDistributor;
+	CBulkEntityEventDistributor* m_pEventDistributor;
 	//////////////////////////////////////////////////////////////////////////
 
 	// Entity timers.

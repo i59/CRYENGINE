@@ -100,36 +100,6 @@ void OnRemoveEntityCVarChange(ICVar* pArgs)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void OnActivateEntityCVarChange(ICVar* pArgs)
-{
-	if (gEnv->pEntitySystem)
-	{
-		const char* szEntity = pArgs->GetString();
-		IEntity* pEnt = gEnv->pEntitySystem->FindEntityByName(szEntity);
-		if (pEnt)
-		{
-			CEntity* pcEnt = (CEntity*)(pEnt);
-			pcEnt->Activate(true);
-		}
-	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-void OnDeactivateEntityCVarChange(ICVar* pArgs)
-{
-	if (gEnv->pEntitySystem)
-	{
-		const char* szEntity = pArgs->GetString();
-		IEntity* pEnt = gEnv->pEntitySystem->FindEntityByName(szEntity);
-		if (pEnt)
-		{
-			CEntity* pcEnt = (CEntity*)(pEnt);
-			pcEnt->Activate(false);
-		}
-	}
-}
-
 //////////////////////////////////////////////////////////////////////
 SEntityLoadParams::SEntityLoadParams()
 	: pReuseEntity(NULL)
@@ -288,7 +258,7 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 	m_pAreaManager = new CAreaManager(this);
 	m_pBreakableManager = new CBreakableManager(this);
 	m_pEntityArchetypeManager = new CEntityArchetypeManager;
-	m_pEventDistributor = new CComponentEventDistributor();
+	m_pEventDistributor = new CBulkEntityEventDistributor();
 
 	m_pEntityLoadManager = new CEntityLoadManager(this);
 
@@ -314,8 +284,6 @@ CEntitySystem::CEntitySystem(ISystem* pSystem)
 	if (gEnv->pConsole != 0)
 	{
 		REGISTER_STRING_CB("es_removeEntity", "", VF_CHEAT, "Removes an entity", OnRemoveEntityCVarChange);
-		REGISTER_STRING_CB("es_activateEntity", "", VF_CHEAT, "Activates an entity", OnActivateEntityCVarChange);
-		REGISTER_STRING_CB("es_deactivateEntity", "", VF_CHEAT, "Deactivates an entity", OnDeactivateEntityCVarChange);
 	}
 }
 
@@ -798,9 +766,6 @@ bool CEntitySystem::ResetEntityId(CEntity* pEntity, EntityId newEntityId)
 
 	RemoveEntityFromActiveList(pEntity);
 
-	// Inform the distributor of any change!
-	m_pEventDistributor->RemapEntityID(pEntity->GetId(), newEntityId);
-
 	if (newEntityId)
 	{
 		const CSaltHandle<> newHandle = IdToHandle(newEntityId);
@@ -880,8 +845,6 @@ void CEntitySystem::DeleteEntity(CEntity* pEntity)
 				}
 			}
 		}
-
-		m_pEventDistributor->OnEntityDeleted(pEntity);
 
 		pEntity->ShutDown();
 
@@ -1015,7 +978,6 @@ void CEntitySystem::RemoveEntityFromActiveList(CEntity* pEntity)
 	{
 		m_mapActiveEntities.erase(pEntity->GetId());
 		m_tempActiveEntitiesValid = false;
-		pEntity->m_bActive = false;
 		if (pEntity->m_bInActiveList)
 		{
 			pEntity->m_bInActiveList = false;
@@ -1182,7 +1144,6 @@ void CEntitySystem::UpdateNotSeenTimeouts()
 			SEntityEvent entityEvent(ENTITY_EVENT_NOT_SEEN_TIMEOUT);
 			entityEvent.nParam[2] = timeoutEntityId;
 			pEntity->SendEvent(entityEvent);
-			SendEventViaEntityEvent(pEntity, entityEvent);
 		}
 	}
 }
@@ -1193,7 +1154,10 @@ void CEntitySystem::PrePhysicsUpdate()
 	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::PrePhysicsUpdate");
 	CRYPROFILE_SCOPE_PROFILE_MARKER("EntitySystem::PrePhysicsUpdate");
 
-	DoPrePhysicsUpdateFast();
+	SEntityEvent evt(ENTITY_EVENT_PREPHYSICSUPDATE);
+	evt.fParam[0] = gEnv->pTimer->GetFrameTime();
+
+	m_pEventDistributor->SendEventToEntities(evt);
 }
 
 //update the entity system
@@ -1881,7 +1845,7 @@ void CEntitySystem::DoUpdateLoop(float fFrameTime)
 				if (auto *pScriptComponent = ce->QueryComponent<IEntityScriptComponent>())
 					nNumScriptable++;
 
-				if (ce->m_bGarbage || ce->GetUpdateStatus())
+				if (ce->m_bGarbage || ce->ShouldUpdate())
 					continue;
 
 				DebugDraw(ce, 0);
@@ -2051,7 +2015,7 @@ bool CEntitySystem::IsComponentFactoryRegistered(const CryInterfaceID &id)
 }
 
 //////////////////////////////////////////////////////////////////////////
-IEntityComponent *CEntitySystem::CreateComponentInstance(const CryInterfaceID &id)
+std::shared_ptr<IEntityComponent> CEntitySystem::CreateComponentInstance(const CryInterfaceID &id)
 {
 	auto factoryIt = m_componentFactoryMap.find(id);
 	CRY_ASSERT(factoryIt != m_componentFactoryMap.end());
@@ -2075,12 +2039,6 @@ IEntityIt* CEntitySystem::GetEntityIterator()
 bool CEntitySystem::IsIDUsed(EntityId nID) const
 {
 	return m_EntitySaltBuffer.IsUsed(nID);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntitySystem::SendEventViaEntityEvent(IEntity* piEntity, const SEntityEvent& event)
-{
-	m_pEventDistributor->SendEvent(event);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2294,7 +2252,6 @@ void CEntitySystem::UpdateTimers()
 				entityEvent.nParam[1] = event.nMilliSeconds;
 				entityEvent.nParam[2] = event.entityId;
 				pEntity->SendEvent(entityEvent);
-				SendEventViaEntityEvent(pEntity, entityEvent);
 
 				if (CVar::es_DebugTimers)
 				{
@@ -2544,7 +2501,7 @@ void CEntitySystem::DebugDraw(CEntity* ce, float timeMs)
 	{
 		// draw information about timing, physics, position, and textual representation of the entity (but no EntityId)
 
-		if (ce->GetUpdateStatus() && timeMs >= 0)
+		if (ce->ShouldUpdate() && timeMs >= 0)
 		{
 			float colors[4] = { 1, 1, 1, 1 };
 			float colorsYellow[4] = { 1, 1, 0, 1 };
@@ -3706,17 +3663,6 @@ void CEntitySystem::DebugDrawProximityTriggers()
 			pRenderAuxGeom->SetRenderFlags(oldFlags);
 		}
 	}
-}
-
-void CEntitySystem::DoPrePhysicsUpdateFast()
-{
-	FUNCTION_PROFILER(m_pISystem, PROFILE_ENTITY);
-
-	SEntityEvent evt(ENTITY_EVENT_PREPHYSICSUPDATE);
-	evt.fParam[0] = gEnv->pTimer->GetFrameTime();
-
-	// Dispatch the event.
-	m_pEventDistributor->SendEvent(evt);
 }
 
 void CEntitySystem::RegisterCharactersForRendering()

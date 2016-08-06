@@ -289,7 +289,7 @@ void CAnimatedCharacter::PostInitialize()
 	moveRequestComponent.SetAnimatedCharacter(this);
 
 	auto &startAnimProcComponent = GetEntity()->AcquireComponent<CAnimatedCharacterComponent_StartAnimProc>();
-	moveRequestComponent.SetAnimatedCharacter(this);
+	startAnimProcComponent.SetAnimatedCharacter(this);
 
 	m_proxiesInitialized = true;
 

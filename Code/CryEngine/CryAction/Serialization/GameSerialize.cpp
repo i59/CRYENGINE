@@ -1729,7 +1729,6 @@ void CGameSerialize::LoadGameData(SLoadEnvironment& loadEnv)
 		// unhide and activate so that physicalization works (will be corrected after extra entity data is loaded)
 		pEntity->Hide(false);
 		pEntity->Invisible(false);
-		pEntity->Activate(true);
 
 		// Warning: since the AI system serialize hasn't happened yet, the AI object won't exist yet (previous ones were
 		//  removed by the AI flush). Essentially, between this point and the AI serialize
@@ -1800,7 +1799,6 @@ void CGameSerialize::LoadGameData(SLoadEnvironment& loadEnv)
 				// moved to after serialize so physicalization works as expected
 				pEntity->Hide(iter->isHidden);
 				pEntity->Invisible(iter->isInvisible);
-				pEntity->Activate(iter->isActive);
 
 				if (IEntityPhysicsComponent* pPhysicalProxy = pEntity->QueryComponent<IEntityPhysicsComponent>())
 				{

@@ -551,8 +551,6 @@ void CPhysicsComponent::Serialize(TSerialize ser)
 				}
 				ser.EndGroup();
 			}
-			if (bSerializableRopes && ser.IsReading())
-				GetCEntity()->ActivateForNumUpdates(2);
 		}
 
 		ser.EndGroup(); //PhysicsProxy
@@ -1994,8 +1992,6 @@ void CPhysicsComponent::OnPhysicsPostStep(EventPhysPostStep* pEvent)
 	                ENTITY_XFORM_NO_EVENT & gEnv->pPhysicalWorld->GetPhysVars()->bLogStructureChanges - 1;
 	if (!m_pPhysicalEntity)
 	{
-		if (m_nFlags & FLAG_SYNC_CHARACTER && !m_pEntity->IsActive())
-			GetCEntity()->ActivateForNumUpdates(4);
 		if (pEvent)
 			m_pEntity->SetPosRotScale(pEvent->pos, pEvent->q, m_pEntity->GetScale(), nWhyFlags);
 		return;
@@ -2024,13 +2020,7 @@ void CPhysicsComponent::OnPhysicsPostStep(EventPhysPostStep* pEvent)
 
 	if (physType != PE_RIGID) // In Rigid body sub-parts are not controlled by physics.
 	{
-		if (m_nFlags & FLAG_SYNC_CHARACTER)
-		{
-			//SyncCharacterWithPhysics();
-			if (!m_pEntity->IsActive())
-				GetCEntity()->ActivateForNumUpdates(4);
-		}
-		else
+		if ((m_nFlags & FLAG_SYNC_CHARACTER) == 0)
 		{
 			// Use all slots.
 			ppos.flags = status_local;
@@ -2229,11 +2219,6 @@ void CPhysicsComponent::CheckColliders()
 //////////////////////////////////////////////////////////////////////////
 void CPhysicsComponent::OnContactWithEntity(CEntity* pEntity)
 {
-	if (m_pColliders)
-	{
-		// Activate entity for 4 frames.
-		GetCEntity()->ActivateForNumUpdates(4);
-	}
 }
 
 void CPhysicsComponent::OnCollision(CEntity* pTarget, int matId, const Vec3& pt, const Vec3& n, const Vec3& vel, const Vec3& targetVel, int partId, float mass)

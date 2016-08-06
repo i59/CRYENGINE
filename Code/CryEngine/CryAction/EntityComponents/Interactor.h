@@ -14,13 +14,15 @@ class CInteractor : public IInteractor
 {
 public:
 	CInteractor();
-	~CInteractor();
+	virtual ~CInteractor();
 
 	// IEntityComponent
 	virtual void PostInitialize() override;
 	virtual void ProcessEvent(const SEntityEvent &event) override;
 
 	virtual void Update(SEntityUpdateContext &) override;
+
+	virtual void Release() override { delete this; }
 
 	virtual void Serialize(TSerialize ser) override;
 

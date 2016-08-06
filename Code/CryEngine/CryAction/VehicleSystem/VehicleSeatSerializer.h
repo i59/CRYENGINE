@@ -32,6 +32,8 @@ public:
 	// IEntityComponent
 	virtual void PostInitialize() override;
 
+	virtual void Release() override { delete this; }
+
 	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override;
 
 	virtual ISerializableInfoPtr GetSpawnInfo() override;

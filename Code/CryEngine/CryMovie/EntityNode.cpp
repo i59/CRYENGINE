@@ -1351,19 +1351,6 @@ void CAnimEntityNode::Animate(SAnimContext& animContext)
 		EnableEntityPhysics(bUsePhysics);
 	}
 
-	if (bForceEntityActivation)
-	{
-		const bool bIsCutScene = (GetSequence()->GetFlags() & IAnimSequence::eSeqFlags_CutScene) != 0;
-
-		if (bIsCutScene)
-		{
-			// Activate entity to force CEntityObject::Update which calls StartAnimationProcessing for skeletal animations.
-			// This solves problems in the first frame the entity becomes visible, because it won't be active.
-			// Only do it in cut scenes, because it is too for all sequences.
-			pEntity->Activate(true);
-		}
-	}
-
 	// [*DavidR | 6/Oct/2010] Positioning an entity when ragdollized will not look good at all :)
 	// Note: Articulated != ragdoll in some cases. And kinematic(mass 0) articulated entities could allow
 	// repositioning, but positioning a kinematic articulated entity by TrackView isn't something we expect

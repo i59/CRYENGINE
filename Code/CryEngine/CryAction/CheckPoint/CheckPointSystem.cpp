@@ -510,9 +510,7 @@ void CCheckpointSystem::LoadExternalEntities(XmlNodeRef parentNode)
 				//setup entity
 				bool bActive = false;
 				bool bHidden = false;
-				nextEntity->getAttr("active", bActive);
 				nextEntity->getAttr("hidden", bHidden);
-				pEntity->Activate(bActive);
 				pEntity->Hide(bHidden);
 				//load matrix
 				SerializeWorldTM(pEntity, nextEntity, false);
@@ -669,7 +667,6 @@ void CCheckpointSystem::RespawnAI(XmlNodeRef data)
 		IEntity* pEntity = pActor->GetEntity();
 		//deactivate all actors
 		pEntity->Hide(true);
-		pEntity->Activate(false);
 	}
 
 	//load actorflags for active actors
@@ -692,7 +689,6 @@ void CCheckpointSystem::RespawnAI(XmlNodeRef data)
 				if (pActor)
 				{
 					pActor->GetEntity()->Hide(false);
-					pActor->GetEntity()->Activate(true);
 				}
 				else
 					CryWarning(VALIDATOR_MODULE_GAME, VALIDATOR_ERROR, "Failed finding actor %i from checkpoint.", (int)id);

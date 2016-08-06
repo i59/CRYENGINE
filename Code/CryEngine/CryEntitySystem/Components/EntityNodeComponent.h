@@ -21,9 +21,13 @@
 class CEntityNodeComponent : public IEntityNodeComponent
 {
 public:
+	virtual ~CEntityNodeComponent() {}
+
 	// IEntityComponent
 	virtual void PostInitialize() override;
 	virtual void ProcessEvent(const SEntityEvent& event) override;
+
+	virtual void Release() override { delete this; }
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override
 	{

@@ -131,7 +131,7 @@ class CVehicle :
 public:
 
 	CVehicle();
-	~CVehicle();
+	virtual ~CVehicle();
 
 	static const NetworkAspectType ASPECT_SEAT_PASSENGER = eEA_GameServerStatic;
 	static const NetworkAspectType ASPECT_SEAT_ACTION = eEA_GameClientDynamic;
@@ -176,6 +176,8 @@ public:
 
 	// IEntityComponent
 	virtual void PostInitialize() override;
+
+	virtual void Release() override { delete this; }
 
 	virtual void ProcessEvent(const SEntityEvent& entityEvent);
 

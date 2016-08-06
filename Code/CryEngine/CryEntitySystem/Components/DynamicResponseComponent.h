@@ -19,6 +19,8 @@ public:
 	virtual void Initialize(IEntity &entity) override;
 	virtual void ProcessEvent(const SEntityEvent& event) override;
 
+	virtual void Release() override { delete this; }
+
 	virtual void Serialize(TSerialize ser) override {}
 
 	virtual bool NeedSerialize() override { return true; }

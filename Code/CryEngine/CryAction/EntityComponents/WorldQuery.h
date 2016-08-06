@@ -51,7 +51,7 @@ private:
 
 public:
 	CWorldQuery();
-	~CWorldQuery();
+	virtual ~CWorldQuery();
 
 	// IEntityComponent
 	virtual void PostInitialize() override;
@@ -59,6 +59,8 @@ public:
 	virtual void Serialize(TSerialize ser) override;
 
 	virtual void Update(SEntityUpdateContext& ctx) override;
+
+	virtual void Release() override { delete this; }
 
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;
 	// ~IEntityComponent

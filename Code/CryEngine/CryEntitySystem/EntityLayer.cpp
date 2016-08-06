@@ -217,7 +217,6 @@ void CEntityLayer::EnableEntities(bool isEnable)
 			if (isEnable)
 			{
 				pEntity->Hide(!isEnable);
-				pEntity->Activate(prop.m_bIsActive);
 
 				if (prop.m_bIsNoAwake)
 				{
@@ -256,7 +255,6 @@ void CEntityLayer::EnableEntities(bool isEnable)
 				}
 
 				pEntity->Hide(!isEnable);
-				pEntity->Activate(isEnable);
 
 				if (prop.m_bIsNoAwake)
 				{

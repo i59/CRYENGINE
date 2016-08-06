@@ -283,8 +283,8 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 
 	SCRIPT_REG_FUNC(SetUpdateRadius);
 	SCRIPT_REG_FUNC(GetUpdateRadius);
-	SCRIPT_REG_TEMPLFUNC(Activate, "bActive");
 	SCRIPT_REG_TEMPLFUNC(IsActive, "");
+	SCRIPT_REG_TEMPLFUNC(SetUpdatePolicy, "nUpdatePolicy");
 	SCRIPT_REG_FUNC(SetPublicParam);
 	SCRIPT_REG_TEMPLFUNC(SetAnimationEvent, "nSlot,sAnimation");
 	SCRIPT_REG_TEMPLFUNC(SetAnimationTime, "nSlot,nLayer,fTime");
@@ -555,6 +555,12 @@ CScriptBind_Entity::CScriptBind_Entity(IScriptSystem* pSS, ISystem* pSystem, IEn
 	//	ETY_FLAG_CASTSHADOWVOLUME         = 0x01000,
 	SCRIPT_REG_GLOBAL(ENTITY_FLAG_CASTSHADOW);
 	SCRIPT_REG_GLOBAL(ENTITY_FLAG_GOOD_OCCLUDER);
+
+	RegisterGlobal("ENTITY_UPDATE_NEVER", (int)EEntityUpdatePolicy_Never);
+	RegisterGlobal("ENTITY_UPDATE_IN_RANGE", (int)EEntityUpdatePolicy_InRange);
+	RegisterGlobal("ENTITY_UPDATE_POT_VISIBLE", (int)EEntityUpdatePolicy_Visible);
+	RegisterGlobal("ENTITY_UPDATE_VISIBLE", (int)EEntityUpdatePolicy_Visible);
+	RegisterGlobal("ENTITY_UPDATE_ALWAYS", (int)EEntityUpdatePolicy_Always);
 
 	SCRIPT_REG_GLOBAL(PE_NONE);
 	SCRIPT_REG_GLOBAL(PE_STATIC);
@@ -4847,19 +4853,24 @@ int CScriptBind_Entity::SetPublicParam(IFunctionHandler* pH)
 }
 
 //////////////////////////////////////////////////////////////////////////
-int CScriptBind_Entity::Activate(IFunctionHandler* pH, int bActive)
-{
-	GET_ENTITY;
-	pEntity->Activate(bActive != 0);
-	return pH->EndFunction();
-}
-
-//////////////////////////////////////////////////////////////////////////
 int CScriptBind_Entity::IsActive(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 	bool bActive = pEntity->IsActive();
 	return pH->EndFunction(bActive);
+}
+
+//////////////////////////////////////////////////////////////////////////
+int CScriptBind_Entity::SetUpdatePolicy(IFunctionHandler* pH, int nUpdatePolicy)
+{
+	GET_ENTITY;
+	
+	if (auto *pScriptComponent = pEntity->QueryComponent<IEntityScriptComponent>())
+	{
+		pScriptComponent->SetUpdatePolicy(nUpdatePolicy);
+	}
+
+	return pH->EndFunction();
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -520,19 +520,6 @@ void CAIProxy::ResendTargetSignalsNextFrame()
 //----------------------------------------------------------------------------------------------------------
 bool CAIProxy::CheckUpdateStatus()
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_AI);
-
-	// DO NOT call Activate on Entity
-	// (this will result in an infinite-ish loop)
-	if (gEnv->pAISystem->GetUpdateAllAlways() || m_UpdateAlways)
-	{
-		m_pGameObject->SetUpdatePolicy(EEntityUpdatePolicy_Always);
-	}
-	else
-	{
-		m_pGameObject->SetUpdatePolicy(EEntityUpdatePolicy_InRange | EEntityUpdatePolicy_Visible);
-	}
-
 	return m_pGameObject->GetEntity()->GetLastConditionalUpdateFlags() != 0;
 }
 
@@ -1302,10 +1289,6 @@ void CAIProxy::Reset(EObjectResetType type)
 	m_currentWeaponId = 0;
 	m_currentWeaponFiremodeIndex = std::numeric_limits<int>::max();
 	m_currentWeaponDescriptor = AIWeaponDescriptor();
-
-	//if (gEnv->IsEditor())
-	if (m_pGameObject)
-		m_pGameObject->SetUpdatePolicy(EEntityUpdatePolicy_Visible | EEntityUpdatePolicy_InRange); // we suppose the first update will set this properly.
 
 	if (m_commHandler.get())
 		m_commHandler->Reset();

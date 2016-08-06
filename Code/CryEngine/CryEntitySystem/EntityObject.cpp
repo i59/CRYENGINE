@@ -342,14 +342,6 @@ void CEntityObject::Render(CEntity* pEntity, SRendParams& rParams, int nRndFlags
 		rParams.dwFObjFlags |= FOB_DYNAMIC_OBJECT;
 
 		pCharacter->Render(rParams, Offset, passInfo);
-
-		const uint32 renderProxyFlags = pRenderComponent->GetFlags();
-		if (!passInfo.IsShadowPass() || (renderProxyFlags & CRenderComponent::FLAG_ANIMATE_OFFSCREEN_SHADOW))
-		{
-			// If We render character, make sure it is also gets animation activated.
-			if (!pEntity->m_bInActiveList)
-				pEntity->ActivateForNumUpdates(8);
-		}
 	}
 	else if (pChildRenderNode)
 	{

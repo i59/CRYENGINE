@@ -282,7 +282,6 @@ class CPlayAnimation_Node : public CFlowBaseNode<eNCT_Instanced>
 	uint32 m_layer;
 
 	bool   m_firedAlmostDone;
-	bool   m_bForcedActivate;
 	bool   m_manualAnimationControlledMovement;
 
 public:
@@ -310,7 +309,6 @@ public:
 	CPlayAnimation_Node(SActivationInfo* pActInfo)
 	{
 		m_firedAlmostDone = false;
-		m_bForcedActivate = false;
 		m_manualAnimationControlledMovement = false;
 		m_token = 0;
 		m_layer = 0;
@@ -334,7 +332,6 @@ public:
 	{
 		ser.Value("m_token", m_token);
 		ser.Value("m_firedAlmostDone", m_firedAlmostDone);
-		ser.Value("m_bForcedActivate", m_bForcedActivate);
 		ser.Value("m_manualAnimationControlledMovement", m_manualAnimationControlledMovement);
 		ser.Value("m_layer", m_layer);
 	}
@@ -426,15 +423,9 @@ private:
 				aparams.m_nFlags |= CA_REPEAT_LAST_KEY;
 			}
 
-			m_bForcedActivate = false;
 			if (GetPortBool(pActInfo, IN_FORCE_UPDATE))
 			{
 				aparams.m_nFlags |= CA_FORCE_SKELETON_UPDATE;
-				if (pActInfo->pEntity->IsActive() == false)
-				{
-					m_bForcedActivate = true;
-					pActInfo->pEntity->Activate(true); // maybe unforce update as well
-				}
 			}
 
 			const bool animationMovementControl = GetPortBool(pActInfo, IN_CONTROL_MOVEMENT);
@@ -490,12 +481,6 @@ private:
 	{
 		if (pActInfo->pEntity)
 		{
-			if (m_bForcedActivate)
-			{
-				pActInfo->pEntity->Activate(false);
-				m_bForcedActivate = false;
-			}
-
 			ICharacterInstance* pCharacterInstance = pActInfo->pEntity->GetCharacter(0);
 			if (pCharacterInstance != NULL)
 			{
@@ -557,12 +542,6 @@ private:
 
 			if (pActInfo->pEntity != NULL)
 			{
-				if (m_bForcedActivate)
-				{
-					pActInfo->pEntity->Activate(false);
-					m_bForcedActivate = false;
-				}
-
 				if (m_manualAnimationControlledMovement)
 				{
 					if (pSkeletonAnimation != NULL)

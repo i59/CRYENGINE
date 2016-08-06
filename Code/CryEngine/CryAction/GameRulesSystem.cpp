@@ -105,8 +105,6 @@ bool CGameRulesSystem::CreateGameRules(const char* rulesName)
 	if (pEntity == NULL)
 		return false;
 
-	pEntity->Activate(true);
-
 	if (pEntity->GetScriptTable())
 	{
 		IScriptSystem* pSS = gEnv->pScriptSystem;

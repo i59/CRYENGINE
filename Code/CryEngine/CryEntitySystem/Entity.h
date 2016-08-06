@@ -44,6 +44,56 @@ typedef uint32 tAIObjectID;
 //////////////////////////////////////////////////////////////////////
 class CEntity : public IEntity
 {
+	// Struct containing a component and the priority that the event it belongs to should receive
+	struct SEventComponentInfo
+	{
+		SEventComponentInfo() : m_pComponent(nullptr) {}
+		SEventComponentInfo(IEntityComponent *pComponent, uint32 priority)
+			: m_pComponent(pComponent)
+			, eventPriority(priority)
+		{
+		}
+
+		// Pointer to the component
+		IEntityComponent *m_pComponent;
+		// Priority of the event, in order to determine which component gets it first
+		uint32 eventPriority;
+	};
+
+	// Struct containing information on the components that have requested to receive this event
+	struct SEventComponents
+	{
+		struct SCompare
+		{
+			bool operator() (const SEventComponentInfo& lhs, const SEventComponentInfo& rhs) const
+			{
+				if (lhs.eventPriority > rhs.eventPriority)
+				{
+					return true;
+				}
+
+				if (lhs.eventPriority < rhs.eventPriority)
+				{
+					return false;
+				}
+
+				if (lhs.m_pComponent->GetInterfaceId().hipart > rhs.m_pComponent->GetInterfaceId().hipart)
+				{
+					return true;
+				}
+
+				if (lhs.m_pComponent->GetInterfaceId().hipart < rhs.m_pComponent->GetInterfaceId().hipart)
+				{
+					return false;
+				}
+
+				return lhs.m_pComponent->GetInterfaceId().lopart > rhs.m_pComponent->GetInterfaceId().lopart;
+			}
+		};
+
+		std::vector<SEventComponentInfo> m_components;
+	};
+
 	// Entity constructor.
 	// Should only be called from Entity System.
 	CEntity(SEntitySpawnParams& params);
@@ -127,7 +177,7 @@ public:
 	virtual void        SetPos(const Vec3& vPos, int nWhyFlags = 0, bool bRecalcPhyBounds = false, bool bForce = false) override;
 	virtual const Vec3& GetPos() const override { return m_vPos; }
 
-	virtual void        SetRotation(const Quat& qRotation, int nWhyFlags = 0) override;
+	virtual void        SetRotation(const Quat& qRotation, int nWhyFlaSetUpdateStatusgs = 0) override;
 	virtual const Quat& GetRotation() const override { return m_qRotation; }
 
 	virtual void        SetScale(const Vec3& vScale, int nWhyFlags = 0) override;
@@ -140,8 +190,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	virtual void Activate(bool bActive) override;
-	virtual bool IsActive() const override { return m_bActive; }
+	virtual bool IsActive() const override { return ShouldUpdate(); }
 
 	//////////////////////////////////////////////////////////////////////////
 	virtual void Serialize(TSerialize ser, int nFlags) override;
@@ -170,7 +219,7 @@ public:
 	void UpdateAIObject();
 	//////////////////////////////////////////////////////////////////////////
 
-	virtual void RegisterComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent) override;
+	virtual void RegisterComponent(const CryInterfaceID &interfaceID, std::shared_ptr<IEntityComponent> pComponent) override;
 	virtual IEntityComponent *GetComponentByTypeId(const CryInterfaceID &interfaceID) const override;
 
 	virtual IEntityComponent *CreateComponentByTypeId(const CryInterfaceID &interfaceID) override;
@@ -289,13 +338,13 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	bool ReloadEntity(SEntityLoadParams& loadParams);
 
-	//////////////////////////////////////////////////////////////////////////
-	// Activates entity only for specified number of frames.
-	// numUpdates must be a small number from 0-15.
-	void ActivateForNumUpdates(int numUpdates);
-	void SetUpdateStatus();
+	// Check if the entity should update, and adds / removes from update list
+	void CheckShouldUpdate();
 	// Get status if entity need to be update every frame or not.
-	bool GetUpdateStatus() const { return (m_bActive || m_nUpdateCounter) && (!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN)); }
+	bool ShouldUpdate() const 
+	{ 
+		return (m_numUpdatedComponents || m_scheduledRemovalType) && (!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN));
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Description:
@@ -381,7 +430,6 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	// Internal entity flags (must be first member var of CEntity) (Reduce cache misses on access to entity data).
 	//////////////////////////////////////////////////////////////////////////
-	unsigned int         m_bActive             : 1; // Active Entities are updated every frame.
 	unsigned int         m_bInActiveList       : 1; // Added to entity system active list.
 	mutable unsigned int m_bBoundsValid        : 1; // Set when the entity bounding box is valid.
 	unsigned int         m_bInitialized        : 1; // Set if this entity already Initialized.
@@ -390,10 +438,6 @@ private:
 	unsigned int         m_bHaveEventListeners : 1; // Set if entity have an event listeners associated in entity system.
 	unsigned int         m_bTrigger            : 1; // Set if entity is proximity trigger itself.
 	unsigned int         m_bWasRelocated       : 1; // Set if entity was relocated at least once.
-	unsigned int         m_nUpdateCounter      : 4; // Update counter is used to activate the entity for the limited number of frames.
-	                                                // Usually used for Physical Triggers.
-	                                                // When update counter is set, and entity is activated, it will automatically
-	                                                // deactivate after this counter reaches zero
 	unsigned int m_lastConditionalUpdateFlags;
 
 	unsigned int m_bInvisible           : 1;        // Set if this entity is invisible.
@@ -450,7 +494,7 @@ private:
 
 	struct SComponentInfo
 	{
-		SComponentInfo(IEntityComponent *pEntComponent)
+		SComponentInfo(std::shared_ptr<IEntityComponent> pEntComponent)
 			: pComponent(pEntComponent)
 			, updatePolicy(EEntityUpdatePolicy_Never)
 		{
@@ -464,6 +508,10 @@ private:
 	typedef std::unordered_map<const CryInterfaceID, SComponentInfo, stl::hash_guid> TEntityComponentMap;
 	// Store components in map for lookup by type id
 	TEntityComponentMap m_entityComponentMap;
+
+	// Map indicating which components are listening to which events
+	typedef std::unordered_map<EEntityEvent, SEventComponents> TEventComponentMap;
+	TEventComponentMap m_eventComponentListenerMap;
 
 	// Number of components that have set their update policy to something other than 0
 	uint m_numUpdatedComponents;

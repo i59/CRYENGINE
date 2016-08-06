@@ -72,8 +72,9 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	m_flagsExtended = params.nFlagsExtended;
 	m_guid = params.guid;
 
+	m_scheduledRemovalType = eScheduledRemovalType_None;
+
 	// Set flags.
-	m_bActive = 0;
 	m_bInActiveList = 0;
 
 	m_bBoundsValid = 0;
@@ -81,7 +82,6 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	m_bHidden = 0;
 	m_bInvisible = 0;
 	m_bGarbage = 0;
-	m_nUpdateCounter = 0;
 	m_bHaveEventListeners = 0;
 	m_bTrigger = 0;
 	m_bWasRelocated = 0;
@@ -196,14 +196,12 @@ bool CEntity::ReloadEntity(SEntityLoadParams& loadParams)
 		}
 
 		// Set flags.
-		m_bActive = 0;
 		m_bInActiveList = 0;
 
 		m_bBoundsValid = 0;
 		m_bHidden = 0;
 		m_bInvisible = 0;
 		m_bGarbage = 0;
-		m_nUpdateCounter = 0;
 		m_bTrigger = 0; // Based on TriggerProxy
 		m_bWasRelocated = 0;
 		m_bNotInheritXform = 0;
@@ -349,79 +347,66 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 
-	if (m_bHidden && !CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN))
-		return;
-
 	m_lastConditionalUpdateFlags = EEntityUpdatePolicy_Never;
 
-	if (m_numUpdatedComponents != 0 || m_scheduledRemovalType != eScheduledRemovalType_None)
-	{
-		AABB worldBounds;
-		GetWorldBounds(worldBounds);
+	AABB worldBounds;
+	GetWorldBounds(worldBounds);
 
-		auto &viewCamera = gEnv->pSystem->GetViewCamera();
+	auto &viewCamera = gEnv->pSystem->GetViewCamera();
 		
-		if (worldBounds.GetDistance(viewCamera.GetPosition()) < 150.f)
-		{
-			m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_InRange;
-		}
-		if (viewCamera.IsAABBVisible_FH(worldBounds))
-		{
-			m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_Visible;
-		}
+	if (worldBounds.GetDistance(viewCamera.GetPosition()) < 150.f)
+	{
+		m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_InRange;
+	}
+	if (viewCamera.IsAABBVisible_FH(worldBounds))
+	{
+		m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_Visible;
+	}
 
-		switch (m_scheduledRemovalType)
+	switch (m_scheduledRemovalType)
+	{
+		case eScheduledRemovalType_AfterTime:
 		{
-			case eScheduledRemovalType_AfterTime:
+			m_scheduledRemovalTime -= ctx.fFrameTime;
+
+			if (isneg(m_scheduledRemovalTime))
 			{
+				m_scheduledRemovalType = eScheduledRemovalType_None;
+
+				CheckShouldUpdate();
+				g_pIEntitySystem->RemoveEntity(GetId());
+			}
+		}
+		break;
+		case eScheduledRemovalType_AfterTimeAndNotVisible:
+		{
+			if ((m_lastConditionalUpdateFlags & EEntityUpdatePolicy_Visible) == 0)
 				m_scheduledRemovalTime -= ctx.fFrameTime;
 
-				if (isneg(m_scheduledRemovalTime))
-				{
-					m_scheduledRemovalType = eScheduledRemovalType_None;
-					g_pIEntitySystem->RemoveEntity(GetId());
-				}
-			}
-			break;
-			case eScheduledRemovalType_AfterTimeAndNotVisible:
+			if (isneg(m_scheduledRemovalTime))
 			{
-				if ((m_lastConditionalUpdateFlags & EEntityUpdatePolicy_Visible) == 0)
-					m_scheduledRemovalTime -= ctx.fFrameTime;
+				m_scheduledRemovalType = eScheduledRemovalType_None;
 
-				if (isneg(m_scheduledRemovalTime))
-				{
-					m_scheduledRemovalType = eScheduledRemovalType_None;
-					g_pIEntitySystem->RemoveEntity(GetId());
-				}
+				CheckShouldUpdate();
+				g_pIEntitySystem->RemoveEntity(GetId());
 			}
-			break;
-			default:
-				break;
 		}
+		break;
+		default:
+			break;
+	}
 
-		// Update all our components
-		TEntityComponentMap tempComponentMap;
-		tempComponentMap = m_entityComponentMap;
-
-		for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
+	// Update all our components
+	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+	{
+		// Check if the entity is allowed to render
+		if ((it->second.updatePolicy & m_lastConditionalUpdateFlags) != 0)
 		{
-			// Check if the entity is allowed to render
-			if ((it->second.updatePolicy & m_lastConditionalUpdateFlags) != 0)
-			{
-				it->second.pComponent->Update(ctx);
-			}
+			it->second.pComponent->Update(ctx);
 		}
 	}
 
 	//	UpdateAIObject();
-
-	if (m_nUpdateCounter != 0)
-	{
-		if (--m_nUpdateCounter == 0)
-		{
-			SetUpdateStatus();
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -500,6 +485,17 @@ void CEntity::ShutDown(bool bRemoveAI /*= true*/, bool bRemoveProxies /*= true*/
 	g_pIEntitySystem->RemoveEntityFromLayers(GetId());
 
 	DeallocBindings();
+
+	// Notify event distributor of this entity being removed
+	auto *pEventDistributor = static_cast<CEntitySystem *>(g_pIEntitySystem)->GetEventDistributor();
+
+	for (auto it = m_eventComponentListenerMap.begin(); it != m_eventComponentListenerMap.end(); ++it)
+	{
+		if (pEventDistributor->IsTrackingEvent(it->first))
+		{
+			pEventDistributor->EnableEvent(this, it->first, 0, false);
+		}
+	}
 
 	//////////////////////////////////////////////////////////////////////////
 	// Release all components
@@ -1017,23 +1013,15 @@ void CEntity::GetLocalBounds(AABB& bbox) const
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::SetUpdateStatus()
+void CEntity::CheckShouldUpdate()
 {
-	bool bEnable = GetUpdateStatus();
+	bool bEnable = ShouldUpdate();
 
 	g_pIEntitySystem->ActivateEntity(this, bEnable);
 
 	if (IAIObject* pAIObject = GetAIObject())
 		if (IAIActorProxy* pProxy = pAIObject->GetProxy())
 			pProxy->EnableUpdate(bEnable);
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntity::Activate(bool bActive)
-{
-	m_bActive = bActive;
-	m_nUpdateCounter = 0;
-	SetUpdateStatus();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1058,6 +1046,8 @@ void CEntity::ScheduleRemoval(float timeToRemoveSeconds, EScheduledRemovalType t
 {
 	m_scheduledRemovalTime = timeToRemoveSeconds;
 	m_scheduledRemovalType = type;
+
+	CheckShouldUpdate();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1099,7 +1089,7 @@ void CEntity::Hide(bool bHide)
 			}
 		}
 
-		SetUpdateStatus();
+		CheckShouldUpdate();
 	}
 }
 
@@ -1146,18 +1136,15 @@ void CEntity::SetComponentUpdatePolicy(IEntityComponent &component, unsigned int
 		if (updatePolicy == EEntityUpdatePolicy_Never)
 		{
 			m_numUpdatedComponents--;
+
+			CheckShouldUpdate();
 		}
 	}
 	else if(updatePolicy != EEntityUpdatePolicy_Never)
 	{
 		m_numUpdatedComponents++;
 
-		// Automatically activate the entity if updates are possible
-		// Otherwise Update won't be called.
-		if (!IsActive())
-		{
-			Activate(true);
-		}
+		CheckShouldUpdate();
 	}
 
 	it->second.updatePolicy = updatePolicy;
@@ -1204,18 +1191,18 @@ IEntityComponent *CEntity::GetComponentByTypeId(const CryInterfaceID &interfaceI
 //////////////////////////////////////////////////////////////////////////
 IEntityComponent *CEntity::CreateComponentByTypeId(const CryInterfaceID &interfaceID)
 {
-	if (auto *pComponent = static_cast<CEntitySystem *>(g_pIEntitySystem)->CreateComponentInstance(interfaceID))
+	if (auto pComponent = static_cast<CEntitySystem *>(g_pIEntitySystem)->CreateComponentInstance(interfaceID))
 	{
 		RegisterComponent(interfaceID, pComponent);
 
-		return pComponent;
+		return pComponent.get();
 	}
 
 	return nullptr;
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::RegisterComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent)
+void CEntity::RegisterComponent(const CryInterfaceID &interfaceID, std::shared_ptr<IEntityComponent> pComponent)
 {
 	m_entityComponentMap.insert(TEntityComponentMap::value_type(interfaceID, pComponent));
 
@@ -1229,7 +1216,48 @@ void CEntity::RegisterComponent(const CryInterfaceID &interfaceID, IEntityCompon
 //////////////////////////////////////////////////////////////////////////
 void CEntity::EnableEvent(bool bEnable, IEntityComponent &component, EEntityEvent event, uint32 priority)
 {
-	g_pIEntitySystem->GetEventDistributor()->EnableEvent(component, event, priority, bEnable);
+	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ENTITY);
+
+	auto eventIt = m_eventComponentListenerMap.find(event);
+	if (bEnable)
+	{
+		if (eventIt == m_eventComponentListenerMap.end())
+		{
+			eventIt = m_eventComponentListenerMap.insert(TEventComponentMap::value_type(event, SEventComponents())).first;
+		}
+		else
+		{
+			for (auto it = eventIt->second.m_components.begin(); it != eventIt->second.m_components.end(); ++it)
+			{
+				if (it->m_pComponent == &component)
+				{
+					return;
+				}
+			}
+		}
+
+		// Sorting is "automatic" as we're using std::set with a custom compare implementation.
+		// This ensures that we only need to sort when an event is enabled
+		eventIt->second.m_components.emplace_back(SEventComponentInfo(&component, priority));
+	}
+	else if (eventIt != m_eventComponentListenerMap.end())
+	{
+		for (auto it = eventIt->second.m_components.begin(); it != eventIt->second.m_components.end(); ++it)
+		{
+			if (it->m_pComponent == &component)
+			{
+				eventIt->second.m_components.erase(it);
+				break;
+			}
+		}
+	}
+
+	// Check if the distributor wants to handle this event when it's sent
+	auto *pEventDistributor = static_cast<CEntitySystem *>(g_pIEntitySystem)->GetEventDistributor();
+	if (pEventDistributor->IsTrackingEvent(event))
+	{
+		pEventDistributor->EnableEvent(this, event, priority, bEnable);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1341,7 +1369,15 @@ bool CEntity::SendEvent(const SEntityEvent& event)
 		// Broadcast event to proxies.
 		uint32 nWhyFlags = (uint32)event.nParam[0];
 
-		g_pIEntitySystem->GetEventDistributor()->SendEventToEntity(*this, event);
+		// Send the event to any component that has subscribed to it
+		auto componentListenerIt = m_eventComponentListenerMap.find(event.event);
+		if (componentListenerIt != m_eventComponentListenerMap.end())
+		{
+			for (auto it = componentListenerIt->second.m_components.begin(); it != componentListenerIt->second.m_components.end(); ++it)
+			{
+				it->m_pComponent->ProcessEvent(event);
+			}
+		}
 
 		// TODO: Move IAIObject to component system so it goes through the distributor above
 		if (IAIObject* aiObject = GetAI())
@@ -2349,26 +2385,6 @@ void CEntity::UpdateAIObject()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CEntity::ActivateForNumUpdates(int numUpdates)
-{
-	if (m_bActive)
-		return;
-
-	IAIObject* pAIObject = GetAIObject();
-	if (pAIObject && pAIObject->GetProxy())
-		return;
-
-	if (m_nUpdateCounter != 0)
-	{
-		m_nUpdateCounter = numUpdates;
-		return;
-	}
-
-	m_nUpdateCounter = numUpdates;
-	SetUpdateStatus();
-}
-
-//////////////////////////////////////////////////////////////////////////
 void CEntity::SetPhysicsState(XmlNodeRef& physicsState)
 {
 	if (physicsState)
@@ -2391,7 +2407,6 @@ void CEntity::SetPhysicsState(XmlNodeRef& physicsState)
 							GetSlot(i)->pCharacter->GetISkeletonPose()->SynchronizeWithPhysicalEntity(physic);
 						else if (GetSlot(i)->pCharacter->GetISkeletonPose()->GetCharacterPhysics(0) == physic)
 							GetSlot(i)->pCharacter->GetISkeletonPose()->SynchronizeWithPhysicalEntity(0, m_vPos, m_qRotation);
-				ActivateForNumUpdates(5);
 			}
 		}
 	}

@@ -26,6 +26,7 @@ struct IEntityComponent
 		typedef char one;
 		typedef struct { char b[2]; } two;
 
+		// GetRMIData is only provided in CNetworkedEntityComponent
 		template <typename C> static one test(decltype(&C::GetRMIData));
 		template <typename C> static two test(...);
 
@@ -40,6 +41,8 @@ struct IEntityComponent
 
 	// Implemented by DECLARE_COMPONENT
 	virtual const CryInterfaceID &GetInterfaceId() const = 0;
+
+	virtual void Release() = 0;
 
 	virtual void Initialize(IEntity &entity)
 	{
@@ -105,7 +108,7 @@ protected:
 
 struct IEntityComponentFactory
 {
-	virtual IEntityComponent *CreateInstance() = 0;
+	virtual std::shared_ptr<IEntityComponent> CreateInstance() = 0;
 };
 
 template <typename T>
@@ -113,9 +116,9 @@ class CEntityComponentFactory
 	: public IEntityComponentFactory
 {
 	// IEntityComponentFactory
-	virtual IEntityComponent *CreateInstance() override
+	virtual std::shared_ptr<IEntityComponent> CreateInstance() override
 	{
-		return new T();
+		return std::shared_ptr<IEntityComponent>(new T(), DeleteWithRelease<T>());
 	}
 	// ~IEntityComponentFactory
 };
@@ -221,6 +224,8 @@ DECLARE_SHARED_POINTERS(IShaderParamCallback);
 //! Interface to the entity Render component.
 struct IEntityRenderComponent : public IEntityComponent
 {
+	virtual ~IEntityRenderComponent() {}
+
 	// <interfuscator:shuffle>}
 	DECLARE_COMPONENT("EntityRenderComponent", 0x8FA27348E662401E, 0x916AE2A00CEACC82)
 
@@ -379,6 +384,8 @@ struct IEntityRenderComponent : public IEntityComponent
 //! Physical proxy interface.
 struct IEntityPhysicsComponent : public IEntityComponent
 {
+	virtual ~IEntityPhysicsComponent() {}
+
 	// <interfuscator:shuffle>
 	DECLARE_COMPONENT("EntityPhysicsComponent", 0x7583A7358303455B, 0x83306428E4C7373C)
 
@@ -445,6 +452,8 @@ struct IEntityScript;
 //! Script proxy interface.
 struct IEntityScriptComponent : public IEntityComponent
 {
+	virtual ~IEntityScriptComponent() {}
+
 	// <interfuscator:shuffle>
 	DECLARE_COMPONENT("EntityScriptComponent", 0xE4748A2B5D1F4AC7, 0x94AEE7E5435FDD17)
 
@@ -503,6 +512,8 @@ inline IScriptTable* IEntity::GetScriptTable() const
 //! Proximity trigger proxy interface.
 struct IEntityTriggerComponent : public IEntityComponent
 {
+	virtual ~IEntityTriggerComponent() {}
+
 	// <interfuscator:shuffle>
 	DECLARE_COMPONENT("EntityTriggerComponent", 0x6A998A93CCB842B3, 0xBF6FEC6D87CE6259)
 
@@ -527,6 +538,8 @@ struct IEntityTriggerComponent : public IEntityComponent
 //! Entity Audio Proxy interface.
 struct IEntityAudioComponent : public IEntityComponent
 {
+	virtual ~IEntityAudioComponent() {}
+
 	// <interfuscator:shuffle>
 	DECLARE_COMPONENT("EntityAudioComponent", 0xCAC7D72F0C6F4DB9, 0x8E19D932CFA719F1)
 
@@ -572,6 +585,8 @@ enum EEntityAreaType
 //! events to the target entities.
 struct IEntityAreaComponent : public IEntityComponent
 {
+	virtual ~IEntityAreaComponent() {}
+
 	enum EAreaProxyFlags
 	{
 		FLAG_NOT_UPDATE_AREA = BIT(1), //!< When set points in the area will not be updated.
@@ -724,6 +739,8 @@ struct IEntityAreaComponent : public IEntityComponent
 
 struct IClipVolumeComponent : public IEntityComponent
 {
+	virtual ~IClipVolumeComponent() {}
+
 	DECLARE_COMPONENT("ClipVolumeComponent", 0xC4F90161B5424E2A, 0x8829B85A69EE0F10)
 
 	virtual void         UpdateRenderMesh(struct IRenderMesh* pRenderMesh, const DynArray<Vec3>& meshFaces) = 0;
@@ -735,6 +752,8 @@ struct IClipVolumeComponent : public IEntityComponent
 //! Flow Graph proxy allows entity to host reference to the flow graph.
 struct IEntityFlowGraphComponent : public IEntityComponent
 {
+	virtual ~IEntityFlowGraphComponent() {}
+
 	// <interfuscator:shuffle>
 	DECLARE_COMPONENT("EntityFlowGraphComponent", 0x7512969C9251477E, 0x9BB892BF876FAD56)
 
@@ -749,6 +768,8 @@ struct IEntityFlowGraphComponent : public IEntityComponent
 //! Substitution proxy remembers IRenderNode this entity substitutes and unhides it upon deletion
 struct IEntitySubstitutionComponent : public IEntityComponent
 {
+	virtual ~IEntitySubstitutionComponent() {}
+
 	// <interfuscator:shuffle>
 	DECLARE_COMPONENT("EntitySubstitutionComponent", 0x75AE31A76D584AAE, 0xBD6EB757380F224B)
 
@@ -760,6 +781,8 @@ struct IEntitySubstitutionComponent : public IEntityComponent
 //! Represents entity camera.
 struct IEntityCameraComponent : public IEntityComponent
 {
+	virtual ~IEntityCameraComponent() {}
+
 	// <interfuscator:shuffle>
 	DECLARE_COMPONENT("EntityCameraComponent", 0x7952D8B269C64249, 0x879F9255694DFF4F)
 
@@ -771,6 +794,8 @@ struct IEntityCameraComponent : public IEntityComponent
 //! Proxy for the entity rope.
 struct IEntityRopeComponent : public IEntityComponent
 {
+	virtual ~IEntityRopeComponent() {}
+
 	DECLARE_COMPONENT("EntityRopeComponent", 0x7BDA9235A6784030, 0x8A46ED8E08FA8537)
 
 	virtual struct IRopeRenderNode* GetRopeRenderNode() = 0;
@@ -786,6 +811,8 @@ namespace DRS
 //! Proxy for dynamic response system actors.
 struct IEntityDynamicResponseComponent : public IEntityComponent
 {
+	virtual ~IEntityDynamicResponseComponent() {}
+
 	DECLARE_COMPONENT("EntityDynamicResponseComponent", 0xE9250DD3A69F482C, 0xAAFF080D50E0F8B5)
 
 	virtual DRS::IResponseActor*      GetResponseActor() const = 0;
@@ -795,5 +822,7 @@ struct IEntityDynamicResponseComponent : public IEntityComponent
 // Track view node component
 struct IEntityNodeComponent : public IEntityComponent
 {
+	virtual ~IEntityNodeComponent() {}
+
 	DECLARE_COMPONENT("EntityNodeComponent", 0x3592CE70D61B47FF, 0xBCC75AA894E236F7)
 };

@@ -16,6 +16,7 @@ protected:
 	typedef CAnimatedCharacterComponent_Base SuperClass;
 
 	explicit CAnimatedCharacterComponent_Base();
+	virtual ~CAnimatedCharacterComponent_Base() {}
 
 	// IEntityComponent
 	virtual void PostInitialize() override;
@@ -34,6 +35,9 @@ public:
 	DECLARE_COMPONENT("CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate", 0x8EBC751B53D34DE4, 0x94CA9644D6D851A5)
 
 	CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate();
+	virtual ~CAnimatedCharacterComponent_PrepareAnimatedCharacterForUpdate() {}
+
+	virtual void Release() override { delete this; }
 
 	ILINE void QueueRotation(const Quat& rotation) { m_queuedRotation = rotation; m_hasQueuedRotation = true; }
 	ILINE void ClearQueuedRotation()               { m_hasQueuedRotation = false; }
@@ -49,6 +53,10 @@ class CAnimatedCharacterComponent_StartAnimProc : public CAnimatedCharacterCompo
 public:
 	DECLARE_COMPONENT("CAnimatedCharacterComponent_StartAnimProc", 0x24978C604D744CAE, 0xBCE1836773423372)
 
+	virtual ~CAnimatedCharacterComponent_StartAnimProc() {}
+
+	virtual void Release() override { delete this; }
+
 protected:
 
 	virtual void                   OnPrePhysicsUpdate(float elapsedTime);
@@ -58,6 +66,10 @@ class CAnimatedCharacterComponent_GenerateMoveRequest : public CAnimatedCharacte
 {
 public:
 	DECLARE_COMPONENT("CAnimatedCharacterComponent_GenerateMoveRequest", 0x7619F10FD914487E, 0x90F3C423D46D6AA5)
+
+	virtual ~CAnimatedCharacterComponent_GenerateMoveRequest() {}
+
+	virtual void Release() override { delete this; }
 
 protected:
 

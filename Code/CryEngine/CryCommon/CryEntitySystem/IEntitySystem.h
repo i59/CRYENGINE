@@ -417,10 +417,6 @@ struct IEntitySystem
 	//! \param event Event to send.
 	virtual void SendEventToAll(SEntityEvent& event) = 0;
 
-	//! Sends the same event to the entity in Entity System using the EntityEvent system
-	//! \param event Event to send.
-	virtual void SendEventViaEntityEvent(IEntity* piEntity, const SEntityEvent& event) = 0;
-
 	//! Get all entities within proximity of the specified bounding box.
 	//! \note Query is not exact, entities reported can be a few meters away from the bounding box.
 	virtual int QueryProximity(SEntityProximityQuery& query) = 0;

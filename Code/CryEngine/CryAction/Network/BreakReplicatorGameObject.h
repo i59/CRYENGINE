@@ -17,12 +17,16 @@ class CBreakRepGameObject : public CNetworkedEntityComponent<CBreakRepGameObject
 public:
 	DECLARE_COMPONENT("BreakRepGameObject", 0xB00AA92D13BE4B86, 0x9B2586787383B0C3)
 
+	virtual ~CBreakRepGameObject() {}
+
 	// IEntityComponent
 	virtual void PostInitialize() override
 	{
 		m_removed = false;
 		m_wasRemoved = false;
 	}
+
+	virtual void Release() override { delete this; }
 
 	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags) override
 	{

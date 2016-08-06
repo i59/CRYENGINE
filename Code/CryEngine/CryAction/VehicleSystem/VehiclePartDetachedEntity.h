@@ -25,6 +25,8 @@ public:
 	virtual void PostInitialize() override;
 	virtual void ProcessEvent(const SEntityEvent& event) override;
 
+	virtual void Release() override { delete this; }
+
 	virtual void Update(SEntityUpdateContext& ctx) override;
 
 	virtual bool NeedSerialize() override { return true; }

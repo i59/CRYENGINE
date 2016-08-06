@@ -73,11 +73,13 @@ public:
 	};
 
 	CRenderComponent();
-	~CRenderComponent();
+	virtual ~CRenderComponent();
 
 	// IEntityComponent
 	virtual void Initialize(IEntity &entity) override;
 	virtual void PostInitialize() override;
+
+	virtual void Release() override { delete this; }
 
 	virtual void ProcessEvent(const SEntityEvent& event) override;
 

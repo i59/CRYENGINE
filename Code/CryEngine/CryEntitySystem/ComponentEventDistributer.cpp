@@ -2,128 +2,67 @@
 #include "stdafx.h"
 #include "ComponentEventDistributer.h"
 
-CComponentEventDistributor::CComponentEventDistributor()
+#include "EntitySystem.h"
+#include "Entity.h"
+
+CBulkEntityEventDistributor::CBulkEntityEventDistributor()
 {
 	// Catch new flags being added exceeding TSubscribedEventFlags capability, increase size if so
 	COMPILE_TIME_ASSERT(sizeof(TSubscribedEventFlags) * 8 >= ENTITY_EVENT_LAST);
+
+	// We currently only handle prephys update
+	// Most other events are sent directly to individual entities
+	m_trackedEventFlags = ENTITY_EVENT_BIT(ENTITY_EVENT_PREPHYSICSUPDATE);
 }
 
-void CComponentEventDistributor::EnableEvent(IEntityComponent &component, EEntityEvent event, uint32 priority, bool bEnable)
+void CBulkEntityEventDistributor::EnableEvent(IEntity* pEntity, EEntityEvent event, uint32 priority, bool bEnable)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ENTITY);
-
-	auto eventIt = m_eventComponentMap.find(event);
+	
+	auto eventIt = m_entityEventMap.find(event);
 	if (bEnable)
 	{
-		if (eventIt == m_eventComponentMap.end())
+		if (eventIt == m_entityEventMap.end())
 		{
-			eventIt = m_eventComponentMap.insert(TEventComponentMap::value_type(event, SEventComponents())).first;
+			eventIt = m_entityEventMap.insert(TEntityEventMap::value_type(event, TEntityEventList())).first;
 		}
 
-		// Sorting is "automatic" as we're using std::set with a custom compare implementation.
-		// This ensures that we only need to sort when an event is enabled
-		eventIt->second.m_components.insert(SEventComponentInfo(&component, priority));
-
-		auto reverseLookupIt = m_entityReverseLookupMap.find(component.GetEntityId());
-		if (reverseLookupIt == m_entityReverseLookupMap.end())
-		{
-			reverseLookupIt = m_entityReverseLookupMap.insert(TEntityReverseLookupMap::value_type(component.GetEntityId(), SEntitySubscribedEvents())).first;
-		}
-
-		reverseLookupIt->second.m_subscribedEventFlags |= ENTITY_EVENT_BIT(event);
+		stl::push_back_unique(eventIt->second, pEntity);
 	}
-	else if (eventIt != m_eventComponentMap.end())
+	else if (eventIt != m_entityEventMap.end())
 	{
-		for (auto it = eventIt->second.m_components.begin(); it != eventIt->second.m_components.end(); ++it)
+		struct SRemovePredicate
 		{
-			if (it->m_pComponent == &component)
+			SRemovePredicate(EntityId id)
+				: entityId(id) {}
+
+			bool operator()(const IEntity *pEntity)
 			{
-				eventIt->second.m_components.erase(it);
-				break;
+				return entityId == pEntity->GetId();
 			}
-		}
+
+			EntityId entityId;
+		};
+
+		eventIt->second.erase(std::remove_if(eventIt->second.begin(), eventIt->second.end(), SRemovePredicate(pEntity->GetId())), eventIt->second.end());
 	}
 }
 
-void CComponentEventDistributor::SendEvent(const SEntityEvent& event)
+void CBulkEntityEventDistributor::SendEventToEntities(const SEntityEvent &event)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ENTITY);
 
-	auto eventIt = m_eventComponentMap.find(event.event);
-	if (eventIt != m_eventComponentMap.end())
+	auto entityStorageIt = m_entityEventMap.find(event.event);
+	if (entityStorageIt != m_entityEventMap.end())
 	{
-		// Sorting for priority is done when the entity registers interest in an event
-		for (auto componentInfoIt = eventIt->second.m_components.begin(); componentInfoIt != eventIt->second.m_components.end(); ++componentInfoIt)
+		for (auto it = entityStorageIt->second.begin(); it != entityStorageIt->second.end(); ++it)
 		{
-			// Send event
-			componentInfoIt->m_pComponent->ProcessEvent(event);
+			(*it)->SendEvent(event);
 		}
 	}
 }
 
-void CComponentEventDistributor::SendEventToEntity(IEntity &entity, const SEntityEvent& event)
+void CBulkEntityEventDistributor::Reset()
 {
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ENTITY);
-
-	auto reverseEntityLookupIt = m_entityReverseLookupMap.find(entity.GetId());
-	if (reverseEntityLookupIt == m_entityReverseLookupMap.end())
-		return;
-
-	if (reverseEntityLookupIt->second.m_subscribedEventFlags & (1ui64 << event.event))
-	{
-		auto eventIt = m_eventComponentMap.find(event.event);
-		CRY_ASSERT(eventIt != m_eventComponentMap.end());
-
-		for (auto it = eventIt->second.m_components.begin(); it != eventIt->second.m_components.end(); ++it)
-		{
-			if (it->m_pComponent->GetEntityId() == entity.GetId())
-			{
-				it->m_pComponent->ProcessEvent(event);
-			}
-		}
-	}
-}
-
-void CComponentEventDistributor::OnEntityDeleted(IEntity *pEntity)
-{
-	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_ENTITY);
-
-	auto reverseEntityLookupIt = m_entityReverseLookupMap.find(pEntity->GetId());
-	if (reverseEntityLookupIt == m_entityReverseLookupMap.end())
-		return;
-
-	for(TSubscribedEventFlags i = 0; i < ENTITY_EVENT_LAST; i++)
-	{
-		if (reverseEntityLookupIt->second.m_subscribedEventFlags & ENTITY_EVENT_BIT(i))
-		{
-			auto eventIt = m_eventComponentMap.find((EEntityEvent)i);
-			CRY_ASSERT(eventIt != m_eventComponentMap.end());
-
-			for (auto it = eventIt->second.m_components.begin(); it != eventIt->second.m_components.end(); ++it)
-			{
-				if (it->m_pComponent->GetEntityId() == pEntity->GetId())
-				{
-					eventIt->second.m_components.erase(it);
-					break;
-				}
-			}
-		}
-	}
-}
-
-void CComponentEventDistributor::RemapEntityID(EntityId oldID, EntityId newID)
-{
-	auto reverseEntityLookupIt = m_entityReverseLookupMap.find(oldID);
-	if (reverseEntityLookupIt == m_entityReverseLookupMap.end())
-		return;
-
-	auto subscribedEvents = reverseEntityLookupIt->second;
-	m_entityReverseLookupMap.erase(reverseEntityLookupIt);
-
-	m_entityReverseLookupMap.insert(TEntityReverseLookupMap::value_type(newID, subscribedEvents));
-}
-
-void CComponentEventDistributor::Reset()
-{
-	m_eventComponentMap.clear();
+	m_entityEventMap.clear();
 }

@@ -75,6 +75,8 @@ public:
 
 	virtual void Update(SEntityUpdateContext& ctx) override;
 
+	virtual void Release() override { delete this; }
+
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const override;
 	// ~IEntityComponent
 

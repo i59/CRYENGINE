@@ -679,6 +679,13 @@ struct SChildAttachParams
 	const char* m_target;
 };
 
+// std::shared_ptr helper to call Release instead of deleting
+template<typename TYPE>
+struct DeleteWithRelease
+{
+	void operator()(TYPE* p) { p->Release(); }
+};
+
 //! Interface to entity object.
 struct IEntity
 {
@@ -894,9 +901,6 @@ struct IEntity
 
 	//////////////////////////////////////////////////////////////////////////
 
-	//! Activates entity, if entity is active it will be updated every frame.
-	virtual void Activate(bool bActive) = 0;
-
 	//! Check if the entity is active now.
 	virtual bool IsActive() const = 0;
 
@@ -982,7 +986,7 @@ struct IEntity
 		}
 
 		// Create a new instance of T, note that the entity system takes over responsibility for deleting
-		auto *pComponent = new T();
+		std::shared_ptr<T> pComponent(new T(), DeleteWithRelease<T>());
 		RegisterComponent(cryiidof<T>(), pComponent);
 
 		return *pComponent;
@@ -1007,7 +1011,7 @@ struct IEntity
 	// The component will be automatically registered as if RegisterComponent was called
 	virtual IEntityComponent *CreateComponentByTypeId(const CryInterfaceID &interfaceID) = 0;
 
-	virtual void RegisterComponent(const CryInterfaceID &interfaceID, IEntityComponent *pComponent) = 0;
+	virtual void RegisterComponent(const CryInterfaceID &interfaceID, std::shared_ptr<IEntityComponent> pComponent) = 0;
 
 	virtual void EnableEvent(bool bEnable, IEntityComponent &component, EEntityEvent event, uint32 priority) = 0;
 

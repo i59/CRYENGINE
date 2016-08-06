@@ -190,24 +190,6 @@ int CPhysicsEventListener::OnStateChange(const EventPhys* pEvent)
 	CEntity* pCEntity = GetEntity(pStateChange->pForeignData, pStateChange->iForeignData);
 	if (pCEntity)
 	{
-		// If its update depends on physics, physics state defines if this entity is to be updated.
-		/*if (policy == ENTITY_UPDATE_PHYSICS || policy == ENTITY_UPDATE_PHYSICS_VISIBLE)
-		{
-			int nNewSymClass = pStateChange->iSimClass[1];
-			//			int nOldSymClass = pStateChange->iSimClass[0];
-			if (nNewSymClass == SC_ACTIVE_RIGID)
-			{
-				// Should activate entity if physics is awaken.
-				pCEntity->Activate(true);
-			}
-			else if (nNewSymClass == SC_SLEEPING_RIGID)
-			{
-				// Entity must go to sleep.
-				pCEntity->Activate(false);
-				//CallStateFunction(ScriptState_OnStopRollSlideContact, "roll");
-				//CallStateFunction(ScriptState_OnStopRollSlideContact, "slide");
-			}
-		}*/
 		int nOldSymClass = pStateChange->iSimClass[0];
 		if (nOldSymClass == SC_ACTIVE_RIGID)
 		{
