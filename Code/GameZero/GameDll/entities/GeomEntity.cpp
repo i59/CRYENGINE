@@ -77,7 +77,7 @@ void CGeomEntity::Reset()
 
 void CGeomEntity::OnFlowgraphActivation(EntityId entityId, IFlowNode::SActivationInfo* pActInfo, const class CFlowGameEntityNode* pNode)
 {
-	if (auto* pGeomEntity = QueryComponent<CGeomEntity>(entityId))
+	if (auto* pGeomEntity = gEnv->pEntitySystem->QueryComponent<CGeomEntity>(entityId))
 	{
 		if (IsPortActive(pActInfo, eInputPorts_LoadGeometry))
 		{

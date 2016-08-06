@@ -14,10 +14,10 @@ std::map<string, CGameEntityNodeFactory*> CGameFactory::s_flowNodeFactories;
 
 void CGameFactory::Init()
 {
-	RegisterEntityWithComponent<CPlayer>("Player", ECLF_INVISIBLE);
+	IEntityComponent::RegisterEntityWithComponent<CPlayer>("Player", ECLF_INVISIBLE);
 	RegisterNoScriptGameObject<CGeomEntity>("GameGeomEntity", "Game/GeomEntity");
 
-	RegisterExternalComponent<CGameRules>();
+	IEntityComponent::RegisterExternalComponent<CGameRules>();
 
 	IGameFramework* pGameFramework = gEnv->pGame->GetIGameFramework();
 	pGameFramework->GetIGameRulesSystem()->RegisterGameRules("SinglePlayer", CGameRules::IID());

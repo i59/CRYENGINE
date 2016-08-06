@@ -14,5 +14,7 @@ public:
 
 	// IEntityComponent
 	virtual void Initialize(IEntity &entity) override;
+
+	virtual void Release() override { delete this; }
 	// ~IEntityComponent
 };

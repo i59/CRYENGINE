@@ -13,6 +13,8 @@ public:
 
 	// IEntityComponent
 	virtual void PostInitialize() override;
+
+	virtual void Release() override { delete this; }
 	// ~IEntityComponent
 
 	// IGameObjectView

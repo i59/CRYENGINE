@@ -22,22 +22,31 @@ void CMovementExtension::PostInitialize()
 	REGISTER_CVAR2("gamezero_pl_movementSpeed", &m_movementSpeed, 20.0f, VF_NULL, "Player movement speed.");
 	REGISTER_CVAR2("gamezero_pl_boostMultiplier", &m_boostMultiplier, 2.0f, VF_NULL, "Player boost multiplier.");
 
-	GetEntity()->SetUpdatePolicy(EEntityUpdatePolicy_Always);
+	EnableEvent(ENTITY_EVENT_POST_UPDATE);
 }
 
-void CMovementExtension::PostUpdate(float frameTime)
+void CMovementExtension::ProcessEvent(const SEntityEvent &event)
 {
-	if (auto *pInputExtension = GetEntity()->QueryComponent<CInputExtension>())
+	switch (event.event)
 	{
-		Quat viewRotation = pInputExtension->GetViewRotation();
+		case ENTITY_EVENT_POST_UPDATE:
+		{
+			float frameTime = event.fParam[0];
 
-		GetEntity()->SetRotation(viewRotation.GetNormalized());
+			if (auto *pInputExtension = GetEntity()->QueryComponent<CInputExtension>())
+			{
+				Quat viewRotation = pInputExtension->GetViewRotation();
 
-		Vec3 vDeltaMovement = pInputExtension->GetDeltaMovement();
-		bool bBoost = pInputExtension->IsBoosting();
+				GetEntity()->SetRotation(viewRotation.GetNormalized());
 
-		const float boostMultiplier = bBoost ? m_boostMultiplier : 1.0f;
+				Vec3 vDeltaMovement = pInputExtension->GetDeltaMovement();
+				bool bBoost = pInputExtension->IsBoosting();
 
-		GetEntity()->SetPos(GetEntity()->GetWorldPos() + viewRotation * (vDeltaMovement * frameTime * boostMultiplier * m_movementSpeed));
+				const float boostMultiplier = bBoost ? m_boostMultiplier : 1.0f;
+
+				GetEntity()->SetPos(GetEntity()->GetWorldPos() + viewRotation * (vDeltaMovement * frameTime * boostMultiplier * m_movementSpeed));
+			}
+		}
+		break;
 	}
 }

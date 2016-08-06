@@ -15,6 +15,8 @@ public:
 	// IEntityComponent
 	virtual void        PostInitialize() override;
 
+	virtual void Release() override { delete this; }
+
 	virtual void        GetMemoryUsage(ICrySizer* s) const override;
 	// ~IEntityComponent
 
@@ -55,6 +57,7 @@ public:
 	virtual void        AbortEntityRemoval(EntityId entityId) override                                                                                                                                                      {}
 	virtual void        AddHitListener(IHitListener* pHitListener) override                                                                                                                                                 {}
 	virtual void        RemoveHitListener(IHitListener* pHitListener) override                                                                                                                                              {}
+	virtual bool ApproveCollision(const EventPhysCollision& collision) override { return true; }
 	virtual void        ShowStatus() override                                                                                                                                                                               {}
 	virtual bool        CanEnterVehicle(EntityId playerId) override                                                                                                                                                         { return true; }
 	virtual const char* GetTeamName(int teamId) const override                                                                                                                                                              { return nullptr; }

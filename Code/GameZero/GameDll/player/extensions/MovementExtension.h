@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <CryEntitySystem/IEntityComponent.h>
+
 class CMovementExtension : public IEntityComponent
 {
 public:
@@ -9,7 +11,10 @@ public:
 
 	// IEntityComponent
 	virtual void PostInitialize() override;
-	virtual void PostUpdate(float frameTime) override;
+
+	virtual void Release() override { delete this; }
+
+	virtual void ProcessEvent(const SEntityEvent &event) override;
 	// ~IEntityComponent
 
 	CMovementExtension();
