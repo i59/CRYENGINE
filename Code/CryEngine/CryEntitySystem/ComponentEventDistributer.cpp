@@ -10,9 +10,9 @@ CBulkEntityEventDistributor::CBulkEntityEventDistributor()
 	// Catch new flags being added exceeding TSubscribedEventFlags capability, increase size if so
 	COMPILE_TIME_ASSERT(sizeof(TSubscribedEventFlags) * 8 >= ENTITY_EVENT_LAST);
 
-	// We currently only handle prephys update
+	// We currently only handle prephys update and post update
 	// Most other events are sent directly to individual entities
-	m_trackedEventFlags = ENTITY_EVENT_BIT(ENTITY_EVENT_PREPHYSICSUPDATE);
+	m_trackedEventFlags = ENTITY_EVENT_BIT(ENTITY_EVENT_PREPHYSICSUPDATE) | ENTITY_EVENT_BIT(ENTITY_EVENT_POST_UPDATE);;
 }
 
 void CBulkEntityEventDistributor::EnableEvent(IEntity* pEntity, EEntityEvent event, uint32 priority, bool bEnable)

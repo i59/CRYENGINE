@@ -67,8 +67,7 @@ struct IEntityComponent
 
 	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) {}
 	virtual void Update(SEntityUpdateContext& ctx) {}
-	virtual void PostUpdate(float frameTime) {}
-
+	
 	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) {}
 	virtual void Serialize(TSerialize ser) {}
 
@@ -759,9 +758,6 @@ struct IEntityFlowGraphComponent : public IEntityComponent
 
 	virtual void        SetFlowGraph(IFlowGraph* pFlowGraph) = 0;
 	virtual IFlowGraph* GetFlowGraph() = 0;
-
-	virtual void        AddEventListener(struct IEntityEventListener* pListener) = 0;
-	virtual void        RemoveEventListener(struct IEntityEventListener* pListener) = 0;
 	// </interfuscator:shuffle>
 };
 

@@ -1160,6 +1160,18 @@ void CEntitySystem::PrePhysicsUpdate()
 	m_pEventDistributor->SendEventToEntities(evt);
 }
 
+//////////////////////////////////////////////////////////////////////////
+void CEntitySystem::PostUpdate(float frameTime)
+{
+	CRY_PROFILE_REGION(PROFILE_ENTITY, "EntitySystem::PostUpdate");
+	CRYPROFILE_SCOPE_PROFILE_MARKER("EntitySystem::PostUpdate");
+
+	SEntityEvent evt(ENTITY_EVENT_POST_UPDATE);
+	evt.fParam[0] = frameTime;
+
+	m_pEventDistributor->SendEventToEntities(evt);
+}
+
 //update the entity system
 //////////////////////////////////////////////////////////////////////
 void CEntitySystem::Update()
@@ -1244,18 +1256,6 @@ void CEntitySystem::Update()
 
 	if (CVar::es_LayerDebugInfo > 0)
 		DebugDrawLayerInfo();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntitySystem::PostUpdate(float frameTime)
-{
-	for (int i = 0, numActive = m_tempActiveEntities.size(); i < numActive; i++)
-	{
-		if (CEntity* pEntity = GetEntityFromID(m_tempActiveEntities[i]))
-		{
-			pEntity->PostUpdate(frameTime);
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////

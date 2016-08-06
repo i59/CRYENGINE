@@ -777,6 +777,7 @@ void CVehicle::PostInitialize()
 	EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
 	EnableEvent(ENTITY_EVENT_PHYS_POSTSTEP, 0, true);
 	EnableEvent(ENTITY_EVENT_PHYSICS_CHANGE_STATE, 0, true);
+	EnableEvent(ENTITY_EVENT_POST_UPDATE);
 
 	if (GetMovement())
 		GetMovement()->PostInit();
@@ -1181,6 +1182,10 @@ void CVehicle::ProcessEvent(const SEntityEvent& entityEvent)
 {
 	switch (entityEvent.event)
 	{
+	case ENTITY_EVENT_POST_UPDATE:
+		PostUpdate(entityEvent.fParam[0]);
+		break;
+
 	case ENTITY_EVENT_RESET:
 		Reset(entityEvent.nParam[0] == 1 ? true : false);
 		break;

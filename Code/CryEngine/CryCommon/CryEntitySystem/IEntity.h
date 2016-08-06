@@ -442,6 +442,9 @@ enum EEntityEvent
 	//! Sent when an entity with pef_monitor_poststep receives a poststep notification
 	ENTITY_EVENT_PHYS_POSTSTEP,
 
+	// Sent after game framework update
+	ENTITY_EVENT_POST_UPDATE,
+
 	//! Called when entity is rendered (Only if ENTITY_FLAG_SEND_RENDER_EVENT is set).
 	//! nParam[0] is a pointer to the current rendering SRenderParams structure.
 	ENTITY_EVENT_RENDER,

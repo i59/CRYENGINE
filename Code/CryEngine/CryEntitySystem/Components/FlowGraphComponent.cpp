@@ -32,9 +32,9 @@ CFlowGraphComponent::~CFlowGraphComponent()
 //////////////////////////////////////////////////////////////////////////
 void CFlowGraphComponent::PostInitialize()
 {
-	// Need to enable all events for the listener below
-	for(int i = 0; i < ENTITY_EVENT_LAST; i++)
-		EnableEvent((EEntityEvent)i, 0, true);
+	EnableEvent(ENTITY_EVENT_INIT);
+	EnableEvent(ENTITY_EVENT_DONE);
+	EnableEvent(ENTITY_EVENT_POST_SERIALIZE);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -56,16 +56,6 @@ IFlowGraph* CFlowGraphComponent::GetFlowGraph()
 //////////////////////////////////////////////////////////////////////////
 void CFlowGraphComponent::ProcessEvent(const SEntityEvent& event)
 {
-	// Assumes only 1 current listener can be deleted as a result of the event.
-	Listeners::iterator next;
-	Listeners::iterator it = m_listeners.begin();
-	while (it != m_listeners.end())
-	{
-		next = it;
-		++next;
-		(*it)->OnEntityEvent(m_pEntity, event);
-		it = next;
-	}
 	// respond to entity activation/deactivation. enable/disable flowgraph
 	switch (event.event)
 	{
@@ -88,18 +78,6 @@ void CFlowGraphComponent::ProcessEvent(const SEntityEvent& event)
 	}
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CFlowGraphComponent::AddEventListener(IEntityEventListener* pListener)
-{
-	// Does not check uniquiness due to performance reasons.
-	m_listeners.push_back(pListener);
-}
-
-void CFlowGraphComponent::RemoveEventListener(IEntityEventListener* pListener)
-{
-	stl::find_and_erase(m_listeners, pListener);
-}
-
 void CFlowGraphComponent::Update(SEntityUpdateContext& ctx)
 {
 	//	if (m_pFlowGraph)
@@ -109,8 +87,6 @@ void CFlowGraphComponent::Update(SEntityUpdateContext& ctx)
 void CFlowGraphComponent::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
 	SAFE_RELEASE(m_pFlowGraph);
-
-	m_listeners.clear();
 }
 
 void CFlowGraphComponent::SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit)

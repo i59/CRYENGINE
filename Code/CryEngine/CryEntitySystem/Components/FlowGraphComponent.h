@@ -53,8 +53,6 @@ public:
 	//////////////////////////////////////////////////////////////////////////
 	virtual void        SetFlowGraph(IFlowGraph* pFlowGraph);
 	virtual IFlowGraph* GetFlowGraph();
-	virtual void        AddEventListener(IEntityEventListener* pListener);
-	virtual void        RemoveEventListener(IEntityEventListener* pListener);
 	//////////////////////////////////////////////////////////////////////////
 private:
 	void OnMove();
@@ -64,9 +62,6 @@ private:
 	// Private member variables.
 	//////////////////////////////////////////////////////////////////////////
 	IFlowGraph* m_pFlowGraph;
-
-	typedef std::list<IEntityEventListener*> Listeners;
-	Listeners m_listeners;
 };
 
 #endif // __FlowGraphProxy_h__

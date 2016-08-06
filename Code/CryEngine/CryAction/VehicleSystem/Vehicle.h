@@ -201,7 +201,6 @@ public:
 
 	virtual SEntityPhysicalizeParams&   GetPhysicsParams() { return m_physicsParams; }
 
-	virtual void                        PostUpdate(float frameTime);
 	virtual void                        PostRemoteSpawn() {};
 
 	virtual const SVehicleStatus&       GetStatus() const;
@@ -645,6 +644,8 @@ public:
 
 	void OnActionEvent(EVehicleActionEvent event);
 	void OnPrePhysicsTimeStep(float deltaTime);
+
+	void PostUpdate(float frameTime);
 
 protected:
 

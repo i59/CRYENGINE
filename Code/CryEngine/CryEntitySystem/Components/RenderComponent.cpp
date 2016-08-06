@@ -1032,6 +1032,9 @@ void CRenderComponent::Render_JobEntry(const SRendParams inRenderParams, const S
 		m_pEntity->SendEvent(event);
 		m_fLastSeenTime=gEnv->pTimer->GetCurrTime();
 	}
+
+	static_cast<CEntity *>(m_pEntity)->OnRendered();
+
 	if (s_pTimeoutList && (m_nEntityFlags & ENTITY_FLAG_SEND_NOT_SEEN_TIMEOUT))
 		s_pTimeoutList->ResetTimeout(m_entityId);
 
@@ -1626,7 +1629,7 @@ int CRenderComponent::SetParticleEmitter(int nSlot, IParticleEmitter* pEmitter, 
 	{
 		pSlot->pChildRenderNode->SetMaterial(pSlot->pMaterial);
 	}
-	SetUpdatePolicy(EEntityUpdatePolicy_Always);// For Particles we need render proxy to be updated.
+	SetUpdatePolicy(EEntityUpdatePolicy_Visible | EEntityUpdatePolicy_InRange);// For Particles we need render proxy to be updated.
 	m_nFlags |= FLAG_HAS_PARTICLES; //Mark as particles emitter
 
 	pEmitter->SetViewDistRatio(GetViewDistRatio());
@@ -1818,7 +1821,7 @@ int CRenderComponent::LoadGeomCache(int nSlot, const char* sFilename)
 	pSlot->OnXForm(GetCEntity());
 
 	m_nFlags |= FLAG_HAS_CHILDRENDERNODES;
-	SetUpdatePolicy(EEntityUpdatePolicy_Always);// For geom caches we need render proxy to be updated.
+	SetUpdatePolicy(EEntityUpdatePolicy_Visible | EEntityUpdatePolicy_InRange);// For geom caches we need render proxy to be updated.
 	pSlot->flags = ENTITY_SLOT_RENDER;
 	pSlot->bUpdate = true;
 	InvalidateBounds( true,true );

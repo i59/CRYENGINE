@@ -119,11 +119,6 @@ void CVoiceListener::SetAuthority(bool auth)
 {
 }
 
-void CVoiceListener::PostUpdate(float frameTime)
-{
-	CRY_ASSERT(false);
-}
-
 bool CVoiceListener::FillDataBuffer(unsigned int nBitsPerSample, unsigned int nSamplesPerSecond, unsigned int nNumSamples, void* pData)
 {
 	if (!m_pVoiceContext)

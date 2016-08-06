@@ -109,8 +109,6 @@ public:
 	bool Init(SEntitySpawnParams& params);
 	// Called by EntitySystem every frame for each active entity.
 	void Update(SEntityUpdateContext& ctx);
-	// Called by EntitySystem at the end of each frame for each active entity.
-	void PostUpdate(float frameTime);
 	// Called by EntitySystem before entity is destroyed.
 	void ShutDown(bool bRemoveAI = true, bool bRemoveProxies = true);
 
@@ -343,7 +341,7 @@ public:
 	// Get status if entity need to be update every frame or not.
 	bool ShouldUpdate() const 
 	{ 
-		return (m_numUpdatedComponents || m_scheduledRemovalType) && (!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN));
+		return (m_updatedComponents.size() || m_scheduledRemovalType) && (!m_bHidden || CheckFlags(ENTITY_FLAG_UPDATE_HIDDEN));
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -376,6 +374,12 @@ public:
 
 	void        SetCloneLayerId(int cloneLayerId) { m_cloneLayerId = cloneLayerId; }
 	int         GetCloneLayerId() const           { return m_cloneLayerId; }
+
+	void OnRendered()
+	{
+		m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_Visible;
+		m_lastRenderTime = gEnv->pTimer->GetFrameStartTime().GetSeconds();
+	}
 
 protected:
 
@@ -438,7 +442,11 @@ private:
 	unsigned int         m_bHaveEventListeners : 1; // Set if entity have an event listeners associated in entity system.
 	unsigned int         m_bTrigger            : 1; // Set if entity is proximity trigger itself.
 	unsigned int         m_bWasRelocated       : 1; // Set if entity was relocated at least once.
+
 	unsigned int m_lastConditionalUpdateFlags;
+	float m_lastRenderTime;
+	// Whether or not this entity was moved since the last Update call
+	unsigned int m_bMovedSinceUpdate : 1;
 
 	unsigned int m_bInvisible           : 1;        // Set if this entity is invisible.
 	unsigned int m_bNotInheritXform     : 1;        // Inherit or not transformation from parent.
@@ -492,29 +500,25 @@ private:
 	// Custom entity material.
 	_smart_ptr<IMaterial> m_pMaterial;
 
-	struct SComponentInfo
-	{
-		SComponentInfo(std::shared_ptr<IEntityComponent> pEntComponent)
-			: pComponent(pEntComponent)
-			, updatePolicy(EEntityUpdatePolicy_Never)
-		{
-		}
-
-		std::shared_ptr<IEntityComponent> pComponent;
-		unsigned int updatePolicy;
-		bool bShouldPostUpdate;
-	};
-
-	typedef std::unordered_map<const CryInterfaceID, SComponentInfo, stl::hash_guid> TEntityComponentMap;
+	typedef std::unordered_map<const CryInterfaceID, std::shared_ptr<IEntityComponent>, stl::hash_guid> TEntityComponentMap;
 	// Store components in map for lookup by type id
 	TEntityComponentMap m_entityComponentMap;
 
+	struct SUpdatedComponent
+	{
+		SUpdatedComponent(IEntityComponent &component, unsigned int newPolicy)
+			: pComponent(&component)
+			, updatePolicy(newPolicy) {}
+
+		IEntityComponent *pComponent;
+		unsigned int updatePolicy;
+	};
+
+	std::vector<SUpdatedComponent> m_updatedComponents;
+	
 	// Map indicating which components are listening to which events
 	typedef std::unordered_map<EEntityEvent, SEventComponents> TEventComponentMap;
 	TEventComponentMap m_eventComponentListenerMap;
-
-	// Number of components that have set their update policy to something other than 0
-	uint m_numUpdatedComponents;
 
 	// Entity Links.
 	IEntityLink* m_pEntityLinks;

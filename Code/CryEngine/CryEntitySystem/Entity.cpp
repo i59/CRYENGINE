@@ -89,11 +89,12 @@ CEntity::CEntity(SEntitySpawnParams& params)
 	m_bInShutDown = 0;
 	m_bLoadedFromLevelFile = 0;
 
+	m_bMovedSinceUpdate = 0;
+
 	m_pGridLocation = 0;
 	m_pProximityEntity = 0;
 
 	m_lastConditionalUpdateFlags = 0;
-	m_numUpdatedComponents = 0;
 
 	m_pBinds = NULL;
 	m_aiObjectID = INVALID_AIOBJECTID;
@@ -241,7 +242,7 @@ bool CEntity::ReloadEntity(SEntityLoadParams& loadParams)
 
 		for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
 		{
-			it->second.pComponent->OnEntityReload(params, entityNode);
+			it->second->OnEntityReload(params, entityNode);
 		}
 
 		// Make sure position is registered.
@@ -325,14 +326,14 @@ bool CEntity::Init(SEntitySpawnParams& params)
 
 	for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
 	{
-		if(it->second.pComponent.get() != pScriptComponent)
-			it->second.pComponent->Initialize(*this);
+		if(it->second.get() != pScriptComponent)
+			it->second->Initialize(*this);
 	}
 
 	for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
 	{
-		if (it->second.pComponent.get() != pScriptComponent)
-			it->second.pComponent->PostInitialize();
+		if (it->second.get() != pScriptComponent)
+			it->second->PostInitialize();
 	}
 
 	if(pScriptComponent != nullptr)
@@ -346,20 +347,30 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_ENTITY);
 
-	m_lastConditionalUpdateFlags = EEntityUpdatePolicy_Never;
-
-	AABB worldBounds;
-	GetWorldBounds(worldBounds);
-
-	auto &viewCamera = gEnv->pSystem->GetViewCamera();
-		
-	if (worldBounds.GetDistance(viewCamera.GetPosition()) < 150.f)
+	if (m_bMovedSinceUpdate)
 	{
-		m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_InRange;
+		AABB worldBounds;
+		GetWorldBounds(worldBounds);
+
+		auto &viewCamera = gEnv->pSystem->GetViewCamera();
+
+		if (worldBounds.GetDistance(viewCamera.GetPosition()) < 150.f)
+		{
+			m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_InRange;
+		}
+		else
+		{
+			m_lastConditionalUpdateFlags &= ~EEntityUpdatePolicy_InRange;
+		}
+
+		m_bMovedSinceUpdate = 0;
 	}
-	if (viewCamera.IsAABBVisible_FH(worldBounds))
+
+	// Remove visibility flag if the entity hasn't been rendered in a while
+	if (m_lastConditionalUpdateFlags & EEntityUpdatePolicy_Visible
+		&& (gEnv->pTimer->GetFrameStartTime().GetSeconds() - m_lastRenderTime) > 1.f)
 	{
-		m_lastConditionalUpdateFlags |= EEntityUpdatePolicy_Visible;
+		m_lastConditionalUpdateFlags &= ~EEntityUpdatePolicy_Visible;
 	}
 
 	switch (m_scheduledRemovalType)
@@ -396,35 +407,13 @@ void CEntity::Update(SEntityUpdateContext& ctx)
 	}
 
 	// Update all our components
-	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
+	for (auto it = m_updatedComponents.begin(); it != m_updatedComponents.end(); ++it)
 	{
-		// Check if the entity is allowed to render
-		if ((it->second.updatePolicy & m_lastConditionalUpdateFlags) != 0)
-		{
-			it->second.pComponent->Update(ctx);
-		}
+		if((it->updatePolicy & m_lastConditionalUpdateFlags) != 0)
+			it->pComponent->Update(ctx);
 	}
 
 	//	UpdateAIObject();
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CEntity::PostUpdate(float frameTime)
-{
-	// Skip PostUpdate if Update was skipped too
-	if (m_lastConditionalUpdateFlags == 0)
-		return;
-
-	TEntityComponentMap tempComponentMap;
-	tempComponentMap = m_entityComponentMap;
-
-	for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
-	{
-		if ((it->second.updatePolicy & m_lastConditionalUpdateFlags) != 0)
-		{
-			it->second.pComponent->PostUpdate(frameTime);
-		}
-	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -500,13 +489,15 @@ void CEntity::ShutDown(bool bRemoveAI /*= true*/, bool bRemoveProxies /*= true*/
 	// Release all components
 	if (bRemoveProxies)
 	{
+		m_updatedComponents.clear();
+
 		std::shared_ptr<IEntityComponent> pTempComponent;
 
 		// We remove components here instead of in the destructor
 		// This is done since entity deletion may be delayed
 		for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end();)
 		{
-			pTempComponent = it->second.pComponent;
+			pTempComponent = it->second;
 			it = m_entityComponentMap.erase(it);
 
 			// We invoke the destructor afterwards to avoid use of invalidated component map iterators
@@ -908,6 +899,8 @@ void CEntity::InvalidateTM(int nWhyFlags, bool bRecalcPhyBounds)
 
 	OnRellocate(nWhyFlags);
 
+	m_bMovedSinceUpdate = 1;
+
 	// Send transform event.
 	if (!(nWhyFlags & ENTITY_XFORM_NO_EVENT))
 	{
@@ -1123,30 +1116,38 @@ void CEntity::Invisible(bool bInvisible)
 		}
 	}
 }
-
 //////////////////////////////////////////////////////////////////////////
-void CEntity::SetComponentUpdatePolicy(IEntityComponent &component, unsigned int updatePolicy)
+void CEntity::SetComponentUpdatePolicy(IEntityComponent &component, unsigned int newUpdatePolicy)
 {
-	auto it = m_entityComponentMap.find(component.GetInterfaceId());
-	CRY_ASSERT(it != m_entityComponentMap.end());
-
-	if (it->second.updatePolicy != 0)
+	if (newUpdatePolicy == EEntityUpdatePolicy_Never)
 	{
-		if (updatePolicy == EEntityUpdatePolicy_Never)
+		for (auto it = m_updatedComponents.begin(); it != m_updatedComponents.end(); ++it)
 		{
-			m_numUpdatedComponents--;
+			if (it->pComponent == &component)
+			{
+				m_updatedComponents.erase(it);
 
-			CheckShouldUpdate();
+				// Check if we should be removed from the update list
+				CheckShouldUpdate();
+
+				break;
+			}
 		}
 	}
-	else if(updatePolicy != EEntityUpdatePolicy_Never)
+	else
 	{
-		m_numUpdatedComponents++;
+		for (auto it = m_updatedComponents.begin(); it != m_updatedComponents.end(); ++it)
+		{
+			if (it->pComponent == &component)
+			{
+				it->updatePolicy = newUpdatePolicy;
+				return;
+			}
+		}
 
+		m_updatedComponents.emplace_back(component, newUpdatePolicy);
 		CheckShouldUpdate();
 	}
-
-	it->second.updatePolicy = updatePolicy;
 }
 
 void CEntity::SendComponentEvent(uint32 eventId, void *pUserData)
@@ -1156,7 +1157,7 @@ void CEntity::SendComponentEvent(uint32 eventId, void *pUserData)
 
 	for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
 	{
-		it->second.pComponent->OnComponentEvent(eventId, pUserData);
+		it->second->OnComponentEvent(eventId, pUserData);
 	}
 }
 
@@ -1171,7 +1172,7 @@ void CEntity::SerializeXML(XmlNodeRef& node, bool bLoading, bool bFromInit)
 {
 	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 	{
-		it->second.pComponent->SerializeXML(node, bLoading, bFromInit);
+		it->second->SerializeXML(node, bLoading, bFromInit);
 	}
 }
 
@@ -1181,7 +1182,7 @@ IEntityComponent *CEntity::GetComponentByTypeId(const CryInterfaceID &interfaceI
 	auto it = m_entityComponentMap.find(interfaceID);
 	if (it != m_entityComponentMap.end())
 	{
-		return it->second.pComponent.get();
+		return it->second.get();
 	}
 
 	return nullptr;
@@ -1406,8 +1407,8 @@ IEntityComponent *CEntity::GetComponentWithRMIBase(const void *pBase) const
 {
 	for (auto it = m_entityComponentMap.cbegin(); it != m_entityComponentMap.cend(); ++it)
 	{
-		if (it->second.pComponent->GetRMIBase() == pBase)
-			return it->second.pComponent.get();
+		if (it->second->GetRMIBase() == pBase)
+			return it->second.get();
 	}
 
 	return nullptr;
@@ -1594,7 +1595,7 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 		{
 			for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 			{
-				if (it->second.pComponent->NeedSerialize())
+				if (it->second->NeedSerialize())
 				{
 					bSaveComponents = true;
 					break;
@@ -1621,7 +1622,7 @@ void CEntity::Serialize(TSerialize ser, int nFlags)
 				{
 					if (!ser.IsReading())
 					{
-						pComponent = it->second.pComponent.get();
+						pComponent = it->second.get();
 
 						CryGUID interfaceId = pComponent->GetInterfaceId();
 						ser.Value("componentInterfaceIdHipart", interfaceId.hipart);
@@ -2509,7 +2510,7 @@ void CEntity::GetMemoryUsage(ICrySizer* pSizer) const
 	
 	for (auto it = m_entityComponentMap.begin(); it != m_entityComponentMap.end(); ++it)
 	{
-		it->second.pComponent->GetMemoryUsage(pSizer);
+		it->second->GetMemoryUsage(pSizer);
 	}
 }
 
