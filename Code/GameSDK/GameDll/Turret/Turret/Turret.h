@@ -73,7 +73,6 @@ public:
 	virtual void SerializeSpawnInfo( TSerialize serializer );
 	virtual ISerializableInfoPtr GetSpawnInfo();
 	virtual void Update( SEntityUpdateContext& context);
-	virtual void PostUpdate( float frameTimeSeconds );
 	virtual void PostRemoteSpawn();
 	virtual void HandleEvent( const SGameObjectEvent& event );
 	virtual void SetChannelId( uint16 id );

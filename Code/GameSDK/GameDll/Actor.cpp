@@ -484,6 +484,21 @@ bool CActor::Init( IGameObject * pGameObject )
 
 	GenerateBlendRagdollTags();
 
+	EnableEvent(ENTITY_EVENT_POST_UPDATE);
+	EnableEvent(ENTITY_EVENT_HIDE);
+	EnableEvent(ENTITY_EVENT_INVISIBLE);
+	EnableEvent(ENTITY_EVENT_UNHIDE);
+	EnableEvent(ENTITY_EVENT_VISIBLE);
+	EnableEvent(ENTITY_EVENT_RESET);
+	EnableEvent(ENTITY_EVENT_ANIM_EVENT);
+	EnableEvent(ENTITY_EVENT_DONE);
+	EnableEvent(ENTITY_EVENT_TIMER);
+	EnableEvent(ENTITY_EVENT_INIT);
+	EnableEvent(ENTITY_EVENT_RELOAD_SCRIPT);
+	EnableEvent(ENTITY_EVENT_ADD_TO_RADAR);
+	EnableEvent(ENTITY_EVENT_REMOVE_FROM_RADAR);
+
+
 	return true;
 }
 
@@ -1648,6 +1663,11 @@ void CActor::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
+	case ENTITY_EVENT_POST_UPDATE:
+		{
+			PostUpdate(event.fParam[0]);
+		}
+		break;
 	case ENTITY_EVENT_HIDE:
 		{
 			g_pGame->GetTacticalManager()->RemoveEntity(GetEntityId(), CTacticalManager::eTacticalEntity_Unit);

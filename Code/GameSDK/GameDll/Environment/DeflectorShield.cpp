@@ -20,7 +20,6 @@ ISerializableInfoPtr CDeflectorShield::GetSpawnInfo() {return ISerializableInfoP
 void CDeflectorShield::ProcessEvent(const SEntityEvent& event) {}
 void CDeflectorShield::SetChannelId(uint16 id) {}
 void CDeflectorShield::SetAuthority(bool auth ) {}
-void CDeflectorShield::PostUpdate(float frameTime) {}
 void CDeflectorShield::PostRemoteSpawn() {}
 
 CDeflectorShield::CDeflectorShield()

@@ -50,7 +50,6 @@ public:
 	virtual void ProcessEvent(const SEntityEvent& ) {};
 	virtual void SetChannelId(uint16 id) {};
 	virtual void SetAuthority(bool auth) {}
-	virtual void PostUpdate(float frameTime) { assert(false); }
 	virtual void PostRemoteSpawn() {};
 
 	// ~IEntityComponent

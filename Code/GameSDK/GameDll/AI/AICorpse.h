@@ -64,7 +64,6 @@ public:
 	virtual void ProcessEvent(const SEntityEvent& entityEvent ) {};
 	virtual void SetChannelId( uint16 id ) {};
 	virtual void SetAuthority( bool auth ) {};
-	virtual void PostUpdate( float frameTime ) { CRY_ASSERT(false); }
 	virtual void PostRemoteSpawn() {};
 	virtual void GetMemoryUsage( ICrySizer *pSizer ) const;
 	// ~IEntityComponent

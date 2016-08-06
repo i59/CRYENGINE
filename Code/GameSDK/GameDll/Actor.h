@@ -557,7 +557,6 @@ public:
 	virtual void SetIKPos(const char *pLimbName, const Vec3& goalPos, int priority);
 
 	virtual void HandleEvent( const SGameObjectEvent& event );
-	virtual void PostUpdate(float frameTime);
 	virtual void PostRemoteSpawn() {};
 
 	virtual bool IsThirdPerson() const { return true; };
@@ -587,6 +586,8 @@ public:
 	// IActionListener
 	virtual void OnAction(const ActionId& actionId, int activationMode, float value);
 	// ~IActionListener
+
+	virtual void PostUpdate(float frameTime);
 
 	virtual void AddHeatPulse(const float intensity, const float time);
 

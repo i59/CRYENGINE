@@ -382,12 +382,6 @@ void CTurret::Update( SEntityUpdateContext& context)
 	const float frameTimeSeconds = context.fFrameTime;
 }
 
-
-void CTurret::PostUpdate( float frameTimeSeconds )
-{
-}
-
-
 void CTurret::PostRemoteSpawn()
 {
 

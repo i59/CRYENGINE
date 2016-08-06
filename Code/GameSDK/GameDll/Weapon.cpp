@@ -433,6 +433,8 @@ bool CWeapon::Init( IGameObject * pGameObject )
 	if(!gEnv->bMultiplayer)
 		g_pGame->GetTacticalManager()->AddEntity(GetEntityId(), CTacticalManager::eTacticalEntity_Item);
 
+	EnableEvent(ENTITY_EVENT_POST_UPDATE);
+
 	return true;
 }
 
@@ -1047,12 +1049,6 @@ void CWeapon::Update( SEntityUpdateContext& ctx)
 	}
 }
 
-void CWeapon::PostUpdate(float frameTime )
-{
-	if (m_fm)
-		m_fm->PostUpdate(frameTime);
-}
-
 //------------------------------------------------------------------------
 void CWeapon::HandleEvent(const SGameObjectEvent &evt)
 {
@@ -1066,6 +1062,13 @@ void CWeapon::ProcessEvent(const SEntityEvent& event)
 
 	switch(event.event)
 	{
+		case ENTITY_EVENT_POST_UPDATE:
+		{
+			if (m_fm)
+				m_fm->PostUpdate(event.fParam[0]);
+		}
+		break;
+
 	case ENTITY_EVENT_HIDE:
 		{
 			if(m_fm && !m_fm->AllowZoom())

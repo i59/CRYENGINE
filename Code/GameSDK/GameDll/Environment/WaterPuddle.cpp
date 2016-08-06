@@ -20,7 +20,6 @@ void CWaterPuddle::HandleEvent(const SGameObjectEvent& gameObjectEvent) {}
 void CWaterPuddle::ProcessEvent(const SEntityEvent& entityEvent) {}
 void CWaterPuddle::SetChannelId(uint16 id) {}
 void CWaterPuddle::SetAuthority(bool auth) {}
-void CWaterPuddle::PostUpdate(float frameTime) {}
 void CWaterPuddle::PostRemoteSpawn() {}
 void CWaterPuddle::GetMemoryUsage(ICrySizer *pSizer) const {}
 

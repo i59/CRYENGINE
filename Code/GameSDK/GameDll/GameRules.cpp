@@ -727,6 +727,12 @@ bool CGameRules::Init( IGameObject * pGameObject )
 
 	m_timeLastShownUnbalancedTeamsWarning = gEnv->pTimer->GetFrameStartTime();
 
+	EnableEvent(ENTITY_EVENT_POST_UPDATE);
+	EnableEvent(ENTITY_EVENT_PRE_SERIALIZE);
+	EnableEvent(ENTITY_EVENT_RESET);
+	EnableEvent(ENTITY_EVENT_START_GAME);
+	EnableEvent(ENTITY_EVENT_ENTER_SCRIPT_STATE);
+
 	return true;
 }
 
@@ -1586,6 +1592,12 @@ void CGameRules::ProcessEvent(const SEntityEvent& event)
 
 	switch(event.event)
 	{
+	case ENTITY_EVENT_POST_UPDATE:
+		{
+		PostUpdate(event.fParam[0]);
+		}
+		break;
+
 	//This is called while loading a saved game
 	case ENTITY_EVENT_PRE_SERIALIZE:
 		{

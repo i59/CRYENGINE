@@ -36,7 +36,6 @@ public:
 	virtual void ProcessEvent(const SEntityEvent& event );	
 	virtual void SetChannelId(uint16 id);
 	virtual void SetAuthority( bool auth );
-	virtual void PostUpdate( float frameTime );
 	virtual void PostRemoteSpawn();
 
 	void TriggerSpark();

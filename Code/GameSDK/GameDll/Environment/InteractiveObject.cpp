@@ -257,11 +257,6 @@ void CInteractiveObjectEx::DebugRender() const
 }
 #endif //#ifndef _RELEASE
 
-void CInteractiveObjectEx::PostUpdate( float frameTime )
-{
-
-}
-
 void CInteractiveObjectEx::PostRemoteSpawn()
 {
 
