@@ -48,7 +48,7 @@ public:
 		FLAG_BBOX_INVALID                   = BIT(3),
 		FLAG_HIDDEN                         = BIT(4), // If render proxy is hidden.
 		//FLAG_HAS_ENV_LIGHTING  = 0x0020, // If render proxy have environment lighting.
-		FLAG_UPDATE                         = BIT(5),  // If render proxy needs to be updated.
+		//FLAG_UPDATE                         = BIT(5),  // If render proxy needs to be updated.
 		FLAG_NOW_VISIBLE                    = BIT(6),  // If render proxy currently visible.
 		FLAG_REGISTERED_IN_3DENGINE         = BIT(7),  // If render proxy have been registered in 3d engine.
 		FLAG_POST_INIT                      = BIT(8),  // If render proxy have received Post init event.

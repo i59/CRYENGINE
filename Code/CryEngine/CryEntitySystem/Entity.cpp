@@ -2056,7 +2056,7 @@ void CEntity::MoveSlot(IEntity* targetIEnt, int nSlot)
 	dstSlot->bUpdate = scrSlot->bUpdate;
 	dstSlot->flags = scrSlot->flags;
 
-	targetRenderComponent.AddFlags(CRenderComponent::FLAG_UPDATE);
+	targetRenderComponent.SetUpdatePolicy(EEntityUpdatePolicy_Always);;
 	targetRenderComponent.InvalidateBounds(true, true);
 	targetRenderComponent.UpdateLodDistance(gEnv->p3DEngine->GetFrameLodInfo());
 

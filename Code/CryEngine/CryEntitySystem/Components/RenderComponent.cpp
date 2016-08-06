@@ -1120,16 +1120,14 @@ IMaterial* CRenderComponent::GetEntitySlotMaterial(unsigned int nPartId, bool bR
 //////////////////////////////////////////////////////////////////////////
 void CRenderComponent::Update(SEntityUpdateContext& ctx)
 {
-	if (!CheckFlags(FLAG_UPDATE))
-		return;
-
 	// Disable prephysics event if we need to
-	if (m_bClearedQueuedGeometryChanges)
+	// TODO: Enable this again, game stops working if we use it for some reason
+	/*if (m_bClearedQueuedGeometryChanges)
 	{
 		EnableEvent(ENTITY_EVENT_PREPHYSICSUPDATE, 0, false);
 
 		m_bClearedQueuedGeometryChanges = false;
-	}
+	}*/
 
 	FUNCTION_PROFILER( GetISystem(),PROFILE_ENTITY );
 
@@ -1500,7 +1498,7 @@ int CRenderComponent::SetSlotCharacter(int nSlot, ICharacterInstance* pCharacter
 		pSlot->pCharacter = pCharacter;
 		pSlot->flags |= ENTITY_SLOT_RENDER;
 		pSlot->bUpdate = true;
-		m_nFlags |= FLAG_UPDATE; // For Characters we need render proxy to be updated.
+		SetUpdatePolicy(EEntityUpdatePolicy_Always);// For Characters we need render proxy to be updated.
 
 		pCharacter->SetFlags( pCharacter->GetFlags() | CS_FLAG_UPDATE );
 
@@ -1628,7 +1626,7 @@ int CRenderComponent::SetParticleEmitter(int nSlot, IParticleEmitter* pEmitter, 
 	{
 		pSlot->pChildRenderNode->SetMaterial(pSlot->pMaterial);
 	}
-	m_nFlags |= FLAG_UPDATE; // For Particles we need render proxy to be updated.
+	SetUpdatePolicy(EEntityUpdatePolicy_Always);// For Particles we need render proxy to be updated.
 	m_nFlags |= FLAG_HAS_PARTICLES; //Mark as particles emitter
 
 	pEmitter->SetViewDistRatio(GetViewDistRatio());
@@ -1820,7 +1818,7 @@ int CRenderComponent::LoadGeomCache(int nSlot, const char* sFilename)
 	pSlot->OnXForm(GetCEntity());
 
 	m_nFlags |= FLAG_HAS_CHILDRENDERNODES;
-	m_nFlags |= FLAG_UPDATE; // For geom caches we need render proxy to be updated.
+	SetUpdatePolicy(EEntityUpdatePolicy_Always);// For geom caches we need render proxy to be updated.
 	pSlot->flags = ENTITY_SLOT_RENDER;
 	pSlot->bUpdate = true;
 	InvalidateBounds( true,true );
