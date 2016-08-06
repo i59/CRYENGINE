@@ -18,22 +18,6 @@ History:
 #include "../TacticalManager.h"
 #include "EntityUtility/EntityScriptCalls.h"
 #include "UI/HUD/HUDUtils.h"
-#include <GameObjects/GameObject.h>
-
-namespace DP
-{
-	void RegisterEvents( IGameObjectExtension& goExt, IGameObject& gameObject )
-	{
-		gameObject.UnRegisterExtForEvents( &goExt, NULL, 0 );
-		const int iScriptEventID = eGFE_ScriptEvent;
-		gameObject.RegisterExtForEvents( &goExt, &iScriptEventID, 1 );
-		const int iStartSharingScreenEventID = eDoorPanelGameObjectEvent_StartShareScreen;
-		gameObject.RegisterExtForEvents( &goExt, &iStartSharingScreenEventID, 1 );
-		const int iStopSharingScreenEventID = eDoorPanelGameObjectEvent_StopShareScreen;
-		gameObject.RegisterExtForEvents( &goExt, &iStopSharingScreenEventID, 1 );
-	}
-}
-
 
 namespace DoorPanelBehaviorStateNames
 {
@@ -111,8 +95,6 @@ bool CDoorPanel::Init( IGameObject * pGameObject )
 
 void CDoorPanel::PostInit( IGameObject * pGameObject )
 {
-	DP::RegisterEvents( *this, *pGameObject );
-
 	StateMachineInitBehavior();
 
 	GetGameObject()->EnableUpdateSlot( this, DOOR_PANEL_MODEL_NORMAL_SLOT );
@@ -125,8 +107,7 @@ void CDoorPanel::PostInit( IGameObject * pGameObject )
 bool CDoorPanel::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
 {
 	ResetGameObject();
-	DP::RegisterEvents( *this, *pGameObject );
-
+	
 	CRY_ASSERT_MESSAGE(false, "CDoorPanel::ReloadExtension not implemented");
 
 	return false;
@@ -166,7 +147,7 @@ void CDoorPanel::FullSerialize( TSerialize serializer )
 	StateMachineSerializeBehavior( SStateEventSerialize(serializer) );
 }
 
-void CDoorPanel::Update( SEntityUpdateContext& ctx, int slot )
+void CDoorPanel::Update( SEntityUpdateContext& ctx )
 {
 	if (m_bHasDelayedStateEvent)
 	{
@@ -264,7 +245,7 @@ void CDoorPanel::HandleEvent( const SGameObjectEvent& gameObjectEvent )
 	}
 }
 
-void CDoorPanel::ProcessEvent( SEntityEvent& entityEvent )
+void CDoorPanel::ProcessEvent(const SEntityEvent& entityEvent )
 {
 	switch(entityEvent.event)
 	{
@@ -405,7 +386,7 @@ void CDoorPanel::AssignAsFSCommandHandler()
 	IEntity* pEntity = GetEntity();
 	if (pEntity)
 	{
-		IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent*>(pEntity->QueryComponent<IEntityRenderComponent>());
 		if (pRenderProxy)
 		{
 			_smart_ptr<IMaterial> pMaterial = pRenderProxy->GetRenderMaterial(DOOR_PANEL_MODEL_NORMAL_SLOT);
@@ -430,12 +411,7 @@ void CDoorPanel::NotifyScreenSharingEvent(const EDoorPanelGameObjectEvent event)
 			IEntity* pEntity = gEnv->pEntitySystem->GetEntity( entityId );
 			if (pEntity)
 			{
-				CGameObject* pGameObject = static_cast<CGameObject*>(pEntity->GetProxy(ENTITY_PROXY_USER));
-				if (pGameObject != NULL)
-				{
-					SGameObjectEvent goEvent( (uint32)event, eGOEF_ToExtensions, IGameObjectSystem::InvalidExtensionID, (void*)(&(thisEntityId)) );
-					pGameObject->SendEvent( goEvent );
-				}
+				pEntity->SendComponentEvent(event, (void*)(&(thisEntityId)));
 			}
 		}
 	}

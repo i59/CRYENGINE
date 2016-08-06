@@ -88,7 +88,7 @@ void CGameRulesModulesManager::Init()
 
 					if (modeXml->getAttr("name", &modeName))
 					{
-						pGameRulesSystem->RegisterGameRules(modeName, "GameRules");
+						pGameRulesSystem->RegisterGameRules(modeName, CGameRules::IID());
 
 						SGameRulesData gameRulesData;
 

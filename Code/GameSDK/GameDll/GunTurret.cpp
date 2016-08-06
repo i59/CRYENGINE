@@ -16,7 +16,6 @@ History:
 #include <CryMath/Cry_GeoOverlap.h>
 #include <IActorSystem.h>
 #include <IMovementController.h>
-#include <IGameObjectSystem.h>
 #include <IVehicleSystem.h>
 #include <GameRules.h>
 #include "Actor.h"
@@ -98,17 +97,6 @@ namespace
 
 }
 
-
-namespace GT
-{
-	void RegisterEvents( IGameObjectExtension& goExt, IGameObject& gameObject )
-	{
-		const int eventID[] = {eCGE_Turret_LockedTarget, eCGE_Turret_LostTarget, eCGE_SetTeam};
-		gameObject.UnRegisterExtForEvents( &goExt, NULL, 0 );
-		gameObject.RegisterExtForEvents( &goExt, eventID, sizeof(eventID)/sizeof(int) );
-	}
-}
-
 //------------------------------------------------------------------------
 CGunTurret::CGunTurret()
 : m_fm2(0),
@@ -150,7 +138,7 @@ void CGunTurret::PostInit(IGameObject * pGameObject)
 
 	if ( !gEnv->bServer )
 		for (int i=0; i<4;i++)
-			pGameObject->SetUpdateSlotEnableCondition(this, i, eUEC_InRange);
+			GetGameObject()->SetUpdateSlotEnableCondition(this, i, eUEC_InRange);
 }
 
 void CGunTurret::SetOwnerId(EntityId ownerId)
@@ -1365,7 +1353,7 @@ void CGunTurret::UpdatePhysics()
 	if (IEntity* pParent = GetEntity()->GetParent())
 	{      
 		IPhysicalEntity* pParentPhysics = pParent->GetPhysics();
-		IEntityPhysicalProxy *pPhysicsProxy = (IEntityPhysicalProxy*)GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
+		IEntityPhysicsComponent *pPhysicsProxy = (IEntityPhysicsComponent*)GetEntity()->QueryComponent<IEntityPhysicsComponent>();
 		if (pParentPhysics && pPhysicsProxy)
 		{
       Matrix34 localTM = GetEntity()->GetLocalTM();
@@ -1474,9 +1462,7 @@ void CGunTurret::OnTargetLocked(IEntity* pTarget)
       IItem* pItem = g_pGame->GetIGameFramework()->GetIItemSystem()->GetItem(pLink->entityId);      
       if (pItem)
       {
-        SGameObjectEvent event(pTarget?eCGE_Turret_LockedTarget:eCGE_Turret_LostTarget, eGOEF_ToExtensions);
-        event.ptr = pTarget;
-        pItem->GetGameObject()->SendEvent(event);
+		pItem->GetEntity()->SendComponentEvent(pTarget ? eCGE_Turret_LockedTarget : eCGE_Turret_LostTarget, pTarget);
       }
     }
   }
@@ -1491,9 +1477,9 @@ void CGunTurret::HandleEvent(const SGameObjectEvent& event)
   {
   case (eCGE_Turret_LockedTarget):
     {
-      if (event.ptr)
+      if (event.param)
       {
-        m_destinationId = ((IEntity*)event.ptr)->GetId();
+        m_destinationId = ((IEntity*)event.param)->GetId();
       }
     }
     break;
@@ -1540,7 +1526,7 @@ bool CGunTurret::UpdateBurst(float deltaTime)
 }
 
 //------------------------------------------------------------------------
-void CGunTurret::ServerUpdate(SEntityUpdateContext& ctx, int update)
+void CGunTurret::ServerUpdate(SEntityUpdateContext& ctx)
 {
 	//update parameters. SNH: cache these in MP since they never change.
 	if(!gEnv->bMultiplayer)
@@ -1720,23 +1706,20 @@ void CGunTurret::UpdateEntityProperties()
 }
 
 //------------------------------------------------------------------------
-void CGunTurret::Update( SEntityUpdateContext& ctx, int update)
+void CGunTurret::Update( SEntityUpdateContext& ctx)
 {  
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_GAME);
 
-	CWeapon::Update(ctx, update);
+	CWeapon::Update(ctx);
 
 	if (IAIObject* aiObject = GetEntity()->GetAI())
 		aiObject->SetPos(GetWeaponPos(), GetWeaponDir());
 
-	if (update==eIUS_FireMode && m_fm2)
+	if (m_fm2)
 		m_fm2->Update(ctx.fFrameTime, ctx.nFrameID);
 
-	if (update!=eIUS_General)
-		return;
-
 	if (IsServer())
-		ServerUpdate(ctx,update);
+		ServerUpdate(ctx);
 
 	UpdateOrientation(ctx.fFrameTime);	// rotate turret towards target, adhering to angle limits
 

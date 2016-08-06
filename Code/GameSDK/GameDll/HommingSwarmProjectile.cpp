@@ -51,13 +51,13 @@ CHommingSwarmProjectile::~CHommingSwarmProjectile()
 
 
 
-void CHommingSwarmProjectile::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CHommingSwarmProjectile::Update(SEntityUpdateContext &ctx)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 
-	BaseClass::Update(ctx, updateSlot);
+	BaseClass::Update(ctx);
 
-	if (!gEnv->bServer || !m_pAmmoParams->pHomingSwarmParams || !m_pPhysicalEntity || updateSlot != 0)
+	if (!gEnv->bServer || !m_pAmmoParams->pHomingSwarmParams || !m_pPhysicalEntity)
 		return;
 
 	const float proxyRadius = m_pAmmoParams->pHomingSwarmParams->proxyRadius;
@@ -168,7 +168,7 @@ void CHommingSwarmProjectile::HandleEvent(const SGameObjectEvent &event)
 
 	if (event.event == eGFE_OnCollision)
 	{
-		if (const EventPhysCollision *pCollision = reinterpret_cast<const EventPhysCollision*>(event.ptr))
+		if (const EventPhysCollision *pCollision = reinterpret_cast<const EventPhysCollision*>(event.param))
 		{
 			if(pCollision->pEntity[0]->GetType()==PE_PARTICLE)
 			{ 

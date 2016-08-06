@@ -232,12 +232,9 @@ void CLightningBolt::Launch(const Vec3 &pos, const Vec3 &dir, const Vec3 &veloci
 
 
 
-void CLightningBolt::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CLightningBolt::Update(SEntityUpdateContext &ctx)
 {
-	Parent::Update(ctx, updateSlot);
-
-	if (updateSlot != 0)
-		return;
+	Parent::Update(ctx);
 
 	if (m_strikeCountDown > 0.f)
 	{
@@ -282,7 +279,7 @@ void CLightningBolt::HandleEvent(const SGameObjectEvent& event)
 {
 	if (event.event == eGFE_OnCollision)
 	{
-		EventPhysCollision* pCollision = (EventPhysCollision*)event.ptr;
+		EventPhysCollision* pCollision = (EventPhysCollision*)event.param;
 		
 		if(!gEnv->bMultiplayer)
 		{

@@ -15,7 +15,6 @@ History:
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CrySystem/File/ICryPak.h>
 #include <CryScriptSystem/IScriptSystem.h>
-#include "IGameObject.h"
 #include "Actor.h"
 #include "Player.h"
 #include "ItemParams.h"
@@ -122,23 +121,12 @@ template <typename TWeaponCompnentInterface, typename TWeaponComponentImplementa
 	CWeaponComponentAllocator<TWeaponCompnentInterface, TWeaponComponentImplementation>::FreeMemoryPool();
 }
 
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
+#define REGISTER_PROJECTILE(name) \
+	IEntityComponent::RegisterExternalComponent<C##name>(); \
+	RegisterProjectile(#name, C##name::IID());
 
-#define REGISTER_PROJECTILE(name, T)	\
-struct C##name##Creator : public IGameObjectExtensionCreatorBase	\
-{ \
-	IGameObjectExtensionPtr Create() \
-	{ \
-		return ComponentCreate_DeleteWithRelease<T>(); \
-	} \
-	void GetGameObjectExtensionRMIData( void ** ppRMI, size_t * nCount ) \
-	{ \
-		T::GetGameObjectExtensionRMIData( ppRMI, nCount ); \
-	} \
-}; \
-static C##name##Creator _##name##Creator; \
-RegisterProjectile(#name, &_##name##Creator);
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 //------------------------------------------------------------------------
 CWeaponSystem::CWeaponSystem(CGame *pGame, ISystem *pSystem)
@@ -175,20 +163,21 @@ CWeaponSystem::CWeaponSystem(CGame *pGame, ISystem *pSystem)
 	RegisterFireModePlugin<CFireModePlugin_RecoilShake>();
 
 	// register projectile classes here
-	REGISTER_PROJECTILE(Projectile, CProjectile);
-	REGISTER_PROJECTILE(Bullet, CBullet);
-	REGISTER_PROJECTILE(KVoltBullet, CKVoltBullet);
-	REGISTER_PROJECTILE(Rocket, CRocket);
-	REGISTER_PROJECTILE(HomingMissile, CHomingMissile);
-	REGISTER_PROJECTILE(C4Projectile, CC4Projectile); 
-	REGISTER_PROJECTILE(Chaff, CChaff);
-	REGISTER_PROJECTILE(Grenade, CGrenade);
-	REGISTER_PROJECTILE(SmokeGrenade, CSmokeGrenade);
-	REGISTER_PROJECTILE(MikeBullet, CMikeBullet);
-	REGISTER_PROJECTILE(LightningBolt, CLightningBolt);
-	REGISTER_PROJECTILE(HommingSwarmProjectile, CHommingSwarmProjectile);
-	REGISTER_PROJECTILE(LTagGrenade, CLTAGGrenade);
-	REGISTER_PROJECTILE(EMPGrenade, CEMPGrenade);
+
+	REGISTER_PROJECTILE(Projectile);
+	REGISTER_PROJECTILE(Bullet);
+	REGISTER_PROJECTILE(KVoltBullet);
+	REGISTER_PROJECTILE(Rocket);
+	REGISTER_PROJECTILE(HomingMissile);
+	REGISTER_PROJECTILE(C4Projectile); 
+	REGISTER_PROJECTILE(Chaff);
+	REGISTER_PROJECTILE(Grenade);
+	REGISTER_PROJECTILE(SmokeGrenade);
+	REGISTER_PROJECTILE(MikeBullet);
+	REGISTER_PROJECTILE(LightningBolt);
+	REGISTER_PROJECTILE(HommingSwarmProjectile);
+	REGISTER_PROJECTILE(LTAGGrenade);
+	REGISTER_PROJECTILE(EMPGrenade);
 
 	m_pPrecache = gEnv->pConsole->GetCVar("i_precache");
 
@@ -637,9 +626,11 @@ bool CWeaponSystem::IsServerSpawn(IEntityClass* pAmmoType) const
 }
 
 //-------------------------------------------	-----------------------------
-void CWeaponSystem::RegisterProjectile(const char *name, IGameObjectExtensionCreatorBase *pCreator)
+void CWeaponSystem::RegisterProjectile(const char *name, const CryInterfaceID& interfaceId)
 {
-	m_projectileregistry.insert(TProjectileRegistry::value_type(name, pCreator));
+	CRY_ASSERT_MESSAGE(gEnv->pEntitySystem->IsComponentFactoryRegistered(interfaceId), "Attempted to register projectile class without registering component with entity system!");
+
+	m_projectileregistry.insert(TProjectileRegistry::value_type(name, interfaceId));
 }
 
 //------------------------------------------------------------------------
@@ -837,18 +828,13 @@ bool CWeaponSystem::ScanXML(XmlNodeRef &root, const char *xmlFile)
 	}
 
 	const char *scriptName = root->getAttr("script");
-	IEntityClassRegistry::SEntityClassDesc classDesc;
-	classDesc.sName = name;
-	classDesc.sScriptFile = scriptName?scriptName:"";
-	//classDesc.pUserProxyData = (void *)it->second;
-	//classDesc.pUserProxyCreateFunc = &CreateProxy<CProjectile>;
-	classDesc.flags |= ECLF_INVISIBLE;
 
 	IEntityClass* pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
 
 	if (!m_reloading && !pClass)
 	{
-		m_pGame->GetIGameFramework()->GetIGameObjectSystem()->RegisterExtension(name, it->second, &classDesc);
+		IEntityComponent::RegisterEntityWithComponent(name, it->second, ECLF_INVISIBLE, scriptName ? scriptName : "");
+
 		pClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass(name);
 		assert(pClass);
 	}
@@ -1242,5 +1228,5 @@ void CDelayedDetonationRMIQueue::Update(float frameTime)
 //-----------------------------------------------------------------------
 void CDelayedDetonationRMIQueue::SendRMI(CPlayer* pPlayer, EntityId projectile)
 {
-	pPlayer->GetGameObject()->InvokeRMI(CPlayer::ClDelayedDetonation(), CPlayer::EntityParams(projectile), eRMI_ToClientChannel, pPlayer->GetChannelId());
+	pPlayer->InvokeRMI(CPlayer::ClDelayedDetonation(), CPlayer::EntityParams(projectile), eRMI_ToClientChannel, pPlayer->GetChannelId());
 }

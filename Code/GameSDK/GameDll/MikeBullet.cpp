@@ -496,7 +496,7 @@ void CMikeBullet::HandleEvent(const SGameObjectEvent& event)
 	if (event.event == eGFE_OnCollision && !gEnv->bMultiplayer) //No flames in MP
 	{
 		const bool playerIsShooter = CheckAnyProjectileFlags(ePFlag_ownerIsPlayer);
-		const EventPhysCollision& collision = *reinterpret_cast<EventPhysCollision*>(event.ptr);
+		const EventPhysCollision& collision = *reinterpret_cast<EventPhysCollision*>(event.param);
 		g_pGame->GetBurnEffectManager()->AddBurnPoint(collision, m_pAmmoParams->pMikeBulletParams, m_hitTypeId, playerIsShooter, m_ownerFactionID);
 	}
 }

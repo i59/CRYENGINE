@@ -90,7 +90,7 @@ void CSnow::FullSerialize(TSerialize ser)
 }
 
 //------------------------------------------------------------------------
-void CSnow::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CSnow::Update(SEntityUpdateContext &ctx)
 {
 	const IActor * pClient = g_pGame->GetIGameFramework()->GetClientActor();
 	if (pClient && Reset())
@@ -110,7 +110,7 @@ void CSnow::HandleEvent(const SGameObjectEvent &event)
 }
 
 //------------------------------------------------------------------------
-void CSnow::ProcessEvent(SEntityEvent &event)
+void CSnow::ProcessEvent(const SEntityEvent &event)
 {
 	switch (event.event)
 	{

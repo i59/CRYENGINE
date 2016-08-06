@@ -101,7 +101,7 @@ int CMovingPlatformMgr::OnCollisionLogged( const EventPhys* pEvent )
 			return 1;
 		}
 	}
-	else if(CEnvironmentalWeapon* pEnvWeap = static_cast<CEnvironmentalWeapon*>(pGameFramework->QueryGameObjectExtension(passengerEntityId, "EnvironmentalWeapon")))
+	else if(CEnvironmentalWeapon* pEnvWeap = static_cast<CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(passengerEntityId)))
 	{
 		if(pEnvWeap->GetOwner())
 		{

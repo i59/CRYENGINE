@@ -40,7 +40,7 @@ public:
 	virtual void SetDestination(const Vec3& pos);
 	virtual const Vec3& GetDestination();
 
-	virtual void Update(SEntityUpdateContext& ctx, int update);
+	virtual void Update(SEntityUpdateContext& ctx);
 
 	//Vec3 GetSlotHelperPos(int slot, const char *helper, bool worldSpace, bool relative) const;
 

@@ -155,122 +155,79 @@ History:
 	}                                                                                                 \
 } 
 
-#define REGISTER_GAME_OBJECT(framework, name, script)\
-	{\
-	IEntityClassRegistry::SEntityClassDesc clsDesc;\
-	clsDesc.sName = #name;\
-	clsDesc.sScriptFile = script;\
-struct C##name##Creator : public IGameObjectExtensionCreatorBase\
-		{\
-		IGameObjectExtensionPtr Create()\
-			{\
-			return ComponentCreate_DeleteWithRelease<C##name>();\
-			}\
-			void GetGameObjectExtensionRMIData( void ** ppRMI, size_t * nCount )\
-			{\
-			C##name::GetGameObjectExtensionRMIData( ppRMI, nCount );\
-			}\
-		};\
-		static C##name##Creator _creator;\
-		framework->GetIGameObjectSystem()->RegisterExtension(#name, &_creator, &clsDesc);\
-	}
-
-#define REGISTER_GAME_OBJECT_WITH_IMPL(framework, name, impl, script)\
-	{\
-	IEntityClassRegistry::SEntityClassDesc clsDesc;\
-	clsDesc.sName = #name;\
-	clsDesc.sScriptFile = script;\
-struct C##name##Creator : public IGameObjectExtensionCreatorBase\
-		{\
-		IGameObjectExtensionPtr Create()\
-			{\
-			return ComponentCreate_DeleteWithRelease<C##impl>();\
-			}\
-			void GetGameObjectExtensionRMIData( void ** ppRMI, size_t * nCount )\
-			{\
-			C##impl::GetGameObjectExtensionRMIData( ppRMI, nCount );\
-			}\
-		};\
-		static C##name##Creator _creator;\
-		framework->GetIGameObjectSystem()->RegisterExtension(#name, &_creator, &clsDesc);\
-	}
-
-#define REGISTER_GAME_OBJECT_EXTENSION(framework, name)\
-	{\
-struct C##name##Creator : public IGameObjectExtensionCreatorBase\
-		{\
-		IGameObjectExtensionPtr Create()\
-			{\
-			return ComponentCreate_DeleteWithRelease<C##name>();\
-			}\
-			void GetGameObjectExtensionRMIData( void ** ppRMI, size_t * nCount )\
-			{\
-			C##name::GetGameObjectExtensionRMIData( ppRMI, nCount );\
-			}\
-		};\
-		static C##name##Creator _creator;\
-		framework->GetIGameObjectSystem()->RegisterExtension(#name, &_creator, NULL);\
-	}
+#define REGISTER_ITEM(name) IItemSystem::RegisterItemClass<C##name>(#name);
 
 // Register the factory templates used to create classes from names. Called via CGame::Init()
 void InitGameFactory(IGameFramework *pFramework)
 {
 	assert(pFramework);
 
-	REGISTER_FACTORY(pFramework, "Player", CPlayer, false);
-	REGISTER_FACTORY(pFramework, "PlayerHeavy", CPlayer, false);
-	
-	REGISTER_FACTORY(pFramework, "DamageTestEnt", CPlayer, true);
+	IEntityComponent::RegisterEntityWithComponent<CPlayer>("Player", VF_INVISIBLE, "Scripts/Entities/Actor/Player.lua");
+	IEntityComponent::RegisterEntityWithComponent<CPlayer>("PlayerHeavy", VF_INVISIBLE, "Scripts/Entities/Actor/PlayerHeavy.lua");
+
+	IEntityComponent::RegisterEntityWithComponent<CPlayer>("DamageTestEnt", 0, "Scripts/Entities/AI/DamageTestEnt.lua");
 
 #if (USE_DEDICATED_INPUT)
-	REGISTER_FACTORY(pFramework, "DummyPlayer", CDummyPlayer, true);
+	IEntityComponent::RegisterEntityWithComponent<CDummyPlayer>("DummyPlayer", 0, "Scripts/Entities/AI/DummyPlayer.lua");
 #endif
 
 	//REGISTER_FACTORY(pFramework, "Civilian", CPlayer, true);
 
 	// Null AI for AI pool
-	REGISTER_FACTORY(pFramework, "NullAI", CPlayer, true);
+	IEntityComponent::RegisterEntityWithComponent<CPlayer>("NullAI", 0, "Scripts/Entities/AI/NullAI.lua");
 
 	// Characters	
-	REGISTER_FACTORY(pFramework, "Characters/Human", CPlayer, true);
+	IEntityComponent::RegisterEntityWithComponent<CPlayer>("Human", 0, "Scripts/Entities/AI/Characters/Human.lua");
 	
+	class CBasicItem : public CItem
+	{
+	public:
+		DECLARE_COMPONENT("Item", 0x0F8F9D3D11C54403, 0x928E34D7CD4439E1)
+	};
+
 	// Items
-	REGISTER_FACTORY(pFramework, "Item", CItem, false);
-	REGISTER_FACTORY(pFramework, "Accessory", CAccessory, false);
-	REGISTER_FACTORY(pFramework, "Laser", CLaser, false);
-	REGISTER_FACTORY(pFramework, "FlashLight", CFlashLight, false);
-	REGISTER_FACTORY(pFramework, "DoubleMagazine", CDoubleMagazine, false);
-	REGISTER_FACTORY(pFramework, "HandGrenades", CHandGrenades, false);
+	IItemSystem::RegisterItemClass<CBasicItem>("Item");
+	REGISTER_ITEM(Accessory);
+	REGISTER_ITEM(Laser);
+	REGISTER_ITEM(FlashLight);
+	REGISTER_ITEM(DoubleMagazine);
+	REGISTER_ITEM(HandGrenades);
+
+	class CBasicWeapon : public CWeapon
+	{
+	public:
+		DECLARE_COMPONENT("Weapon", 0x028F9D7D01C5448F, 0x9213B189E52BC565)
+	};
 
 	// Weapons
-	REGISTER_FACTORY(pFramework, "Weapon", CWeapon, false);
-	REGISTER_FACTORY(pFramework, "VehicleWeapon", CVehicleWeapon, false);
-	REGISTER_FACTORY(pFramework, "VehicleWeaponGuided", CVehicleWeaponGuided, false);
-	REGISTER_FACTORY(pFramework, "VehicleWeaponControlled", CVehicleWeaponControlled, false);
-	REGISTER_FACTORY(pFramework, "VehicleWeaponPulseC", CVehicleWeaponPulseC, false);
-	REGISTER_FACTORY(pFramework, "VehicleMountedWeapon", CVehicleMountedWeapon, false);
-	REGISTER_FACTORY(pFramework, "Binocular", CBinocular, false);
-	REGISTER_FACTORY(pFramework, "C4", CC4, false);
-	REGISTER_FACTORY(pFramework, "DebugGun", CDebugGun, false);
-	REGISTER_FACTORY(pFramework, "GunTurret", CGunTurret, false);
-	REGISTER_FACTORY(pFramework, "JAW", CJaw, false);
-	REGISTER_FACTORY(pFramework, "AIGrenade", CAIGrenade, false);
-	REGISTER_FACTORY(pFramework, "AISmokeGrenades", CAIGrenade, false);
-	REGISTER_FACTORY(pFramework, "AIEMPGrenade", CAIGrenade, false);
-	REGISTER_FACTORY(pFramework, "LTAG", CLTag, false);
-	REGISTER_FACTORY(pFramework, "PickAndThrowWeapon", CPickAndThrowWeapon, false);
-	REGISTER_FACTORY(pFramework, "NoWeapon", CNoWeapon, false);
-	REGISTER_FACTORY(pFramework, "HeavyMountedWeapon", CHeavyMountedWeapon, false);
-	REGISTER_FACTORY(pFramework, "HeavyWeapon", CHeavyWeapon, false);
-	REGISTER_FACTORY(pFramework, "WeaponMelee", CWeaponMelee, false);
-	REGISTER_FACTORY(pFramework, "UseableTurret", CUseableTurret, false);
-	REGISTER_FACTORY(pFramework, "CinematicWeapon", CCinematicWeapon, false);
+	IItemSystem::RegisterItemClass<CBasicWeapon>("Weapon");
+	REGISTER_ITEM(VehicleWeapon);
+	REGISTER_ITEM(VehicleWeaponGuided);
+	REGISTER_ITEM(VehicleWeaponControlled);
+	REGISTER_ITEM(VehicleWeaponPulseC);
+	REGISTER_ITEM(VehicleMountedWeapon);
+	REGISTER_ITEM(Binocular);
+	REGISTER_ITEM(C4);
+	REGISTER_ITEM(DebugGun);
+	REGISTER_ITEM(GunTurret);
+	IItemSystem::RegisterItemClass<CJaw>("JAW");
+	REGISTER_ITEM(AIGrenade);
+	IItemSystem::RegisterItemClass<CAIGrenade>("AISmokeGrenades");
+	IItemSystem::RegisterItemClass<CAIGrenade>("AIEMPGrenade");
+	IItemSystem::RegisterItemClass<CLTag>("LTAG");
+	REGISTER_ITEM(PickAndThrowWeapon);
+	REGISTER_ITEM(NoWeapon);
+	REGISTER_ITEM(HeavyMountedWeapon);
+	REGISTER_ITEM(HeavyWeapon);
+	REGISTER_ITEM(WeaponMelee);
+	REGISTER_ITEM(UseableTurret);
+	REGISTER_ITEM(CinematicWeapon);
 	
 	// vehicle objects
 	IVehicleSystem* pVehicleSystem = pFramework->GetIVehicleSystem();
 
 #define REGISTER_VEHICLEOBJECT(name, obj) \
-	REGISTER_FACTORY((IVehicleSystem*)pVehicleSystem, name, obj, false); \
+	REGISTER_FACTORY(pVehicleSystem, name, obj, false); \
 	obj::m_objectId = pVehicleSystem->AssignVehicleObjectId(name);
 
 	// damage behaviours
@@ -302,19 +259,19 @@ void InitGameFactory(IGameFramework *pFramework)
 
 
 	// Custom GameObjects
-	REGISTER_GAME_OBJECT(pFramework, Tornado, "Scripts/Entities/Environment/Tornado.lua");
-	REGISTER_GAME_OBJECT(pFramework, Shake, "Scripts/Entities/Environment/Shake.lua");
-	REGISTER_GAME_OBJECT(pFramework, Rain, "Scripts/Entities/Environment/Rain.lua");
-	REGISTER_GAME_OBJECT(pFramework, Snow, "Scripts/Entities/Environment/Snow.lua");
-	REGISTER_GAME_OBJECT(pFramework, InteractiveObjectEx, "Scripts/Entities/PlayerInteractive/InteractiveObjectEx.lua");
-	REGISTER_GAME_OBJECT(pFramework, DeployableBarrier, "Scripts/Entities/PlayerInteractive/DeployableBarrier.lua");
-	REGISTER_GAME_OBJECT(pFramework, ReplayObject, "");
-	REGISTER_GAME_OBJECT(pFramework, ReplayActor, "");
-	REGISTER_GAME_OBJECT(pFramework, DeflectorShield, "Scripts/Entities/Others/DeflectorShield.lua");
+	IEntityComponent::RegisterEntityWithComponent<CTornado>("Tornado", 0, "Scripts/Entities/Environment/Tornado.lua");
+	IEntityComponent::RegisterEntityWithComponent<CShake>("Shake", 0, "Scripts/Entities/Environment/Shake.lua");
+	IEntityComponent::RegisterEntityWithComponent<CRain>("Rain", 0, "Scripts/Entities/Environment/Rain.lua");
+	IEntityComponent::RegisterEntityWithComponent<CSnow>("Snow", 0, "Scripts/Entities/Environment/Snow.lua");
+	IEntityComponent::RegisterEntityWithComponent<CInteractiveObjectEx>("InteractiveObjectEx", 0, "Scripts/Entities/PlayerInteractive/InteractiveObjectEx.lua");
+	IEntityComponent::RegisterEntityWithComponent<CDeployableBarrier>("DeployableBarrier", 0, "Scripts/Entities/PlayerInteractive/DeployableBarrier.lua");
+	IEntityComponent::RegisterEntityWithComponent<CReplayObject>("ReplayObject", 0, "");
+	IEntityComponent::RegisterEntityWithComponent<CReplayActor>("ReplayActor", 0, "");
+	IEntityComponent::RegisterEntityWithComponent<CDeflectorShield>("DeflectorShield", 0, "Scripts/Entities/Others/DeflectorShield.lua");
 	HIDE_FROM_EDITOR("DeflectorShield");
-	REGISTER_GAME_OBJECT(pFramework, EnvironmentalWeapon, "Scripts/Entities/Multiplayer/EnvironmentWeapon_Rooted.lua");
-	REGISTER_GAME_OBJECT(pFramework, DangerousRigidBody, "Scripts/Entities/Multiplayer/DangerousRigidBody.lua");
-	REGISTER_GAME_OBJECT(pFramework, AICorpse, "");
+	IEntityComponent::RegisterEntityWithComponent<CEnvironmentalWeapon>("EnvironmentalWeapon", 0, "Scripts/Entities/Multiplayer/EnvironmentWeapon_Rooted.lua");
+	IEntityComponent::RegisterEntityWithComponent<CDangerousRigidBody>("DangerousRigidBody", 0, "Scripts/Entities/Multiplayer/DangerousRigidBody.lua");
+	IEntityComponent::RegisterEntityWithComponent<CAICorpse>("AICorpse", 0, "");
 	HIDE_FROM_EDITOR("ReplayObject");
 	HIDE_FROM_EDITOR("ReplayActor");
 	HIDE_FROM_EDITOR("AICorpse");
@@ -322,44 +279,41 @@ void InitGameFactory(IGameFramework *pFramework)
 
 	//////////////////////////////////////////////////////////////////////////
 	/// Shape/Volume objects
-	REGISTER_GAME_OBJECT(pFramework, MPPath, "Scripts/Entities/Multiplayer/MPPath.lua");
+	IEntityComponent::RegisterEntityWithComponent<CMPPath>("MPPath", 0, "Scripts/Entities/Multiplayer/MPPath.lua");
 	HIDE_FROM_EDITOR("MPPath");
 	REGISTER_EDITOR_VOLUME_CLASS( pFramework, "MPPath" );
 
-	REGISTER_GAME_OBJECT(pFramework, LedgeObject, "Scripts/Entities/ContextualNavigation/LedgeObject.lua");
+	IEntityComponent::RegisterEntityWithComponent<CLedgeObject>("LedgeObject", 0, "Scripts/Entities/ContextualNavigation/LedgeObject.lua");
 	HIDE_FROM_EDITOR("LedgeObject");
 	REGISTER_EDITOR_VOLUME_CLASS( pFramework, "LedgeObject" );
-	REGISTER_GAME_OBJECT(pFramework, LedgeObjectStatic, "Scripts/Entities/ContextualNavigation/LedgeObjectStatic.lua");
+	IEntityComponent::RegisterEntityWithComponent<CLedgeObjectStatic>("LedgeObjectStatic", 0, "Scripts/Entities/ContextualNavigation/LedgeObjectStatic.lua");
 	HIDE_FROM_EDITOR("LedgeObjectStatic");
 	REGISTER_EDITOR_VOLUME_CLASS( pFramework, "LedgeObjectStatic" );
 
-	REGISTER_GAME_OBJECT(pFramework, WaterPuddle, "Scripts/Entities/Environment/WaterPuddle.lua");
+	IEntityComponent::RegisterEntityWithComponent<CWaterPuddle>("WaterPuddle", 0, "Scripts/Entities/Environment/WaterPuddle.lua");
 	HIDE_FROM_EDITOR("WaterPuddle");
 	REGISTER_EDITOR_VOLUME_CLASS(pFramework, "WaterPuddle");
 	//////////////////////////////////////////////////////////////////////////
 
 
-	REGISTER_GAME_OBJECT(pFramework, SmartMine, "Scripts/Entities/Environment/SmartMine.lua");
-	REGISTER_GAME_OBJECT(pFramework, MineField, "Scripts/Entities/Environment/MineField.lua");
-	REGISTER_GAME_OBJECT(pFramework, DoorPanel, "Scripts/Entities/Environment/DoorPanel.lua");
-	REGISTER_GAME_OBJECT(pFramework, VicinityDependentObjectMover, "Scripts/Entities/Environment/VicinityDependentObjectMover.lua");
-	REGISTER_GAME_OBJECT(pFramework, WaterRipplesGenerator, "Scripts/Entities/Environment/WaterRipplesGenerator.lua");
-	REGISTER_GAME_OBJECT(pFramework, LightningArc, "Scripts/Entities/Environment/LightningArc.lua");
+	IEntityComponent::RegisterEntityWithComponent<CSmartMine>("SmartMine", 0, "Scripts/Entities/Environment/SmartMine.lua");
+	IEntityComponent::RegisterEntityWithComponent<CMineField>("MineField", 0, "Scripts/Entities/Environment/MineField.lua");
+	IEntityComponent::RegisterEntityWithComponent<CDoorPanel>("DoorPanel", 0, "Scripts/Entities/Environment/DoorPanel.lua");
+	IEntityComponent::RegisterEntityWithComponent<CVicinityDependentObjectMover>("VicinityDependentObjectMover", 0, "Scripts/Entities/Environment/VicinityDependentObjectMover.lua");
+	IEntityComponent::RegisterEntityWithComponent<CWaterRipplesGenerator>("WaterRipplesGenerator", 0, "Scripts/Entities/Environment/WaterRipplesGenerator.lua");
+	IEntityComponent::RegisterEntityWithComponent<CLightningArc>("LightningArc", 0, "Scripts/Entities/Environment/LightningArc.lua");
 
-	REGISTER_GAME_OBJECT_WITH_IMPL(pFramework, CTFFlag, CarryEntity, "Scripts/Entities/Multiplayer/CTFFlag.lua");
+	IEntityComponent::RegisterEntityWithComponent<CCarryEntity>("CTFFlag", 0, "Scripts/Entities/Multiplayer/CTFFlag.lua");
+	IEntityComponent::RegisterEntityWithComponent<CTurret>("Turret", 0, "Scripts/Entities/Turret/Turret.lua");
 	
-	REGISTER_GAME_OBJECT_WITH_IMPL(pFramework, Turret, Turret, "Scripts/Entities/Turret/Turret.lua");
-	
-	REGISTER_GAME_OBJECT_EXTENSION(pFramework, ScriptControlledPhysics);
-
 	HIDE_FROM_EDITOR("CTFFlag");
 	IEntityClassRegistry::SEntityClassDesc stdClass;
 	stdClass.flags |= ECLF_INVISIBLE|ECLF_DEFAULT;
 	stdClass.sName = "Corpse";
 	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(stdClass);
 
-	//GameRules
-	REGISTER_FACTORY(pFramework, "GameRules", CGameRules, false);
+	// Register the game mode as an external component to be instantiated by CryAction
+	IEntityComponent::RegisterExternalComponent<CGameRules>();
 
 	IGameRulesModulesManager *pGameRulesModulesManager = CGameRulesModulesManager::GetInstance();
 

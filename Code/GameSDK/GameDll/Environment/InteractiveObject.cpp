@@ -78,8 +78,7 @@ void CInteractiveObjectEx::InitClient( int channelId )
 void CInteractiveObjectEx::PostInit( IGameObject *pGameObject )
 {
 #ifndef _RELEASE
-	if(pGameObject)
-	pGameObject->EnableUpdateSlot(this,0);
+	GetGameObject()->EnableUpdateSlot(this,0);
 #endif //#ifndef _RELEASE
 }
 
@@ -207,7 +206,7 @@ ISerializableInfoPtr CInteractiveObjectEx::GetSpawnInfo()
 	return 0;
 }
 
-void CInteractiveObjectEx::Update( SEntityUpdateContext &ctx, int updateSlot )
+void CInteractiveObjectEx::Update( SEntityUpdateContext &ctx )
 {
 
 #ifndef _RELEASE
@@ -273,7 +272,7 @@ void CInteractiveObjectEx::HandleEvent( const SGameObjectEvent &goEvent )
 
 }
 
-void CInteractiveObjectEx::ProcessEvent( SEntityEvent &entityEvent )
+void CInteractiveObjectEx::ProcessEvent(const SEntityEvent &entityEvent )
 {
 	switch (entityEvent.event)
 	{
@@ -491,7 +490,7 @@ void CInteractiveObjectEx::StartUse( EntityId entityId )
 			const Vec3 vRadius(radius,radius,radius);
 			AABB worldBox(pos-vRadius, pos+vRadius);
 
-			if (IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)GetEntity()->GetProxy(ENTITY_PROXY_RENDER))
+			if (IEntityRenderComponent *pRenderProxy = (IEntityRenderComponent*)GetEntity()->QueryComponent<IEntityRenderComponent>())
 			{
 				gEnv->p3DEngine->DeleteDecalsInRange(&worldBox, pRenderProxy->GetRenderNode());
 			}

@@ -65,7 +65,7 @@ void CDebugGun::OnAction(EntityId actorId, const ActionId& actionId, int activat
 }
 
 //------------------------------------------------------------------------
-void CDebugGun::Update( SEntityUpdateContext& ctx, int update)
+void CDebugGun::Update( SEntityUpdateContext& ctx)
 { 
   if (!IsSelected())
     return;

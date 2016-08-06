@@ -19,8 +19,7 @@
 
 //////////////////////////////////////////////////////////////////////////
 CBoidsProxy::CBoidsProxy()
-	: m_pEntity(NULL)
-	, m_pFlock(NULL)
+	: m_pFlock(NULL)
 	, m_playersInCount(0)
 {
 }
@@ -33,31 +32,23 @@ CBoidsProxy::~CBoidsProxy()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBoidsProxy::Initialize( const SComponentInitializer& init )
+void CBoidsProxy::PostInitialize()
 {
-	m_pEntity = init.m_pEntity;
+	// Make sure render proxy also exist.
+	GetEntity()->AcquireExternalComponent<IEntityRenderComponent>();
 
-	// Make sure render and trigger proxy also exist.
-	m_pEntity->CreateProxy( ENTITY_PROXY_RENDER );
+	SetUpdatePolicy(EEntityUpdatePolicy_InRange);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBoidsProxy::Reload( IEntity *pEntity,SEntitySpawnParams &params )
+void CBoidsProxy::OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode)
 {
-	m_pEntity = pEntity;
-
 	if (m_pFlock)
-		m_pFlock->SetPos(pEntity->GetWorldPos());
+		m_pFlock->SetPos(GetEntity()->GetWorldPos());
 	
 	// Make sure render and trigger proxy also exist.
-	pEntity->CreateProxy( ENTITY_PROXY_RENDER );
+	GetEntity()->AcquireExternalComponent<IEntityRenderComponent>();
 	m_playersInCount = 0;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CBoidsProxy::Release()
-{
-	delete this;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -68,7 +59,7 @@ void CBoidsProxy::Update( SEntityUpdateContext &ctx )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBoidsProxy::ProcessEvent( SEntityEvent &event )
+void CBoidsProxy::ProcessEvent(const SEntityEvent &event )
 {
 	switch (event.event) {
 	case ENTITY_EVENT_XFORM:
@@ -90,19 +81,6 @@ void CBoidsProxy::ProcessEvent( SEntityEvent &event )
 			m_pFlock->Reset();
 		break;
 	}
-}
-
-//////////////////////////////////////////////////////////////////////////
-bool CBoidsProxy::GetSignature( TSerialize signature )
-{
-	signature.BeginGroup("BoidsProxy");
-	if (m_pFlock)
-	{
-		uint32 type = (uint32)m_pFlock->GetType();
-		signature.Value("type", type);
-	}
-	signature.EndGroup();
-	return true;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -132,21 +110,19 @@ void CBoidsProxy::SetFlock( CFlock *pFlock )
 	pTrigger->SetTriggerBounds( bbox );
 	*/
 
-	IEntityAreaProxyPtr pArea = crycomponent_cast<IEntityAreaProxyPtr>(m_pEntity->CreateProxy( ENTITY_PROXY_AREA ));
-	if (!pArea)
-		return;
+	auto &areaComponent = GetEntity()->AcquireExternalComponent<IEntityAreaComponent>();
 
-	pArea->SetFlags( pArea->GetFlags() & IEntityAreaProxy::FLAG_NOT_SERIALIZE );
-	pArea->SetSphere( Vec3(0,0,0),fMaxDist );
+	areaComponent.SetFlags( areaComponent.GetFlags() & IEntityAreaComponent::FLAG_NOT_SERIALIZE );
+	areaComponent.SetSphere( Vec3(0,0,0),fMaxDist );
 	if(gEnv->pEntitySystem->EntitiesUseGUIDs())
-		pArea->AddEntity( m_pEntity->GetGuid() );
+		areaComponent.AddEntity( m_pEntity->GetGuid() );
 	else
-		pArea->AddEntity( m_pEntity->GetId() ); // add itself.
+		areaComponent.AddEntity( m_pEntity->GetId() ); // add itself.
 
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBoidsProxy::OnTrigger( bool bEnter,SEntityEvent &event )
+void CBoidsProxy::OnTrigger( bool bEnter, const SEntityEvent &event )
 {
 	EntityId whoId = (EntityId)event.nParam[0];
 	IEntity *pEntity = gEnv->pEntitySystem->GetEntity(whoId);
@@ -163,7 +139,6 @@ void CBoidsProxy::OnTrigger( bool bEnter,SEntityEvent &event )
 			if (m_playersInCount == 1)
 			{
 				// Activates entity when player is nearby.
-				m_pEntity->Activate(true);
 				if (m_pFlock)
 					m_pFlock->SetEnabled(true);
 			}
@@ -171,7 +146,6 @@ void CBoidsProxy::OnTrigger( bool bEnter,SEntityEvent &event )
 			{
 				// Activates entity when player is nearby.
 				m_playersInCount = 0;
-				m_pEntity->Activate(false);
 				if (m_pFlock)
 					m_pFlock->SetEnabled(false);
 			}
@@ -191,34 +165,15 @@ CBoidObjectProxy::~CBoidObjectProxy()
 {
 }
 
-//////////////////////////////////////////////////////////////////////////
-void CBoidObjectProxy::Initialize( const SComponentInitializer& init )
+void CBoidObjectProxy::PostInitialize()
 {
-	m_pEntity = init.m_pEntity;
+	EnableEvent(ENTITY_EVENT_DONE, 0, true);
+	EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBoidObjectProxy::ProcessEvent( SEntityEvent &event )
+void CBoidObjectProxy::ProcessEvent(const SEntityEvent &event )
 {
 	if (m_pBoid)
 		m_pBoid->OnEntityEvent( event );
-}
-
-///////////////////////////////////////////////////////////78//////////////
-bool CBoidObjectProxy::GetSignature( TSerialize signature )
-{
-	signature.BeginGroup("BoidObjectProxy");
-	if (m_pBoid && m_pBoid->m_flock)
-	{
-		uint32 type = (uint32)m_pBoid->m_flock->GetType();
-		signature.Value("type", type);
-	}
-	signature.EndGroup();
-	return true;
-}
-
-//////////////////////////////////////////////////////////////////////////
-void CBoidObjectProxy::Serialize( TSerialize ser )
-{
-
 }

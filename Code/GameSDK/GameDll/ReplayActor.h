@@ -16,7 +16,6 @@ History:
 #define __REPLAYACTOR_H__
 
 #include "ReplayObject.h"
-#include "GameObjects/GameObject.h"
 #include "DualCharacterProxy.h"
 #include "Network/Lobby/SessionNames.h"
 
@@ -56,6 +55,7 @@ struct SBasicReplayMovementParams
 class CReplayActor : public CReplayObject
 {
 public:
+	DECLARE_COMPONENT("ReplayActor", 0x2ECC79353FC949D2, 0x8796D12502778999)
 
 	typedef CryFixedStringT<DISPLAY_NAME_LENGTH> TPlayerDisplayName;
 	static const int ShadowCharacterSlot = 5;
@@ -64,7 +64,7 @@ public:
 	virtual ~CReplayActor();
 
 	// IEntityEvent
-	virtual	void ProcessEvent( SEntityEvent &event );
+	virtual	void ProcessEvent(const SEntityEvent &event );
 	// ~IEntityEvent
 
 	virtual void PostInit(IGameObject *pGameObject);
@@ -135,10 +135,7 @@ public:
 	{
 		if (pEntity)
 		{
-			if (CGameObject * pGameObject = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER))
-			{
-				return (CReplayActor*)pGameObject->QueryExtension("ReplayActor");
-			}
+			return pEntity->QueryComponent<CReplayActor>();
 		}
 		return NULL;
 	}
@@ -196,7 +193,7 @@ private:
 	{
 		GunRemovalListener() : pReplayActor(NULL) {}
 		virtual ~GunRemovalListener(){}
-		virtual void OnEntityEvent( IEntity *pEntity,SEntityEvent &event );
+		virtual void OnEntityEvent( IEntity *pEntity, const SEntityEvent &event );
 
 		CReplayActor * pReplayActor;
 	} m_GunRemovalListener;

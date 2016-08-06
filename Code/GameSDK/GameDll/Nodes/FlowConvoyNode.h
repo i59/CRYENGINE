@@ -132,7 +132,7 @@ private:
 		float m_wheelDistance; //wheel half distance from center
 		float m_coachOffset;  //coach half length
 		float m_distanceOnPath; //coach center distance on path
-		IEntityAudioProxy* m_pEntitySoundsProxy;
+		IEntityAudioComponent* m_pEntitySoundsProxy;
 		//tSoundID m_runSoundID;
 		//tSoundID m_breakSoundID;
 		CConvoyPathIterator m_frontWheelIterator[2], m_backWheelIterator[2];

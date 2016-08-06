@@ -20,8 +20,6 @@
 
 #include <CryGame/IGame.h>
 #include <CryGame/IGameFramework.h>
-#include <IGameObjectSystem.h>
-#include <IGameObject.h>
 #include <CryCore/Platform/IPlatformOS.h>
 #include <IActorSystem.h>
 #include <CryCore/StlUtils.h>
@@ -34,6 +32,8 @@
 #include "Network/Lobby/MatchMakingTelemetry.h"
 
 #include <CryCore/Platform/CryWindows.h>
+
+#include "EntityComponentWrappers.h"
 
 #define GAME_NAME				"GAMESDK"
 #define GAME_LONGNAME		"CRYENGINE GAME SDK"
@@ -218,6 +218,8 @@ enum ECryGameEvent
 	eCGE_AllowDirectionChangeTransitionExit,
 	eCGE_Ragdollize,
 	eCGE_ItemTakenFromCorpse,
+	eGFE_EnableBlendRagdoll,
+	eGFE_StoodOnChange,
 
 	eCGE_Last
 };
@@ -730,8 +732,6 @@ protected:
 	virtual void RegisterConsoleVars();
 	virtual void RegisterConsoleCommands();
 	virtual void UnregisterConsoleCommands();
-
-	virtual void RegisterGameObjectEvents();
 
 	// marcok: this is bad and evil ... should be removed soon
 	static void CmdRestartGame(IConsoleCmdArgs *pArgs);

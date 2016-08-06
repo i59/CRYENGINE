@@ -96,7 +96,7 @@ void CC4Projectile::HandleEvent(const SGameObjectEvent &event)
 
 	if (event.event == eGFE_OnCollision)
 	{
-		EventPhysCollision *pCollision = (EventPhysCollision *)event.ptr;
+		EventPhysCollision *pCollision = (EventPhysCollision *)event.param;
 
 		if(pCollision && pCollision->pEntity[0]->GetType()==PE_PARTICLE)
 		{
@@ -152,7 +152,7 @@ void CC4Projectile::HandleEvent(const SGameObjectEvent &event)
 }
 
 //--------------------------------------------
-void CC4Projectile::ProcessEvent(SEntityEvent &event)
+void CC4Projectile::ProcessEvent(const SEntityEvent &event)
 {
 	BaseClass::ProcessEvent(event);
 
@@ -324,7 +324,7 @@ NetworkAspectType CC4Projectile::GetNetSerializeAspects()
 	return BaseClass::GetNetSerializeAspects() | m_stickyProjectile.GetNetSerializeAspects() | ASPECT_C4_STATUS;
 }
 
-void CC4Projectile::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CC4Projectile::Update(SEntityUpdateContext &ctx)
 {
 	if(gEnv->bMultiplayer)
 	{
@@ -366,7 +366,7 @@ void CC4Projectile::Update(SEntityUpdateContext &ctx, int updateSlot)
 		}
 	}
 
-	BaseClass::Update(ctx, updateSlot);
+	BaseClass::Update(ctx);
 }
 
 //------------------------------------------------------------------------

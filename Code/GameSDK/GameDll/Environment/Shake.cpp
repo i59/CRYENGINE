@@ -71,7 +71,7 @@ void CShake::FullSerialize(TSerialize ser)
 }
 
 //------------------------------------------------------------------------
-void CShake::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CShake::Update(SEntityUpdateContext &ctx)
 {
 	IActor *pClient = g_pGame->GetIGameFramework()->GetClientActor();
 	if (pClient)
@@ -96,7 +96,7 @@ void CShake::HandleEvent(const SGameObjectEvent &event)
 }
 
 //------------------------------------------------------------------------
-void CShake::ProcessEvent(SEntityEvent &event)
+void CShake::ProcessEvent(const SEntityEvent &event)
 {
 }
 

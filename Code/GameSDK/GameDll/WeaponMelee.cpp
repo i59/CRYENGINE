@@ -103,9 +103,9 @@ void CWeaponMelee::MeleeAttack( bool bShort )
 	}
 }
 
-void CWeaponMelee::Update(SEntityUpdateContext& ctx, int slot)
+void CWeaponMelee::Update(SEntityUpdateContext& ctx)
 {
-	CWeapon::Update( ctx, slot );
+	CWeapon::Update( ctx );
 
 	// This check is required because the GameObjectExtention system calls Update 255 times at initialization time.
 	if( IsSelected() )

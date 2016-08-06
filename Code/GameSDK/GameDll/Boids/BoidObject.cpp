@@ -138,9 +138,9 @@ void CBoidObject::ExecuteTrigger(int nIndex)
 			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_entity);
 			if (pEntity)
 			{
-				IEntityAudioProxyPtr audioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+				IEntityAudioComponent* audioProxy = &pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
-				if (audioProxy.get())
+				if (audioProxy)
 				{
 					audioProxy->ExecuteTrigger(id);
 				}
@@ -176,7 +176,7 @@ int CBoidObject::GetGeometrySurfaceType()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBoidObject::OnEntityEvent( SEntityEvent &event )
+void CBoidObject::OnEntityEvent( const SEntityEvent &event )
 {
 	switch (event.event)
 	{
@@ -193,7 +193,7 @@ void CBoidObject::OnEntityEvent( SEntityEvent &event )
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CBoidObject::OnCollision( SEntityEvent &event )
+void CBoidObject::OnCollision( const SEntityEvent &event )
 {
 	EventPhysCollision *pCollision = (EventPhysCollision *)(event.nParam[0]);
 

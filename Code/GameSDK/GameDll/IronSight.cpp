@@ -210,10 +210,6 @@ void CIronSight::Update(float frameTime, uint32 frameId)
 		LeaveZoom();
 		m_zoomOutScheduled = false;
 	}
-
-  if (keepUpdating)
-    m_pWeapon->RequireUpdate(eIUS_Zooming);
-
 }
 
 //------------------------------------------------------------------------
@@ -716,8 +712,6 @@ void CIronSight::ZoomIn(float time, float from, float to, bool smooth, int nextS
 
 	OnZoom(time, nextStep);
 
-	m_pWeapon->RequireUpdate(eIUS_Zooming);
-
 	if (m_pWeapon->IsOwnerClient())
 	{
 		const char* szZoomOverlay = GetShared()->zoomParams.zoom_overlay.c_str();
@@ -764,8 +758,6 @@ void CIronSight::ZoomOut(float time, float from, float to, bool smooth, int next
 	m_zoomingIn = false;
 
 	OnZoom(time, nextStep);
-
-	m_pWeapon->RequireUpdate(eIUS_Zooming);
 
 	if (m_pWeapon->IsOwnerClient())
 	{

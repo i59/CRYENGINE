@@ -10,9 +10,11 @@
 
 
 
-class CLightningArc : public CGameObjectExtensionHelper<CLightningArc, IGameObjectExtension>
+class CLightningArc : public CEntityComponentConversionHelper<CLightningArc>
 {
 public:
+	DECLARE_COMPONENT("LightningArc", 0xDD0A3E13D8B7473F, 0xAA5BBF8D10DEF3E0)
+
 	CLightningArc();
 
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
@@ -29,12 +31,11 @@ public:
 	virtual void PostSerialize();
 	virtual void SerializeSpawnInfo( TSerialize ser );
 	virtual ISerializableInfoPtr GetSpawnInfo();
-	virtual void Update( SEntityUpdateContext& ctx, int updateSlot );
+	virtual void Update( SEntityUpdateContext& ctx );
 	virtual void HandleEvent( const SGameObjectEvent& event );
-	virtual void ProcessEvent( SEntityEvent& event );	
+	virtual void ProcessEvent(const SEntityEvent& event );	
 	virtual void SetChannelId(uint16 id);
 	virtual void SetAuthority( bool auth );
-	virtual const void * GetRMIBase() const;
 	virtual void PostUpdate( float frameTime );
 	virtual void PostRemoteSpawn();
 

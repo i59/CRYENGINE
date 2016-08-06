@@ -121,7 +121,7 @@ bool CNetworkedPhysicsEntity::NetSerialize( TSerialize ser, EEntityAspects aspec
 		if (type == PE_NONE)
 			return true;
 
-		IEntityPhysicalProxy * pEPP = (IEntityPhysicalProxy *) GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
+		IEntityPhysicsComponent * pEPP = (IEntityPhysicsComponent *) GetEntity()->QueryComponent<IEntityPhysicsComponent>();
 		if (ser.IsWriting())
 		{
 			if (!pEPP || !pEPP->GetPhysicalEntity() || pEPP->GetPhysicalEntity()->GetType() != type)

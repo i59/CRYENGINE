@@ -31,6 +31,8 @@ class CCinematicWeapon : public CWeapon
 	typedef CWeapon BaseClass;
 
 public:
+	DECLARE_COMPONENT("CinematicWeapon", 0xB2CEC8903DA54ACC, 0x8FCD6AF5EA971C2D)
+
 	CCinematicWeapon();
 	virtual ~CCinematicWeapon();
 

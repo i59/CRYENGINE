@@ -33,17 +33,19 @@ private:
 	typedef CWeapon BaseClass;
 
 public:
+	DECLARE_COMPONENT("Jaw", 0xAA296DFA521F4235, 0xBD41A6B870C6E608)
+
 	CJaw();
 
 	virtual bool Init(IGameObject * pGameObject);
-	virtual void Update(SEntityUpdateContext& ctx, int slot);
+	virtual void Update(SEntityUpdateContext& ctx);
 	virtual void OnReset();
 	virtual bool SetAspectProfile(EEntityAspects aspect, uint8 profile);
 	virtual void Select(bool select);
 	virtual void PickUp(EntityId pickerId, bool sound, bool select/* =true */, bool keepHistory/* =true */, const char* setup);
 	virtual void Drop(float impulseScale, bool selectNext/* =true */, bool byDeath/* =false */);
 	virtual bool ShouldDoPostSerializeReset() const;
-	virtual void ProcessEvent(SEntityEvent& event);
+	virtual void ProcessEvent(const SEntityEvent& event);
 	virtual void OnShoot(EntityId shooterId, EntityId ammoId, IEntityClass* pAmmoType, const Vec3 &pos, const Vec3 &dir, const Vec3 &vel);
 	virtual void OnAction(EntityId actorId, const ActionId& actionId, int activationMode, float value);
 	virtual bool OutOfAmmo(bool allFireModes) const;

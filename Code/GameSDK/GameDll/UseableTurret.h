@@ -14,6 +14,7 @@ private:
 	typedef CHeavyMountedWeapon BaseClass;
 
 public:
+	DECLARE_COMPONENT("UseableTurret", 0xEB36169582F54F47, 0x8E480260EAA1A14E)
 
 	enum ECUTFiringMode
 	{

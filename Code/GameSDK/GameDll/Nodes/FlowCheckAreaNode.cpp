@@ -97,7 +97,7 @@ public:
 			ActivateOutput(&m_actInfo, EOP_Leave, true);
 	}
 
-	void OnEntityEvent(IEntity *pEntity, SEntityEvent &event)
+	void OnEntityEvent(IEntity *pEntity, const SEntityEvent &event)
 	{
 		switch (event.event)
 		{

@@ -20,7 +20,6 @@
 #endif
 
 #include <CryNetwork/SerializeFwd.h>
-#include "IGameObject.h"
 #include "GameRulesTypes.h"
 
 #ifndef _RELEASE

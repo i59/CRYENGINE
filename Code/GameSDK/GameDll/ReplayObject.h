@@ -41,13 +41,15 @@ private:
 	TItemVec m_items;
 };
 
-class CReplayObject : public CGameObjectExtensionHelper<CReplayObject, IGameObjectExtension>
+class CReplayObject : public CEntityComponentConversionHelper<CReplayObject>
 {
 public:
+	DECLARE_COMPONENT("ReplayObject", 0x977B54B8FCDE438B, 0x8DD1E32B1E71CEA2)
+
 	CReplayObject();
 	virtual ~CReplayObject();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init(IGameObject *pGameObject);
 	virtual void InitClient(int channelId) {}
 	virtual void PostInit(IGameObject *pGameObject) {}
@@ -61,15 +63,15 @@ public:
 	virtual void PostSerialize() {}
 	virtual void SerializeSpawnInfo( TSerialize ser ) {}
 	virtual ISerializableInfoPtr GetSpawnInfo() {return 0;}
-	virtual void Update( SEntityUpdateContext &ctx, int updateSlot) {}
+	virtual void Update( SEntityUpdateContext &ctx) {}
 	virtual void PostUpdate(float frameTime ) {}
 	virtual void PostRemoteSpawn() {}
 	virtual void HandleEvent( const SGameObjectEvent &) {}
-	virtual void ProcessEvent(SEntityEvent &) {}
+	virtual void ProcessEvent(const SEntityEvent &) {}
 	virtual void SetChannelId(uint16 id) {}
 	virtual void SetAuthority(bool auth) {}
 	virtual void GetMemoryUsage(ICrySizer * s) const {}
-	//~IGameObjectExtension
+	// ~IEntityComponent
 
 	void SetTimeSinceSpawn(float time) { assert(time >= 0); m_timeSinceSpawn = time; }
 

@@ -629,7 +629,7 @@ void CGameRulesObjective_CTF::OnAction(const ActionId &action, int activationMod
 }
 
 //-------------------------------------------------------------------------
-void CGameRulesObjective_CTF::OnEntityEvent( IEntity *pEntity, SEntityEvent &event )
+void CGameRulesObjective_CTF::OnEntityEvent( IEntity *pEntity, const SEntityEvent &event )
 {
 	EntityId entityId = pEntity->GetId();
 
@@ -897,7 +897,7 @@ void CGameRulesObjective_CTF::Handle_SetupFallbackWeapon( EntityId weaponId, Ent
 	STeamInfo *pTeamInfo = &m_teamInfo[teamId - 1];
 	pTeamInfo->m_fallbackWeaponId = weaponId;
 
-	CCarryEntity *pFlag = static_cast<CCarryEntity*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(flagId, CTF_FLAG_CLASS_NAME));
+	CCarryEntity *pFlag = static_cast<CCarryEntity*>(gEnv->pEntitySystem->QueryComponent<CCarryEntity>(flagId));
 	if (pFlag)
 	{
 		pFlag->SetSpawnedWeaponId(weaponId);
@@ -987,7 +987,7 @@ void CGameRulesObjective_CTF::Server_ResetAll()
 									EntityId weaponId = pWeapon->GetId();
 									pTeamInfo->m_fallbackWeaponId = weaponId;
 
-									CCarryEntity *pFlag = static_cast<CCarryEntity*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(flagId, CTF_FLAG_CLASS_NAME));
+									CCarryEntity *pFlag = static_cast<CCarryEntity*>(gEnv->pEntitySystem->QueryComponent<CCarryEntity>(flagId));
 									if (pFlag)
 									{
 										pFlag->SetSpawnedWeaponId(weaponId);
@@ -1109,7 +1109,7 @@ void CGameRulesObjective_CTF::Server_CheckForFlagRetrieval()
 //-------------------------------------------------------------------------
 void CGameRulesObjective_CTF::Server_PhysicalizeFlag(EntityId flagId, bool bEnable)
 {
-	CNetworkedPhysicsEntity *pNetPhysEnt = static_cast<CNetworkedPhysicsEntity*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(flagId, CTF_FLAG_CLASS_NAME));
+	CNetworkedPhysicsEntity *pNetPhysEnt = static_cast<CNetworkedPhysicsEntity*>(gEnv->pEntitySystem->QueryComponent<CNetworkedPhysicsEntity>(flagId));
 	if (pNetPhysEnt)
 	{
 		pNetPhysEnt->Physicalize(bEnable ? CNetworkedPhysicsEntity::ePhys_PhysicalizedRigid : CNetworkedPhysicsEntity::ePhys_NotPhysicalized);

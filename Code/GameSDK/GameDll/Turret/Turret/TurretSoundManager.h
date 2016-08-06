@@ -37,7 +37,7 @@ struct STurretSoundInfo
 class CTurretSoundManagerHelper
 {
 public:
-	CTurretSoundManagerHelper( IEntityAudioProxyPtr pIEntityAudioProxy )
+	CTurretSoundManagerHelper( IEntityAudioComponent* pIEntityAudioProxy )
 		: m_pIEntityAudioProxy( pIEntityAudioProxy )
 	{
 		assert( m_pIEntityAudioProxy != NULL );
@@ -123,7 +123,7 @@ public:
 	}
 
 private:
-	IEntityAudioProxyPtr m_pIEntityAudioProxy;
+	IEntityAudioComponent* m_pIEntityAudioProxy;
 	STurretSoundInfo m_sounds[ eTS_SoundCount ];
 };
 
@@ -131,7 +131,7 @@ private:
 class CTurretSoundManager
 {
 public:
-	CTurretSoundManager( SmartScriptTable pSoundPropertiesTable, ICharacterInstance* pCharacterInstance, IEntityAudioProxyPtr pIEntityAudioProxy )
+	CTurretSoundManager( SmartScriptTable pSoundPropertiesTable, ICharacterInstance* pCharacterInstance, IEntityAudioComponent* pIEntityAudioProxy )
 		: m_soundManagerHelper( pIEntityAudioProxy )
 		, m_oldYawRadians( 0 )
 		, m_oldPitchRadians( 0 )
@@ -176,7 +176,7 @@ public:
 		ReleaseResources();
 	}
 
-	void ProcessEvent( SEntityEvent& event )
+	void ProcessEvent(const SEntityEvent& event )
 	{
 		switch( event.event )
 		{

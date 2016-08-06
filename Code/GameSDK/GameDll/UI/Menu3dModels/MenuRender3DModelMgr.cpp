@@ -328,7 +328,7 @@ void CMenuRender3DModelMgr::HideModel(bool bHide,int nEntityIdx,bool bUpdateMode
 		// Reset alpha
 		if(bHide)
 		{
-			IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+			IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent*>(pEntity->QueryComponent<IEntityRenderComponent>());
 			if(pRenderProxy)
 			{
 				pRenderProxy->SetOpacity(0.0f);
@@ -372,7 +372,7 @@ void CMenuRender3DModelMgr::ForceAnimationUpdate(IEntity* pEntity)
 			animProcessParams.zoomAdjustedDistanceFromCamera = fZoomAdjustedDistanceFromCamera;
 			pCharInst->StartAnimationProcessing(animProcessParams);
 			pCharInst->FinishAnimationComputations();
-			IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+			IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent*>(pEntity->QueryComponent<IEntityRenderComponent>());
 			if(pRenderProxy)
 			{
 				pRenderProxy->InvalidateLocalBounds();
@@ -732,7 +732,7 @@ void CMenuRender3DModelMgr::PreCacheMaterial(SRenderSingleEntityData& rd, IEntit
 	const bool bFullUpdate = true;
 	const bool bDrawNear = true;
 
-	IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+	IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent*>(pEntity->QueryComponent<IEntityRenderComponent>());
 	if (pRenderProxy)
 		gEnv->p3DEngine->PrecacheRenderNode(pRenderProxy->GetRenderNode(), 0.0f);
 
@@ -1037,7 +1037,7 @@ void CMenuRender3DModelMgr::SetAsPost3dRenderObject(IEntity* pEntity,uint8 group
 {
 	if(pEntity)
 	{
-		IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent*>(pEntity->QueryComponent<IEntityRenderComponent>());
 		if(pRenderProxy)
 		{
 			pRenderProxy->SetAsPost3dRenderObject(true,groupId,pScreenRect);
@@ -1563,7 +1563,7 @@ void CMenuRender3DModelMgr::UpdateEntities()
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(renderEntityData.entityId);
 		if(pEntity)
 		{
-			IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+			IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent*>(pEntity->QueryComponent<IEntityRenderComponent>());
 			if(pRenderProxy)
 			{
 				// Set silhouettes

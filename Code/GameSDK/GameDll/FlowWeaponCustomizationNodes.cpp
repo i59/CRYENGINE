@@ -1,7 +1,6 @@
 // Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 
 #include "StdAfx.h"
-#include "GameObjects/GameObject.h"
 #include "Item.h"
 #include "Weapon.h"
 #include "FlowWeaponCustomizationNodes.h"
@@ -61,8 +60,7 @@ void CFlashUIInventoryNode::ProcessEvent( EFlowEvent event, SActivationInfo *pAc
 
 						if(pEntity)
 						{
-							CGameObject * pGameObject = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER);
-							CItem* pItem = (CItem*)pGameObject->QueryExtension(pGameObject->GetEntity()->GetClass()->GetName());
+							CItem* pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem<CItem>(*pEntity);
 
 							if(pItem && pItem->CanSelect())
 							{
@@ -133,14 +131,14 @@ void CFlashUIGetEquippedAccessoriesNode::ProcessEvent( EFlowEvent event, SActiva
 
 				if (pEntity)
 				{
-					CGameObject * pGameObject = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER);
-					IItem* pWeapon = (IItem*)pGameObject->QueryExtension(pGameObject->GetEntity()->GetClass()->GetName());
+					IGameObject * pGameObject = (IGameObject*)pEntity->QueryComponent<IGameObject>();
+					CItem* pItem = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem<CItem>(*pEntity);
 
 					//If the weapon exists, return all equipped attachments in a separated string
-					if(pWeapon)
+					if(pItem)
 					{
 						//All equipped accessories for this weapon weapons
-						accessories = static_cast<CItem*>(pWeapon)->GetAttachedAccessoriesString(UIARGS_DEFAULT_DELIMITER);
+						accessories = static_cast<CItem*>(pItem)->GetAttachedAccessoriesString(UIARGS_DEFAULT_DELIMITER);
 					}
 				}
 			}
@@ -199,8 +197,7 @@ void CFlashUIGetCompatibleAccessoriesNode ::ProcessEvent( EFlowEvent event, SAct
 				IEntity* pEntity = gEnv->pEntitySystem->GetEntity(item);
 				if(pEntity)
 				{
-					CGameObject * pGameObject = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER);
-					CWeapon* pWeapon = (CWeapon*)pGameObject->QueryExtension(pGameObject->GetEntity()->GetClass()->GetName());
+					CWeapon* pWeapon = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem<CWeapon>(*pEntity);
 
 					//If the weapon exists, ask for all compatible accessories
 					if(pWeapon)
@@ -290,10 +287,7 @@ void CFlashUICheckAccessoryState ::ProcessEvent( EFlowEvent event, SActivationIn
 					IEntity* pEntity = gEnv->pEntitySystem->GetEntity(item);
 					if(pEntity)
 					{
-
-						CGameObject * pGameObject = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER);
-						const char* ext = pGameObject->GetEntity()->GetClass()->GetName();
-						CWeapon* pWeapon = (CWeapon*)pGameObject->QueryExtension(pGameObject->GetEntity()->GetClass()->GetName());
+						CWeapon* pWeapon = gEnv->pGame->GetIGameFramework()->GetIItemSystem()->GetItem<CWeapon>(*pEntity);
 						bool selectable = pWeapon->CanSelect();
 						if(pWeapon)
 						{

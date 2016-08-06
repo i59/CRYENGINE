@@ -59,7 +59,7 @@ namespace PickAndThrow
 {
 	CEnvironmentalWeapon* GetEnviromentalWeaponForEntity( const EntityId entityId )
 	{
-		return static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(entityId, "EnvironmentalWeapon"));
+		return static_cast<CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(entityId));
 	}
 
 	void EnviromentalWeaponEnableIgnore( const CPlayer* pPlayer, const EntityId entityId )
@@ -726,7 +726,7 @@ void CPickAndThrowWeapon::EnslaveTarget(bool enslave)
 					// Stop any hit reaction before enslaving
 					if (enslave)
 					{
-						pTargetActor->HandleEvent( SGameObjectEvent( eCGE_ReactionEnd, eGOEF_ToExtensions ) );
+						pTargetActor->GetEntity()->SendComponentEvent(eCGE_ReactionEnd);
 					}
 
 					IEntity *pTargetEntity= pTargetActor->GetEntity();
@@ -819,7 +819,7 @@ void CPickAndThrowWeapon::OnSelected(bool selected)
 
 		int16 actionType = eEVE_Pickup;
 
-		if (IEntityRenderProxy *pRenderProxy = validTargetEntity ? (IEntityRenderProxy*)pTargetEntity->GetProxy(ENTITY_PROXY_RENDER) : NULL)
+		if (IEntityRenderComponent *pRenderProxy = validTargetEntity ? (IEntityRenderComponent*)pTargetEntity->QueryComponent<IEntityRenderComponent>() : NULL)
 		{
 			const Vec3 pos = pTargetEntity->GetWorldPos();
 			AABB aabb;
@@ -874,8 +874,6 @@ void CPickAndThrowWeapon::OnSelected(bool selected)
 		}
 	
 		m_state = isNPC ? eST_GRABBINGNPC : eST_GOINGTOPICK;
-
-		RequireUpdate( eIUS_General );
 
 		m_objectGrabbed = m_objectCollisionsLimited = false;
 		m_hitsTakenByNPC = 0;
@@ -1534,12 +1532,9 @@ void CPickAndThrowWeapon::RestoreObjectPhysics( EntityId entityId, bool isNPC )
 } 
 
 //---------------------------------------------------------------------------
-void CPickAndThrowWeapon::Update(SEntityUpdateContext& ctx, int val )
+void CPickAndThrowWeapon::Update(SEntityUpdateContext& ctx )
 {
-	CWeapon::Update( ctx, val );
-
-	if (val!=eIUS_General)
-		return;   // to avoid multiple updates in the same frame
+	CWeapon::Update( ctx );
 
 	// Cache these
 	const SPickAndThrowParams::SGrabTypeParams& grabParams = GetGrabTypeParams(); 
@@ -1569,8 +1564,6 @@ void CPickAndThrowWeapon::Update(SEntityUpdateContext& ctx, int val )
 			break;
 		case eST_GOINGTOPICK:
 		{
-			RequireUpdate( eIUS_General );
-
 			if (!GetEntityObject() || !IsGrabStillValid())
 			{
 				CPlayer *pOwner = GetOwnerPlayer();
@@ -1603,8 +1596,6 @@ void CPickAndThrowWeapon::Update(SEntityUpdateContext& ctx, int val )
 	
 		case eST_PICKING:
 		{
-			RequireUpdate( eIUS_General );
-
 			const float timeLimit = DeterminePickingStateDuration(); 
 			if (m_timePassed >= timeLimit)
 			{
@@ -1615,12 +1606,6 @@ void CPickAndThrowWeapon::Update(SEntityUpdateContext& ctx, int val )
 			break;
 		}
 
-		case eST_GRABBINGNPC:
-			{
-				RequireUpdate( eIUS_General );
-			}
-			break;
-		
 		case eST_CHARGED_THROW_PRE_RELEASE:
 		{
 			UpdateChargedThrowPreRelease(ctx.fFrameTime); 
@@ -1632,8 +1617,6 @@ void CPickAndThrowWeapon::Update(SEntityUpdateContext& ctx, int val )
 		case eST_PUSHINGAWAY_WEAK:
 		case eST_CHARGED_THROW_POST_RELEASE:
 		{
-			RequireUpdate( eIUS_General );
-			
 			CPlayer *pOwner = GetOwnerPlayer();
 
 			m_obstructionChecker.DoCheck( pOwner, m_objectId );
@@ -1668,7 +1651,6 @@ void CPickAndThrowWeapon::Update(SEntityUpdateContext& ctx, int val )
 		
 		case eST_THROWING:
 		{
-			RequireUpdate( eIUS_General );
 			float timeMax = m_animDuration;
 			if (IsNPC())
 				timeMax = max( timeMax, (GetThrowParams().timeToFreeAtThrowing + GetThrowParams().timeToRestorePhysicsAfterFree) );
@@ -1696,7 +1678,6 @@ void CPickAndThrowWeapon::Update(SEntityUpdateContext& ctx, int val )
 		
 		case eST_STARTDROPPING:
 		{
-			RequireUpdate( eIUS_General );
 			if (m_timePassed >= GetGrabTypeParams().timeToFreeAtDropping)  
 			{
 				m_state = eST_DROPPING;
@@ -1707,7 +1688,6 @@ void CPickAndThrowWeapon::Update(SEntityUpdateContext& ctx, int val )
 
 		case eST_DROPPING:
 		{
-			RequireUpdate( eIUS_General );
 			if (m_timePassed >= GetGrabTypeParams().timeDropping)
 			{
 				CPlayer *pOwner = GetOwnerPlayer();
@@ -1727,22 +1707,18 @@ void CPickAndThrowWeapon::Update(SEntityUpdateContext& ctx, int val )
 				g_pGame->GetAutoAimManager().SetCloseCombatSnapTarget(m_currentMeleeAutoTargetId, 
 					g_pGameCVars->pl_melee.melee_snap_end_position_range, 
 					g_pGameCVars->pl_melee.melee_snap_move_speed_multiplier);
-				
-				RequireUpdate( eIUS_General );
 			}
 			break;
 		}
 
 		case eST_COMPLEX_MELEE:
 		{
-			RequireUpdate( eIUS_General );
 			UpdateComplexMelee(ctx.fFrameTime);	
 			break;
 		}
 		
 		case eST_KILLING_GRABBEDNPC:
 		{
-			RequireUpdate( eIUS_General );
 			if (m_timePassed >= m_animDuration)
 			{
 				m_state = eST_KILLED_GRABBEDNPC;
@@ -1753,7 +1729,6 @@ void CPickAndThrowWeapon::Update(SEntityUpdateContext& ctx, int val )
 		
 		case eST_KILLED_GRABBEDNPC:
 		{
-			RequireUpdate( eIUS_General );
 			{
 				Start_Drop( false );
 			}
@@ -2066,8 +2041,6 @@ void CPickAndThrowWeapon::PerformCameraShake(const SPickAndThrowParams::SCameraS
 // Contains all the logic for the various sub stages of a charged throw
 void CPickAndThrowWeapon::UpdateChargedThrowPreRelease( const float frameTime )
 {
-	RequireUpdate( eIUS_General );
-
 	// Need to make sure we switch to a looped hold anim when prime is done
 	if( m_chargedThrowState == eCTS_PRIMING && 
 		  m_timePassed >= (m_animDuration*0.99f)) // NOTE: pre-empt the end of this anim slightly?
@@ -2172,7 +2145,6 @@ void CPickAndThrowWeapon::UpdateInfiniteViewEntities( float frameTime )
 {
 	if (m_infiniteViewEntities.size()>0)
 	{
-		RequireUpdate( eIUS_General );
 		uint32 numValidEntities = 0;
 		float currTime = gEnv->pTimer->GetCurrTime();
 		
@@ -2236,7 +2208,7 @@ void CPickAndThrowWeapon::RestoreEntityViewDist( const SInfiniteViewDistEntity& 
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity( info.entityId );
 	if (pEntity)
 	{
-		IEntityRenderProxy *pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRenderComponent *pRenderProxy = static_cast<IEntityRenderComponent *>(pEntity->QueryComponent<IEntityRenderComponent>());
 		if (pRenderProxy)
 		{
 			IRenderNode *pRenderNode = pRenderProxy->GetRenderNode();
@@ -2421,7 +2393,7 @@ void CPickAndThrowWeapon::ThrowObject()
 		if(m_state == eST_CHARGED_THROW_POST_RELEASE)
 		{
 			// Find the object's centre to work out the throw direction from
-			IEntityPhysicalProxy* pPhysProxy = static_cast<IEntityPhysicalProxy*>(pEntity->GetProxy(ENTITY_PROXY_PHYSICS));
+			IEntityPhysicsComponent* pPhysProxy = static_cast<IEntityPhysicsComponent*>(pEntity->QueryComponent<IEntityPhysicsComponent>());
 			if(pPhysProxy)
 			{
 				AABB aabb;
@@ -2487,7 +2459,7 @@ void CPickAndThrowWeapon::ThrowObject()
 				
 			if (m_state == eST_PUSHINGAWAY_POWER)
 			{
-				IEntityRenderProxy *pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+				IEntityRenderComponent *pRenderProxy = static_cast<IEntityRenderComponent *>(pEntity->QueryComponent<IEntityRenderComponent>());
 				IRenderNode *pRenderNode = (pRenderProxy != NULL) ? pRenderProxy->GetRenderNode() : NULL;
 				if (pRenderNode)
 				{
@@ -2663,7 +2635,7 @@ IEntity* CPickAndThrowWeapon::CalculateBestChargedThrowAutoAimTarget(const Matri
 			Vec3 targetTestPos; 
 
 			// We test against target aabb centre to reduce error
-			IEntityPhysicalProxy* pPhysProxy = static_cast<IEntityPhysicalProxy*>(pEntity->GetProxy(ENTITY_PROXY_PHYSICS));
+			IEntityPhysicsComponent* pPhysProxy = static_cast<IEntityPhysicsComponent*>(pEntity->QueryComponent<IEntityPhysicsComponent>());
 			if(pPhysProxy)
 			{
 				AABB aabb;
@@ -2741,7 +2713,7 @@ IEntity* CPickAndThrowWeapon::CalculateBestChargedThrowAutoAimTarget(const Matri
 		Vec3 targetTestPos = pBestTarget->GetPos(); 
 
 		// We use aabb centre to reduce error
-		IEntityPhysicalProxy* pPhysProxy = static_cast<IEntityPhysicalProxy*>(pBestTarget->GetProxy(ENTITY_PROXY_PHYSICS));
+		IEntityPhysicsComponent* pPhysProxy = static_cast<IEntityPhysicsComponent*>(pBestTarget->QueryComponent<IEntityPhysicsComponent>());
 		if(pPhysProxy)
 		{
 			AABB aabb;
@@ -3500,7 +3472,6 @@ void CPickAndThrowWeapon::RequestStartThrow( EState throwState )
 			m_RequestedThrowState = throwState;
 			CHANGED_NETWORK_STATE(this, ASPECT_STREAM);
 			Start_Throw(m_RequestedThrowState);
-			RequireUpdate( eIUS_General );
 		}
 		else
 		{
@@ -3509,16 +3480,15 @@ void CPickAndThrowWeapon::RequestStartThrow( EState throwState )
 			{
 				m_RequestedThrowState = throwState;
 				Start_Throw(m_RequestedThrowState);
-				RequireUpdate( eIUS_General );
 			}
 
 			if(throwState != eST_CHARGED_THROW_POST_RELEASE)
 			{
-				GetGameObject()->InvokeRMI(SvRequestThrow(), SvRequestThrowParams(throwState), eRMI_ToServer);
+			GetGameObject()->InvokeRMI(SvRequestThrow(), SvRequestThrowParams(throwState), eRMI_ToServer);
 			}
 			else
 			{
-				GetGameObject()->InvokeRMI(SvRequestChargedThrowPostRelease(), NoParams(), eRMI_ToServer);
+			GetGameObject()->InvokeRMI(SvRequestChargedThrowPostRelease(), NoParams(), eRMI_ToServer);
 			}
 		}
 	}
@@ -3540,7 +3510,6 @@ void CPickAndThrowWeapon::RequestChargedThrowPreRelease( )
 			m_RequestedThrowState = eST_CHARGED_THROW_PRE_RELEASE; 
 			Start_Charged_Throw_PreRelease(); 
 			CHANGED_NETWORK_STATE(this, ASPECT_STREAM);
-			RequireUpdate( eIUS_General );
 		}
 		else
 		{
@@ -3549,10 +3518,9 @@ void CPickAndThrowWeapon::RequestChargedThrowPreRelease( )
 			{
 				m_RequestedThrowState = eST_CHARGED_THROW_PRE_RELEASE;
 				Start_Charged_Throw_PreRelease(); 
-				RequireUpdate( eIUS_General );
 			}
 
-			GetGameObject()->InvokeRMI(SvRequestChargedThrowPreRelease(),NoParams(), eRMI_ToServer);
+		GetGameObject()->InvokeRMI(SvRequestChargedThrowPreRelease(),NoParams(), eRMI_ToServer);
 		}
 	}
 }
@@ -3790,12 +3758,10 @@ bool CPickAndThrowWeapon::NetSerialize( TSerialize ser, EEntityAspects aspect, u
 				if(m_RequestedThrowState == eST_CHARGED_THROW_PRE_RELEASE)
 				{
 					Start_Charged_Throw_PreRelease(); 
-					RequireUpdate( eIUS_General );
 				}
 				else if(throwStateChanged && m_RequestedThrowState != eST_UNKNOWN)
 				{
 					Start_Throw(m_RequestedThrowState);
-					RequireUpdate( eIUS_General );
 				}
 			}
 		}
@@ -3874,8 +3840,6 @@ void CPickAndThrowWeapon::QuickAttach()
 	{
 		m_state = eST_IDLE;
 	}
-	
-	RequireUpdate( eIUS_General );
 }
 
 void CPickAndThrowWeapon::OnEndMannequinGrabAction()

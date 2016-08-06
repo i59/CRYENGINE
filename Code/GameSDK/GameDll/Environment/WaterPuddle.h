@@ -6,7 +6,6 @@
 #define WATER_PUDDLE_H
 
 
-#include <IGameObject.h>
 #include "ActorManager.h"
 
 
@@ -37,13 +36,15 @@ private:
 
 
 
-class CWaterPuddle : public CGameObjectExtensionHelper<CWaterPuddle, IGameObjectExtension>
+class CWaterPuddle : public CEntityComponentConversionHelper<CWaterPuddle>
 {
 public:
+	DECLARE_COMPONENT("WaterPuddle", 0xA4075904BDAC4073, 0xA2041726295254B2)
+
 	CWaterPuddle();
 	~CWaterPuddle();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init(IGameObject * pGameObject);
 	virtual void InitClient(int channelId);
 	virtual void PostInit(IGameObject * pGameObject);
@@ -57,15 +58,15 @@ public:
 	virtual void PostSerialize();
 	virtual void SerializeSpawnInfo(TSerialize ser);
 	virtual ISerializableInfoPtr GetSpawnInfo();
-	virtual void Update(SEntityUpdateContext& ctx, int slot);
+	virtual void Update(SEntityUpdateContext& ctx);
 	virtual void HandleEvent(const SGameObjectEvent& gameObjectEvent);
-	virtual void ProcessEvent(SEntityEvent& entityEvent);
+	virtual void ProcessEvent(const SEntityEvent& entityEvent);
 	virtual void SetChannelId(uint16 id);
 	virtual void SetAuthority(bool auth);
 	virtual void PostUpdate(float frameTime);
 	virtual void PostRemoteSpawn();
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
-	// ~IGameObjectExtension
+	// ~IEntityComponent
 
 	void ZapEnemiesOnPuddle(int ownTeam, EntityId shooterId, EntityId weaponId, float damage, int hitTypeId, IParticleEffect* hitEffect);
 

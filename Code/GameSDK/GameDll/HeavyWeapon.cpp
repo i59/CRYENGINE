@@ -170,7 +170,6 @@ void CHeavyWeapon::StartUse(EntityId userId)
 	TriggerRespawn();
 
 	EnableUpdate(true, eIUS_General);
-	RequireUpdate(eIUS_General);
 
 	RegisterAsUser();
 
@@ -201,7 +200,7 @@ void CHeavyWeapon::StartUse(EntityId userId)
 
 	if (IsServer())
 	{
-		pOwner->GetGameObject()->InvokeRMIWithDependentObject(CActor::ClStartUse(), CActor::ItemIdParam(GetEntityId()), eRMI_ToAllClients|eRMI_NoLocalCalls, GetEntityId());
+		pOwner->InvokeRMIWithDependentObject(CActor::ClStartUse(), CActor::ItemIdParam(GetEntityId()), eRMI_ToAllClients|eRMI_NoLocalCalls, GetEntityId());
 		g_pGame->GetGameRules()->AbortEntityRemoval(GetEntityId());
 	}
 
@@ -242,7 +241,7 @@ void CHeavyWeapon::DeselectAndDrop(EntityId userId)
 
 	if(gEnv->bServer)
 	{
-		GetGameObject()->InvokeRMI(ClDeselectAndDrop(), SHeavyWeaponUserParams(userId), eRMI_ToAllClients|eRMI_NoLocalCalls);
+	GetGameObject()->InvokeRMI(ClDeselectAndDrop(), SHeavyWeaponUserParams(userId), eRMI_ToAllClients|eRMI_NoLocalCalls);
 	}
 }
 
@@ -343,7 +342,7 @@ void CHeavyWeapon::InitClient( int channelId )
 	}
 	else if(m_bIsHighlighted)
 	{
-		GetGameObject()->InvokeRMI(ClHeavyWeaponHighlighted(), SNoParams(), eRMI_ToClientChannel, channelId);		 
+	GetGameObject()->InvokeRMI(ClHeavyWeaponHighlighted(), SNoParams(), eRMI_ToClientChannel, channelId);		 
 	}
 }
 

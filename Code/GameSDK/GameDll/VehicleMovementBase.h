@@ -378,7 +378,7 @@ public:
 	virtual void EnableMovementProcessing(bool enable) override { m_bMovementProcessingEnabled = enable; }
 	virtual bool IsMovementProcessingEnabled() override { return m_bMovementProcessingEnabled; }
 
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void ProcessEvent(const SEntityEvent& event) override;
 	virtual CryCriticalSection* GetNetworkLock() override { return &m_networkLock; }
 
 	virtual float GetEnginePedal() override { return m_movementAction.power; }
@@ -406,7 +406,7 @@ public:
 		pSizer->AddObject(m_damageComponents);
 	}
 
-	virtual IEntityAudioProxy* GetAudioProxy() const override { return m_pIEntityAudioProxy.get(); }
+	virtual IEntityAudioComponent* GetAudioProxy() const override { return m_pIEntityAudioProxy; }
 	virtual AudioControlId GetPrimaryWeaponAudioTrigger() const override { return m_audioControlIDs[eSID_VehiclePrimaryWeapon]; }
 	virtual AudioControlId GetPrimaryWeaponAudioStopTrigger() const override { return m_audioControlIDs[eSID_VehicleStopPrimaryWeapon]; }
 	virtual AudioControlId GetSecondaryWeaponAudioTrigger() const override { return m_audioControlIDs[eSID_VehicleSecondaryWeapon]; }
@@ -488,7 +488,7 @@ public:
 protected:
 	IVehicle* m_pVehicle;
 	IEntity* m_pEntity;
-	IEntityAudioProxyPtr m_pIEntityAudioProxy;	
+	IEntityAudioComponent* m_pIEntityAudioProxy;	
 	static IGameTokenSystem* m_pGameTokenSystem;
 	static IVehicleSystem* m_pVehicleSystem;
 	static IActorSystem* m_pActorSystem;

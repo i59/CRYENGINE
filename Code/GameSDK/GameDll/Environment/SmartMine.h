@@ -16,8 +16,6 @@ History:
 #ifndef _SMART_MINE_H_
 #define _SMART_MINE_H_
 
-#include <IGameObject.h>
-
 #include "../State.h"
 #include "../EntityUtility/EntityEffects.h"
 
@@ -88,17 +86,18 @@ struct SSmartMineEvent_Update : public SStateEvent
 //////////////////////////////////////////////////////////////////////////
 /// Smart Mine
 
-class CSmartMine : public CGameObjectExtensionHelper<CSmartMine, IGameObjectExtension>
+class CSmartMine : public CEntityComponentConversionHelper<CSmartMine>
 {
 
 public:
+	DECLARE_COMPONENT("SmartMine", 0xF195DEF7E9DB43B3, 0x8D5CA62701A43BEB)
 
 	typedef CryFixedArray<EntityId, 4> TrackedEntities; //Up to 4 targets should be more than enough... 
 
 	CSmartMine();
 	virtual ~CSmartMine();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init( IGameObject * pGameObject );
 	virtual void InitClient( int channelId ) {};
 	virtual void PostInit( IGameObject * pGameObject );
@@ -112,15 +111,15 @@ public:
 	virtual void PostSerialize() {};
 	virtual void SerializeSpawnInfo( TSerialize ser ) {}
 	virtual ISerializableInfoPtr GetSpawnInfo() {return 0;}
-	virtual void Update( SEntityUpdateContext& ctx, int slot );
+	virtual void Update( SEntityUpdateContext& ctx );
 	virtual void HandleEvent( const SGameObjectEvent& gameObjectEvent );
-	virtual void ProcessEvent( SEntityEvent& entityEvent );
+	virtual void ProcessEvent(const SEntityEvent& entityEvent );
 	virtual void SetChannelId( uint16 id ) {};
 	virtual void SetAuthority( bool auth ) {};
 	virtual void PostUpdate( float frameTime ) { CRY_ASSERT(false); }
 	virtual void PostRemoteSpawn() {};
 	virtual void GetMemoryUsage( ICrySizer *pSizer ) const;
-	// ~IGameObjectExtension
+	// ~IEntityComponent
 
 	void StartTrackingEntity( const EntityId entityId );
 	void StopTrackingEntity( const EntityId entityId );

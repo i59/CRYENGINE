@@ -12,28 +12,16 @@ void CDeflectorShield::InitClient(int channelId) {}
 void CDeflectorShield::PostInitClient(int channelId) {}
 void CDeflectorShield::PostReloadExtension(IGameObject * pGameObject, const SEntitySpawnParams &params) {}
 bool CDeflectorShield::GetEntityPoolSignature(TSerialize signature) {return true;}
-void CDeflectorShield::Release() {}
 void CDeflectorShield::FullSerialize(TSerialize ser) {}
 bool CDeflectorShield::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int pflags) {return true;}
 void CDeflectorShield::PostSerialize() {}
 void CDeflectorShield::SerializeSpawnInfo(TSerialize ser) {}
 ISerializableInfoPtr CDeflectorShield::GetSpawnInfo() {return ISerializableInfoPtr();}
-void CDeflectorShield::ProcessEvent(SEntityEvent& event) {}
+void CDeflectorShield::ProcessEvent(const SEntityEvent& event) {}
 void CDeflectorShield::SetChannelId(uint16 id) {}
 void CDeflectorShield::SetAuthority(bool auth ) {}
-const void * CDeflectorShield::GetRMIBase() const {return 0;}
 void CDeflectorShield::PostUpdate(float frameTime) {}
 void CDeflectorShield::PostRemoteSpawn() {}
-
-namespace DS
-{
-	void RegisterEvents( IGameObjectExtension& goExt, IGameObject& gameObject )
-	{
-		const int eventID = eGFE_OnCollision;
-		gameObject.UnRegisterExtForEvents( &goExt, NULL, 0 );
-		gameObject.RegisterExtForEvents( &goExt, &eventID, 1 );
-	}
-}
 
 CDeflectorShield::CDeflectorShield()
 	:	m_minDamage(50)
@@ -55,7 +43,6 @@ CDeflectorShield::CDeflectorShield()
 bool CDeflectorShield::Init(IGameObject * pGameObject)
 {
 	SetGameObject(pGameObject);
-	GetGameObject()->EnablePhysicsEvent(true, eEPE_OnCollisionLogged);
 	LoadScriptProperties();
 
 	return true;
@@ -63,22 +50,19 @@ bool CDeflectorShield::Init(IGameObject * pGameObject)
 
 void CDeflectorShield::PostInit(IGameObject * pGameObject)
 {
-	DS::RegisterEvents( *this, *pGameObject );
+	EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
 }
 
 bool CDeflectorShield::ReloadExtension(IGameObject * pGameObject, const SEntitySpawnParams &params)
 {
 	ResetGameObject();
-	DS::RegisterEvents( *this, *pGameObject );
 	return true;
 }
 
 
 
-void CDeflectorShield::Update(SEntityUpdateContext& ctx, int updateSlot)
+void CDeflectorShield::Update(SEntityUpdateContext& ctx)
 {
-	if (updateSlot != 0)
-		return;
 	UpdateDeflectedEnergies(ctx.fFrameTime);
 	DebugDraw();
 }
@@ -89,7 +73,7 @@ void CDeflectorShield::HandleEvent(const SGameObjectEvent& event)
 {
 	if (event.event == eGFE_OnCollision)
 	{
-		EventPhysCollision* pCollision = (EventPhysCollision*)event.ptr;
+		EventPhysCollision* pCollision = (EventPhysCollision*)event.param;
 		ProcessCollision(*pCollision);
 	}
 }

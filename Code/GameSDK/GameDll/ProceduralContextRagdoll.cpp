@@ -65,7 +65,7 @@ void CProceduralContextRagdoll::QueueRagdoll( bool bAlive )
 		m_targetEntityId = m_entity->GetId();
 	}
 
-	IActor* piActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor( m_targetEntityId );
+	CActor* piActor = static_cast<CActor *>(g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_targetEntityId));
 
 	// NOTE: The case where piActor is NULL is when you're - in the CryMann preview!
 	if(piActor)
@@ -77,15 +77,15 @@ void CProceduralContextRagdoll::QueueRagdoll( bool bAlive )
 		}
 		else if( !m_bInRagdoll || (m_bInRagdoll && !bAlive && m_bEntityAlive) )
 		{
-			SRagdollizeParams params;
-			params.mass = static_cast<CActor*>(piActor)->GetActorPhysics().mass;
-			params.sleep = m_bEntityAlive = bAlive;
-			params.stiffness = m_stiffness;
+			if (auto *pAnimatedCharacter = piActor->GetEntity()->QueryComponent<IAnimatedCharacter>())
+			{
+				SRagdollizeParams params;
+				params.mass = static_cast<CActor*>(piActor)->GetActorPhysics().mass;
+				params.sleep = m_bEntityAlive = bAlive;
+				params.stiffness = m_stiffness;
 
-			SGameObjectEvent event( eGFE_QueueRagdollCreation, eGOEF_ToExtensions );
-			event.ptr = &params;
-
-			piActor->GetGameObject()->SendEvent( event );
+				pAnimatedCharacter->SetRagdollizeParams(params);
+			}
 
 			m_bInRagdoll = true;
 		}

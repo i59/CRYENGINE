@@ -20,7 +20,6 @@
 #endif
 
 #include <CryNetwork/SerializeFwd.h>
-#include "IGameObject.h"
 
 class IGameRulesTeamsModule
 {

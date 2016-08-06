@@ -19,7 +19,6 @@
 # pragma once
 #endif
 
-#include "IGameObject.h"
 #include <CryNetwork/SerializeFwd.h>
 #include "GameRulesTypes.h"
 

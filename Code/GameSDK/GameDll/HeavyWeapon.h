@@ -29,6 +29,8 @@ private:
 	typedef CWeapon BaseClass;
 
 public:
+	DECLARE_COMPONENT("HeavyWeapon", 0xB6AD641CC9224EB2, 0xBAE4AC0AFAEE052D)
+
 	CHeavyWeapon();
 	virtual ~CHeavyWeapon();
 

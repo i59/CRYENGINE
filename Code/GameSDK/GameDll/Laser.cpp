@@ -104,7 +104,7 @@ IEntity* CLaserBeam::CreateLaserEntity()
 		m_laserEntityId = pNewEntity->GetId();
 
 
-		IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)pNewEntity->GetProxy(ENTITY_PROXY_RENDER);
+		IEntityRenderComponent *pRenderProxy = (IEntityRenderComponent*)pNewEntity->QueryComponent<IEntityRenderComponent>();
 		IRenderNode * pRenderNode = pRenderProxy?pRenderProxy->GetRenderNode():NULL;
 
 		if(pRenderNode)
@@ -707,14 +707,12 @@ void CLaser::TurnOffLaser(bool manual /*= false*/)
 }
 
 //-------------------------------------------
-void CLaser::Update(SEntityUpdateContext& ctx, int slot)
+void CLaser::Update(SEntityUpdateContext& ctx)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 
-	if((slot == eIUS_General) && m_laserBeam.IsLaserActivated())
+	if(m_laserBeam.IsLaserActivated())
 	{
-		RequireUpdate(eIUS_General);
-
 		CWeapon* pParentWeapon = GetWeapon();
 		if (pParentWeapon)
 		{

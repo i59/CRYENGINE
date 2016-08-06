@@ -409,7 +409,7 @@ bool CGameRulesMPDamageHandling::SvOnHitScaled( const HitInfo &hitInfo )
 					{
 						CPersistantStats::GetInstance()->OnClientDestroyedVehicle(params);
 					}
-					else if(IGameObject * pShooterGameObject = g_pGame->GetIGameFramework()->GetGameObject(hitInfo.shooterId))
+					else if(IGameObject * pShooterGameObject = gEnv->pEntitySystem->QueryComponent<IGameObject>(hitInfo.shooterId))
 					{
 						m_pGameRules->GetGameObject()->InvokeRMIWithDependentObject(CGameRules::ClVehicleDestroyed(), params, eRMI_ToClientChannel, hitInfo.shooterId, pShooterGameObject->GetChannelId());
 					}					
@@ -589,7 +589,7 @@ void CGameRulesMPDamageHandling::SvOnExplosion(const ExplosionInfo &explosionInf
 				}
 				else
 				{
-					CInteractiveObjectEx* pInteractiveObject = static_cast<CInteractiveObjectEx*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(entity->GetId(), "InteractiveObjectEx"));
+					CInteractiveObjectEx* pInteractiveObject = static_cast<CInteractiveObjectEx*>(gEnv->pEntitySystem->QueryComponent<CInteractiveObjectEx>(entity->GetId()));
 					if(pInteractiveObject)
 					{
 						pInteractiveObject->OnExploded(explHit.pos);

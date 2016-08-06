@@ -15,21 +15,21 @@ DRS::IResponseActionInstanceUniquePtr CActionExecuteAudioTrigger::Execute(DRS::I
 		IEntity* pEntity = pResponseInstance->GetCurrentActor()->GetLinkedEntity();
 		if (pEntity)
 		{
-			const IEntityAudioProxyPtr pEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+			auto &audioComponent = pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 			DRS::IResponseActionInstanceUniquePtr pActionInstance(new CActionExecuteAudioTriggerInstance());
 			
 			if (m_bWaitToBeFinished)
 			{
 				SAudioCallBackInfo const callbackInfo((void* const)pActionInstance.get(), (void* const)ActionPlaySoundId, (void* const)pActionInstance.get(), eAudioRequestFlags_PriorityNormal | eAudioRequestFlags_SyncFinishedCallback);
-				if (pEntityAudioProxy->ExecuteTrigger(audioStartTriggerID, DEFAULT_AUDIO_PROXY_ID, callbackInfo))
+				if (audioComponent.ExecuteTrigger(audioStartTriggerID, DEFAULT_AUDIO_PROXY_ID, callbackInfo))
 				{
 					return pActionInstance;
 				}
 			}
 			else
 			{
-				pEntityAudioProxy->ExecuteTrigger(audioStartTriggerID, DEFAULT_AUDIO_PROXY_ID);
+				audioComponent.ExecuteTrigger(audioStartTriggerID, DEFAULT_AUDIO_PROXY_ID);
 			}
 		}
 	}

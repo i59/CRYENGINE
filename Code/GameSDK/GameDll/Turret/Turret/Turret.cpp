@@ -377,7 +377,7 @@ ISerializableInfoPtr CTurret::GetSpawnInfo()
 }
 
 
-void CTurret::Update( SEntityUpdateContext& context, int updateSlot )
+void CTurret::Update( SEntityUpdateContext& context)
 {
 	const float frameTimeSeconds = context.fFrameTime;
 }
@@ -401,7 +401,7 @@ void CTurret::HandleEvent( const SGameObjectEvent& event )
 }
 
 
-void CTurret::ProcessEvent( SEntityEvent& event )
+void CTurret::ProcessEvent(const SEntityEvent& event )
 {
 	switch ( event.event )
 	{
@@ -544,9 +544,9 @@ void CTurret::Reset( const bool enteringGameMode )
 	const ETurretBehaviorState initialStateId = GetInitialBehaviorStateId();
 	SetInitialStateById( initialStateId );
 
-	IGameObject* const pGameObject = GetGameObject();
+	auto* const pGameObject = GetGameObject();
 	assert( pGameObject );
-	pGameObject->EnablePrePhysicsUpdate( ePPU_Always );
+	EnableEvent(ENTITY_EVENT_PREPHYSICSUPDATE);
 
 	pGameObject->EnableUpdateSlot( this, 0 );
 	pGameObject->SetUpdateSlotEnableCondition( this, 0, eUEC_VisibleOrInRange );
@@ -697,8 +697,6 @@ void CTurret::OnPrePhysicsUpdate()
 			{
 				return;
 			}
-
-			pEntity->Activate( true );
 		}
 	}
 
@@ -1230,8 +1228,6 @@ void CTurret::InitWeapons()
 			pTacticalManager->RemoveEntity( m_primaryWeaponId, CTacticalManager::eTacticalEntity_Item );
 		}
 	}
-
-	pItem->EnableUpdate( true, eIUS_General );
 
 	const float primaryWeaponFovDegrees = GetPrimaryWeaponFovDegrees();
 	m_primaryWeaponFovCos = cos( DEG2RAD( primaryWeaponFovDegrees ) );
@@ -2608,7 +2604,7 @@ void CTurret::InitTurretSoundManager()
 	m_pSoundManager.reset();
 
 	IEntity* const pEntity = GetEntity();
-	IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	IEntityAudioComponent* pIEntityAudioProxy = &pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 	ICharacterInstance* const pCharacterInstance = pEntity->GetCharacter( DEFAULT_TURRET_MODEL_SLOT );
 
@@ -2652,11 +2648,6 @@ void CTurret::NotifyCancelPreparingToFire()
 	}
 
 	m_pSoundManager->NotifyCancelPreparingToFire();
-}
-
-IComponent::ComponentEventPriority CTurret::GetEventPriority(const int eventID) const
-{
-	return ENTITY_PROXY_USER;
 }
 
 void CTurret::OnEntityKilledEarly(const HitInfo &hitInfo) 

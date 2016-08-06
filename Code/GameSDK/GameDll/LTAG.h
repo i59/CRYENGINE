@@ -21,6 +21,7 @@ History:
 class CLTag :	public CWeapon
 {
 public:
+	DECLARE_COMPONENT("LTag", 0xAC552F354CD14918, 0x9D5816541D201DD7)
 
 	CLTag();
 	virtual ~CLTag();
@@ -38,7 +39,7 @@ public:
 		s->AddObject(this, sizeof(*this));
 		CWeapon::GetInternalMemoryUsage(s); // collect memory of parent class
 	}
-	virtual void ProcessEvent(SEntityEvent& event);
+	virtual void ProcessEvent(const SEntityEvent& event);
 	//virtual bool NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile, int flags );
 	//virtual void Select(bool select);
 	virtual void StartChangeFireMode();

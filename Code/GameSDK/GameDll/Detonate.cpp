@@ -88,8 +88,6 @@ void CDetonate::Update(float frameTime, uint32 frameId)
 			if (detonated && m_pWeapon->GetOwnerActor() && m_pWeapon->GetOwnerActor()->IsClient())
 				m_pWeapon->GetScheduler()->TimerAction(uint32(m_pWeapon->GetCurrentAnimationTime(eIGS_Owner)), CSchedulerAction<ExplodeAction>::Create(this), false);
 		}
-		else
-			m_pWeapon->RequireUpdate(eIUS_FireMode);
 	}
 }
 
@@ -138,7 +136,6 @@ void CDetonate::StartFire()
 		CActor *pOwner=m_pWeapon->GetOwnerActor();
 
 		CCCPOINT(DetonateFireMode_StartFireOK);
-		m_pWeapon->RequireUpdate(eIUS_FireMode);
 		m_detonationTimer = 0.1f;
 		m_pWeapon->PlayAction(GetFragmentIds().fire);
 		m_pWeapon->RequestDetonate();

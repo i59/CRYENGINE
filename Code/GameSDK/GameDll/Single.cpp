@@ -244,16 +244,6 @@ void CSingle::Update(float frameTime, uint32 frameId)
 
 	keepUpdating |= (m_queuedProbableHits.size() > 0);
 
-	if (keepUpdating)
-		m_pWeapon->RequireUpdate(eIUS_FireMode);
-
-#ifndef _RELEASE
-	if(g_pGameCVars->i_debug_spread > 1 && m_pWeapon->IsSelected())
-	{
-		m_pWeapon->RequireUpdate(eIUS_FireMode); //Force updating to keep debug spread watch active
-	}
-#endif
-
 	BaseClass::Update(frameTime, frameId);
 
 	m_firstFire = m_firstFire && !m_fired;
@@ -367,13 +357,6 @@ void CSingle::Activate(bool activate)
 			m_pWeapon->Reload();
 		}
 	}
-
-#ifndef _RELEASE
-	if(g_pGameCVars->i_debug_spread > 1)
-	{
-		m_pWeapon->RequireUpdate(eIUS_FireMode); //Force updating to show debug spread watch value
-	}
-#endif
 }
 
 void CSingle::OnEnterFirstPerson()
@@ -544,8 +527,6 @@ void CSingle::StartFire()
 
 	m_muzzleEffect.StartFire(this);
 
-	m_pWeapon->RequireUpdate(eIUS_FireMode);	
-
 	RegisterHazardAreaInFrontOfWeapon();	
 }
 
@@ -611,8 +592,6 @@ void CSingle::SetNextShotTime(float time)
 	}
 
 	m_next_shot = time;
-	if (time>0.0f)
-		m_pWeapon->RequireUpdate(eIUS_FireMode);
 }
 
 //------------------------------------------------------------------------
@@ -1751,7 +1730,6 @@ void CSingle::NetShoot(const Vec3 &hit, int predictionHandle)
 			if(hit.IsZeroFast())
 			{
 				DeferGetProbableHit(WEAPON_HIT_RANGE);
-				m_pWeapon->RequireUpdate(eIUS_FireMode);
 				return;
 			}
 		}
@@ -1889,8 +1867,6 @@ void CSingle::NetShootEx(const Vec3 &pos, const Vec3 &dir, const Vec3 &vel, cons
 		pAmmo->GetGameObject()->RegisterAsValidated(pActor->GetGameObject(), predictionHandle);
 		pAmmo->GetGameObject()->BindToNetwork();
 	}
-
-	m_pWeapon->RequireUpdate(eIUS_FireMode);
 }
 
 //------------------------------------------------------------------------

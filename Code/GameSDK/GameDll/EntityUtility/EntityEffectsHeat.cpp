@@ -140,7 +140,7 @@ float EntityEffects::CHeatController::UpdateCoolDown(const float frameTime)
 
 void EntityEffects::CHeatController::SetThermalVisionParams( const float scale )
 {
-	IEntityRenderProxy *pEntityRenderProxy = static_cast<IEntityRenderProxy *>(m_ownerEntity->GetProxy(ENTITY_PROXY_RENDER));
+	IEntityRenderComponent *pEntityRenderProxy = static_cast<IEntityRenderComponent *>(m_ownerEntity->QueryComponent<IEntityRenderComponent>());
 	if(pEntityRenderProxy)
 	{
 		pEntityRenderProxy->SetVisionParams(scale, scale, scale, scale);

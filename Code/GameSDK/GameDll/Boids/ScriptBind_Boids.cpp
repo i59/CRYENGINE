@@ -92,7 +92,7 @@ CFlock* CScriptBind_Boids::GetFlock( IScriptTable *pEntityTable )
 		GameWarning( "Boids: called with an invalid entity" );
 		return 0;
 	}
-	CBoidsProxy *pProxy = (CBoidsProxy*)pEntity->GetProxy(ENTITY_PROXY_BOIDS);
+	CBoidsProxy *pProxy = (CBoidsProxy*)pEntity->QueryComponent<CBoidsProxy>();
 	if (!pProxy)
 	{
 		GameWarning( "Boids: specified entity is not a flock" );
@@ -145,8 +145,7 @@ int CScriptBind_Boids::CreateFlock( IFunctionHandler *pH, SmartScriptTable entit
 
 	//////////////////////////////////////////////////////////////////////////
 	// Creates a boids proxy for this entity, and attach flock to it.
-	CBoidsProxyPtr pBoidsProxy = ComponentCreateAndRegister_DeleteWithRelease<CBoidsProxy>( IComponent::SComponentInitializer(pEntity), true );
-	pEntity->SetProxy( ENTITY_PROXY_BOIDS,pBoidsProxy );
+	auto *pBoidsProxy = &pEntity->AcquireComponent<CBoidsProxy>();
 
 	SBoidContext bc;
 	pFlock->GetBoidSettings( bc );
@@ -194,7 +193,7 @@ int CScriptBind_Boids::SetFlockParams(IFunctionHandler *pH,SmartScriptTable enti
 	IEntity *pEntity = GetEntity(entity);
 	if (pEntity)
 	{
-		CBoidsProxy *pBoidsProxy = (CBoidsProxy*)pEntity->GetProxy(ENTITY_PROXY_BOIDS);
+		CBoidsProxy *pBoidsProxy = (CBoidsProxy*)pEntity->QueryComponent<CBoidsProxy>();
 		if (pBoidsProxy)
 		{
 			// Update 

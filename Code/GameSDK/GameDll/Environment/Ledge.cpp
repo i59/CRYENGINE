@@ -23,16 +23,6 @@ namespace
 	}
 }
 
-namespace Ledge
-{
-	void RegisterEvents( IGameObjectExtension& goExt, IGameObject& gameObject )
-	{
-		const int eventID = eGFE_ScriptEvent;
-		gameObject.UnRegisterExtForEvents( &goExt, NULL, 0 );
-		gameObject.RegisterExtForEvents( &goExt, &eventID, 1 );
-	}
-}
-
 CLedgeObject::LedgeProperties::LedgeProperties( const IEntity& entity )
 {
 	memset(this, 0, sizeof(LedgeProperties));
@@ -174,7 +164,6 @@ bool CLedgeObject::Init( IGameObject * pGameObject )
 
 void CLedgeObject::PostInit( IGameObject * pGameObject )
 {
-	Ledge::RegisterEvents( *this, *pGameObject );
 	// In pure game, all ledge data is loaded by the manager from the level.pak
 	if (gEnv->IsEditor())
 	{
@@ -189,7 +178,6 @@ void CLedgeObject::PostInit( IGameObject * pGameObject )
 bool CLedgeObject::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
 {
 	ResetGameObject();
-	Ledge::RegisterEvents( *this, *pGameObject );
 
 	CRY_ASSERT_MESSAGE(false, "CLedgeObject::ReloadExtension not implemented");
 
@@ -224,7 +212,7 @@ void CLedgeObject::HandleEvent( const SGameObjectEvent& gameObjectEvent )
 	}
 }
 
-void CLedgeObject::ProcessEvent( SEntityEvent& entityEvent )
+void CLedgeObject::ProcessEvent(const SEntityEvent& entityEvent )
 {
 	switch( entityEvent.event )
 	{

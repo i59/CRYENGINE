@@ -78,8 +78,6 @@ void CItem::UpdateMounted(float frameTime)
 
 		UpdateIKMounted(pActor, vGunXAxis*0.1f);
 	}
-
-	RequireUpdate(eIUS_General);  
 }
 
 //------------------------------------------------------------------------
@@ -297,7 +295,7 @@ void CItem::CopyRenderFlags(IEntity *pOwner)
 	IRenderNode *pRenderNode = GetRenderProxy()->GetRenderNode();
 	if (pRenderNode)
 	{
-		IEntityRenderProxy *pOwnerRenderProxy = (IEntityRenderProxy *)pOwner->GetProxy(ENTITY_PROXY_RENDER);
+		IEntityRenderComponent *pOwnerRenderProxy = (IEntityRenderComponent *)pOwner->QueryComponent<IEntityRenderComponent>();
 		IRenderNode *pOwnerRenderNode = pOwnerRenderProxy?pOwnerRenderProxy->GetRenderNode():NULL;
 		if (pOwnerRenderNode)
 		{

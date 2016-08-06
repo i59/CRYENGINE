@@ -101,7 +101,7 @@ void CGameRulesCombiCaptureObjective::SCaptureEntity::SetEnabled(const bool enab
 
 			if (IEntity* pEntity=gEnv->pEntitySystem->GetEntity(eid))
 			{
-				if (IEntityRenderProxy* renderProxy=static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+				if (IEntityRenderComponent* renderProxy=static_cast<IEntityRenderComponent*>(pEntity->QueryComponent<IEntityRenderComponent>()))
 				{
 					if (IRenderNode* renderNode=renderProxy->GetRenderNode())
 					{

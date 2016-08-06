@@ -17,7 +17,6 @@
 #include <CrySystem/XML/IXml.h>
 #include "GameRules.h"
 #include "GameCVars.h"
-#include "IGameObject.h"
 #include <CryNetwork/ISerialize.h>
 #include "GameRulesModules/IGameRulesStatsRecording.h"
 #include "GameRulesModules/IGameRulesPlayerStatsModule.h"

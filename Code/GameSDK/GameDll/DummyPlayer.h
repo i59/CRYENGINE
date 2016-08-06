@@ -29,7 +29,7 @@ public:
 	virtual bool IsPlayer() const { return true; }
 	
 	virtual bool Init( IGameObject * pGameObject );
-	virtual void Update(SEntityUpdateContext& ctx, int updateSlot);
+	virtual void Update(SEntityUpdateContext& ctx);
 
 	EDefaultableBool GetFire();
 	void SetFire(EDefaultableBool value);

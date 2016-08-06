@@ -37,7 +37,7 @@ public:
 
 	virtual void StartFire();
 
-	virtual void Update(SEntityUpdateContext& ctx, int update);
+	virtual void Update(SEntityUpdateContext& ctx);
 
 	virtual void SetAmmoCount(IEntityClass* pAmmoType, int count);
 	virtual void SetInventoryAmmoCount(IEntityClass* pAmmoType, int count);

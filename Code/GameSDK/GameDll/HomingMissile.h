@@ -31,7 +31,7 @@ public:
   
 	// CRocket	
 	virtual bool Init(IGameObject *pGameObject);
-	virtual void Update(SEntityUpdateContext &ctx, int updateSlot);
+	virtual void Update(SEntityUpdateContext &ctx);
 	virtual void Launch(const Vec3 &pos, const Vec3 &dir, const Vec3 &velocity, float speedScale);
 	virtual void SetDestination(const Vec3& pos);
 

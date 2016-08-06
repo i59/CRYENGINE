@@ -15,9 +15,9 @@ bool CWaterPuddle::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 pro
 void CWaterPuddle::PostSerialize() {}
 void CWaterPuddle::SerializeSpawnInfo(TSerialize ser) {}
 ISerializableInfoPtr CWaterPuddle::GetSpawnInfo() {return 0;}
-void CWaterPuddle::Update(SEntityUpdateContext& ctx, int slot) {}
+void CWaterPuddle::Update(SEntityUpdateContext& ctx) {}
 void CWaterPuddle::HandleEvent(const SGameObjectEvent& gameObjectEvent) {}
-void CWaterPuddle::ProcessEvent(SEntityEvent& entityEvent) {}
+void CWaterPuddle::ProcessEvent(const SEntityEvent& entityEvent) {}
 void CWaterPuddle::SetChannelId(uint16 id) {}
 void CWaterPuddle::SetAuthority(bool auth) {}
 void CWaterPuddle::PostUpdate(float frameTime) {}

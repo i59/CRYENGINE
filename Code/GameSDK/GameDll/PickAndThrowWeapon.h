@@ -57,6 +57,7 @@ class CPickAndThrowWeapon :	public CWeapon, public IMeleeCollisionHelperListener
 	};
 
 public:
+	DECLARE_COMPONENT("PickAndThrowWeapon", 0x52D84AD87A5A40C1, 0xAFC1D4E3BCEE7D81)
 
 	CPickAndThrowWeapon();
 	virtual ~CPickAndThrowWeapon();
@@ -74,7 +75,7 @@ public:
 	virtual bool CanModify() const;
 	virtual void OnSelected( bool selected );
 	virtual bool ShouldPlaySelectAction() const;
-	virtual void Update(SEntityUpdateContext& ctx, int val );
+	virtual void Update(SEntityUpdateContext& ctx );
 	virtual bool Init(IGameObject * pGameObject);	
 	virtual bool UpdateAimAnims( SParams_WeaponFPAiming &aimAnimParams);
 	virtual void UpdateTags(const class IActionController *pActionController, class CTagState &tagState, bool selected) const;

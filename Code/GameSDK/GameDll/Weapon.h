@@ -116,7 +116,7 @@ public:
 	CWeapon();
 	virtual ~CWeapon();
 
-	// IItem, IGameObjectExtension
+	// IItem, IEntityComponent
 	virtual bool Init(IGameObject * pGameObject) override;
 	virtual void InitClient(int channelId) override { CItem::InitClient(channelId); }
 	virtual void Release() override;
@@ -125,9 +125,9 @@ public:
 	virtual NetworkAspectType GetNetSerializeAspects() override;
 	virtual void PostSerialize() override;
 	virtual void SerializeLTL(TSerialize ser) override;
-	virtual void Update(SEntityUpdateContext& ctx, int) override;
+	virtual void Update(SEntityUpdateContext& ctx) override;
 	virtual void PostUpdate( float frameTime ) override;
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void ProcessEvent(const SEntityEvent& event) override;
 	virtual void HandleEvent(const SGameObjectEvent &evt) override;
 	virtual void SetChannelId(uint16 id) override {}
 	virtual void GetMemoryUsage(ICrySizer * s) const override;

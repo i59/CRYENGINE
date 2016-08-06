@@ -15,13 +15,7 @@ namespace TurretHelpers
 	{
 		assert( g_pGame != NULL );
 
-		IGameFramework* pGameFramework = g_pGame->GetIGameFramework();
-		assert( pGameFramework );
-
-		IGameObject* pGameObject = pGameFramework->GetGameObject( entityId );
-		IGameObjectExtension* pTurretExtension = pGameObject ? pGameObject->QueryExtension( "Turret" ) : NULL;
-		CTurret* pTurret = pTurretExtension ? static_cast< CTurret* >( pTurretExtension ) : NULL;
-		return pTurret;
+		return gEnv->pEntitySystem->QueryComponent<CTurret>(entityId);
 	}
 
 

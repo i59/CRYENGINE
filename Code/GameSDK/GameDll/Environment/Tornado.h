@@ -15,18 +15,19 @@ History:
 #define __TORNADO_H__
 #pragma once
 
-#include <IGameObject.h>
 
 class CFlowTornadoWander;
 struct IGroundEffect;
 
-class CTornado : public CGameObjectExtensionHelper<CTornado, IGameObjectExtension>
+class CTornado : public CEntityComponentConversionHelper<CTornado>
 {
 public:
+	DECLARE_COMPONENT("EntityRenderComponent", 0xC0D2F46A38544EB1, 0xAD97A11770271211)
+
 	CTornado();
 	virtual ~CTornado();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init(IGameObject *pGameObject);
 	virtual void InitClient(int channelId) {};
 	virtual void PostInit(IGameObject *pGameObject);
@@ -40,16 +41,16 @@ public:
 	virtual void PostSerialize() {}
 	virtual void SerializeSpawnInfo( TSerialize ser ) {}
 	virtual ISerializableInfoPtr GetSpawnInfo() {return 0;}
-	virtual void Update( SEntityUpdateContext &ctx, int updateSlot);
+	virtual void Update( SEntityUpdateContext &ctx);
 	virtual void PostUpdate(float frameTime ) {};
 	virtual void PostRemoteSpawn() {};
 	virtual void HandleEvent( const SGameObjectEvent &);
-	virtual void ProcessEvent(SEntityEvent &);
+	virtual void ProcessEvent(const SEntityEvent &);
 	virtual void SetChannelId(uint16 id) {}
 	virtual void SetAuthority(bool auth);
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
 	
-	//~IGameObjectExtension
+	// ~IEntityComponent
 
 	void	SetTarget(IEntity *pTargetEntity, CFlowTornadoWander *pCallback);
 

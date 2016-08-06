@@ -31,8 +31,6 @@ History:
 #include "UI/HUD/HUDEventDispatcher.h"
 #include "GamePhysicsSettings.h"
 
-#include <GameObjects/GameObject.h>
-
 #if CRY_PLATFORM_WINDOWS && CRY_PLATFORM_64BIT
 	#pragma warning(disable: 4244)
 #endif
@@ -424,7 +422,7 @@ int CScriptBind_Game::OnEnvironmentalWeaponHealthChanged( IFunctionHandler *pH, 
 
 		if(pEntity)
 		{
-			CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(eId, "EnvironmentalWeapon"));
+			CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(eId));
 			if(pEnvWeapon)
 			{
 				pEnvWeapon->SvOnHealthChanged(fPrevHealth, fCurrentHealth); 
@@ -449,7 +447,7 @@ int CScriptBind_Game::ResetEntity( IFunctionHandler *pH, ScriptHandle entityId )
 
 int CScriptBind_Game::SetDangerousRigidBodyDangerStatus( IFunctionHandler *pH, ScriptHandle entityId, bool isDangerous, ScriptHandle triggerPlayerId )
 {
-	if( CDangerousRigidBody *pDangerousRigidBody = static_cast<CDangerousRigidBody*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension((EntityId)entityId.n, "DangerousRigidBody")) )
+	if( CDangerousRigidBody *pDangerousRigidBody = static_cast<CDangerousRigidBody*>(gEnv->pEntitySystem->QueryComponent<CDangerousRigidBody>((EntityId)entityId.n)) )
 	{
 		pDangerousRigidBody->SetIsDangerous(isDangerous, (EntityId)triggerPlayerId.n);
 	}
@@ -462,12 +460,7 @@ int CScriptBind_Game::SendEventToGameObject( IFunctionHandler* pH, ScriptHandle 
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity( (EntityId)entityId.n );
 	if (pEntity != NULL)
 	{
-		CGameObject* pGameObject = static_cast<CGameObject*>(pEntity->GetProxy(ENTITY_PROXY_USER));
-		if (pGameObject != NULL)
-		{
-			SGameObjectEvent goEvent( (uint32)eGFE_ScriptEvent, eGOEF_ToExtensions, IGameObjectSystem::InvalidExtensionID, event );
-			pGameObject->SendEvent( goEvent );
-		}
+		pEntity->SendComponentEvent(eGFE_ScriptEvent, event);
 	}
 	return pH->EndFunction();
 }

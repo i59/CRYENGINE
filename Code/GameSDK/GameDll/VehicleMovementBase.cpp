@@ -194,8 +194,7 @@ bool CVehicleMovementBase::Init(IVehicle* pVehicle, const CVehicleParams& table)
 
 	CacheAudioControlIDs();
 
-	m_pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(m_pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
-	assert(m_pIEntityAudioProxy.get());
+	m_pIEntityAudioProxy = &m_pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 
 	AudioSwitchStateId nSurfaceStateID = INVALID_AUDIO_SWITCH_STATE_ID;
 	gEnv->pAudioSystem->GetAudioSwitchStateId(m_audioControlIDs[eSID_VehicleSurface], "concrete", nSurfaceStateID);
@@ -520,8 +519,8 @@ void CVehicleMovementBase::Update(const float deltaTime)
 
 	// Cache distance + visible status flags
 	IGameObject* pGameObj = m_pVehicle->GetGameObject();
-	m_isProbablyVisible = pGameObj->IsProbablyVisible() ? 1 : 0;
-	m_isProbablyDistant = m_pVehicle->IsProbablyDistant() ? 1 : 0;
+	m_isProbablyVisible = m_pVehicle->GetEntity()->WasVisibleLastFrame() ? 1 : 0;
+	m_isProbablyDistant = m_pVehicle->GetEntity()->WasInRangeLastFrame() ? 0 : 1;
 
 	const SVehicleStatus& status = m_pVehicle->GetStatus();
 
@@ -785,8 +784,6 @@ bool CVehicleMovementBase::StartEngine()
   StartAnimation(eVMA_Engine);
   InitWind();
     
-	m_pVehicle->GetGameObject()->EnableUpdateSlot(m_pVehicle, IVehicle::eVUS_EnginePowered);
-    
 	return true;
 }
 
@@ -852,8 +849,6 @@ void CVehicleMovementBase::OnEngineCompletelyStarted()
 //------------------------------------------------------------------------
 void CVehicleMovementBase::OnEngineCompletelyStopped()
 {
-  m_pVehicle->GetGameObject()->DisableUpdateSlot(m_pVehicle, IVehicle::eVUS_EnginePowered);
-
   SVehicleEventParams params;
   m_pVehicle->BroadcastVehicleEvent(eVE_EngineStopped, params);
 
@@ -1136,8 +1131,6 @@ void CVehicleMovementBase::OnEvent(EVehicleMovementEvent event, const SVehicleMo
 
 		StartExhaust();
 		StartAnimation(eVMA_Engine);
-
-		m_pVehicle->GetGameObject()->EnableUpdateSlot(m_pVehicle, IVehicle::eVUS_EnginePowered);
   }
   else if (event == eVME_ToggleEngineUpdate)
   {
@@ -2252,15 +2245,9 @@ void CVehicleMovementBase::Serialize(TSerialize ser, EEntityAspects aspects)
         m_soundStats.lastPlayed[i].SetSeconds((int64)-100);
 
       if (!m_isEnginePowered && (isEnginePowered || (isEngineStarting && !m_isEngineStarting)))
-      { 
-        m_pVehicle->GetGameObject()->EnableUpdateSlot(m_pVehicle, IVehicle::eVUS_EnginePowered);        
+      {        
         InitWind();        
       }
-      else if (!isEnginePowered && !isEngineStarting && (m_isEnginePowered || m_isEngineStarting))
-      {
-        m_pVehicle->GetGameObject()->DisableUpdateSlot(m_pVehicle, IVehicle::eVUS_EnginePowered);
-      }
-
       m_isEnginePowered = isEnginePowered;
       m_isEngineStarting = isEngineStarting;
       if (!m_isExhaustActivated)
@@ -2286,7 +2273,7 @@ void CVehicleMovementBase::PostSerialize()
 }
 
 //------------------------------------------------------------------------
-void CVehicleMovementBase::ProcessEvent(SEntityEvent& event)
+void CVehicleMovementBase::ProcessEvent(const SEntityEvent& event)
 { 
 }
 

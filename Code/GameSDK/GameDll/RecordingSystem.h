@@ -130,11 +130,11 @@ public:
 	virtual void OnSpawn(IEntity *pEntity, SEntitySpawnParams &params);
 	virtual bool OnRemove(IEntity *pEntity);
 	virtual void OnReused(IEntity *pEntity, SEntitySpawnParams &params);
-	virtual void OnEvent(IEntity *pEntity, SEntityEvent &event);
+	virtual void OnEvent(IEntity *pEntity, const SEntityEvent &event);
 	//~IEntitySystemSink
 
 	// IEntityEventListener
-	virtual void OnEntityEvent(IEntity *pEntity, SEntityEvent &event);
+	virtual void OnEntityEvent(IEntity *pEntity, const SEntityEvent &event);
 	//~IEntityEventListener
 
 	// IParticleEffectListener
@@ -495,7 +495,7 @@ private:
 	void ApplyMannequinSetParam(const SRecording_MannSetParam *pMannSetParam);
 	void ApplyMannequinSetParamFloat(const SRecording_MannSetParamFloat *pMannSetParamFloat);
 	void OnPlayerFirstPersonChange(IEntity* pPlayerEntity, EntityId weaponId, bool firstPerson);
-	void CloakEnable(IEntityRenderProxy* pRenderProxy, bool enable, bool fade);
+	void CloakEnable(IEntityRenderComponent* pRenderProxy, bool enable, bool fade);
 	void ApplyEntitySpawn(const SRecording_EntitySpawn *entitySpawn, float time = 0.0f);
 	void ApplyEntityRemoved(const SRecording_EntityRemoved *entityRemoved);
 	void ApplyEntityLocation(const SRecording_EntityLocation *entityLocation, const SRecording_EntityLocation *entityLocation2 = NULL, float lerpValue = 0.f);

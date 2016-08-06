@@ -13,7 +13,7 @@
 
 void CRecordingSystem::SvProcessKillCamData(IActor *pActor, const CActor::KillCamFPData &packet)
 {
-	m_forwarder.ReceivePacket(pActor, packet);
+	m_forwarder.ReceivePacket(static_cast<CActor *>(pActor), packet);
 }
 
 void CRecordingSystem::ClProcessKillCamData(IActor *pActor, const CActor::KillCamFPData &packet)

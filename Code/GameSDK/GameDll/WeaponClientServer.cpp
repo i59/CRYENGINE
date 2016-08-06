@@ -293,9 +293,9 @@ void CWeapon::RequestShoot(IEntityClass* pAmmoType, const Vec3 &pos, const Vec3 
 	if (!gEnv->bServer && pActor && pActor->IsClient())
 	{
 		if (IsServerSpawn(pAmmoType) || forceExtended)
-			GetGameObject()->InvokeRMI(CWeapon::SvRequestShootEx(), SvRequestShootExParams(pos, dir, vel, hit, extra, predictionHandle, m_firemode), eRMI_ToServer);
+		GetGameObject()->InvokeRMI(CWeapon::SvRequestShootEx(), SvRequestShootExParams(pos, dir, vel, hit, extra, predictionHandle, m_firemode), eRMI_ToServer);
 		else
-			GetGameObject()->InvokeRMI(CWeapon::SvRequestShoot(), SvRequestShootParams(hit, m_firemode), eRMI_ToServer);
+		GetGameObject()->InvokeRMI(CWeapon::SvRequestShoot(), SvRequestShootParams(hit, m_firemode), eRMI_ToServer);
 
 		m_expended_ammo++;
 		m_fireCounter++;
@@ -314,7 +314,7 @@ void CWeapon::RequestStartFire()
 
 	if (!gEnv->bServer && pActor && pActor->IsClient())
 	{
-		GetGameObject()->InvokeRMI(CWeapon::SvRequestStartFire(), DefaultParams(), eRMI_ToServer);
+	GetGameObject()->InvokeRMI(CWeapon::SvRequestStartFire(), DefaultParams(), eRMI_ToServer);
 	}
 	else if (IsServer())
 	{
@@ -330,7 +330,7 @@ void CWeapon::RequestStartMeleeAttack(bool weaponMelee, bool boostedAttack, int8
 
 	if (!gEnv->bServer && pActor && pActor->IsClient())
 	{
-		GetGameObject()->InvokeRMI(CWeapon::SvRequestStartMeleeAttack(), MeleeRMIParams(boostedAttack,attackIndex), eRMI_ToServer);
+	GetGameObject()->InvokeRMI(CWeapon::SvRequestStartMeleeAttack(), MeleeRMIParams(boostedAttack,attackIndex), eRMI_ToServer);
 	
 #ifndef _RELEASE
 		if(g_pGameCVars->pl_pickAndThrow.environmentalWeaponComboDebugEnabled)
@@ -362,7 +362,7 @@ void CWeapon::RequestStopFire()
 
 	if (!gEnv->bServer && pActor && pActor->IsClient())
 	{
-		GetGameObject()->InvokeRMI(CWeapon::SvRequestStopFire(), DefaultParams(), eRMI_ToServer);
+	GetGameObject()->InvokeRMI(CWeapon::SvRequestStopFire(), DefaultParams(), eRMI_ToServer);
 	}
 	else if (IsServer())
 	{
@@ -377,7 +377,7 @@ void CWeapon::RequestReload()
 
 	if (!gEnv->bServer && pActor && pActor->IsClient())
 	{
-		GetGameObject()->InvokeRMI(SvRequestReload(), DefaultParams(), eRMI_ToServer);
+	GetGameObject()->InvokeRMI(SvRequestReload(), DefaultParams(), eRMI_ToServer);
 	}
 	else if (IsServer())
 	{
@@ -396,7 +396,7 @@ void CWeapon::RequestCancelReload()
 		{
 			m_fm->CancelReload();
 		}
-		GetGameObject()->InvokeRMI(SvRequestCancelReload(), DefaultParams(), eRMI_ToServer);
+	GetGameObject()->InvokeRMI(SvRequestCancelReload(), DefaultParams(), eRMI_ToServer);
 	}
 	else if (IsServer())
 	{
@@ -427,7 +427,7 @@ void CWeapon::RequestFireMode(int fmId)
 			{
 				m_fm->Activate(false);
 			}
-			GetGameObject()->InvokeRMI(SvRequestFireMode(), SvRequestFireModeParams(fmId), eRMI_ToServer);
+		GetGameObject()->InvokeRMI(SvRequestFireMode(), SvRequestFireModeParams(fmId), eRMI_ToServer);
 		}	
 		StartVerificationSample(gEnv->pTimer->GetAsyncCurTime());
 		SHUDEvent event(eHUDEvent_OnWeaponFireModeChanged);
@@ -447,7 +447,7 @@ void CWeapon::RequestWeaponRaised(bool raise)
 			if (gEnv->bServer)
 				CHANGED_NETWORK_STATE(this, ASPECT_STREAM);
 			else
-				GetGameObject()->InvokeRMI(SvRequestWeaponRaised(), WeaponRaiseParams(raise), eRMI_ToServer);
+			GetGameObject()->InvokeRMI(SvRequestWeaponRaised(), WeaponRaiseParams(raise), eRMI_ToServer);
 		}
 	}
 }
@@ -463,7 +463,7 @@ void CWeapon::RequestSetZoomState(bool zoomed)
 			if (gEnv->bServer)
 				CHANGED_NETWORK_STATE(this, ASPECT_STREAM);
 			else
-				GetGameObject()->InvokeRMI(SvRequestSetZoomState(), ZoomStateParams(zoomed), eRMI_ToServer);
+			GetGameObject()->InvokeRMI(SvRequestSetZoomState(), ZoomStateParams(zoomed), eRMI_ToServer);
 		}
 	}
 }

@@ -5,7 +5,6 @@
 #include "EntityEffectsCloak.h"
 
 #include <CryEntitySystem/IEntitySystem.h>
-#include <CryEntitySystem/IEntityProxy.h>
 #include "GameRules.h"
 #include "Actor.h"
 
@@ -20,7 +19,7 @@ void EntityEffects::Cloak::CloakEntity( IEntity* pEntity, bool bEnable, bool bFa
 {
 	if (pEntity)
 	{
-		IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*) pEntity->GetProxy(ENTITY_PROXY_RENDER);
+		IEntityRenderComponent *pRenderProxy = (IEntityRenderComponent*) pEntity->QueryComponent<IEntityRenderComponent>();
 		if (pRenderProxy)
 		{
 			// If the render-node for this entity currently isn't rendering, then force the cloaking transition
@@ -102,8 +101,8 @@ bool EntityEffects::Cloak::CloakSyncEntities( const CloakSyncParams& params )
 		return false;
 	}
 
-	IEntityRenderProxy* pCloakMasterRP = static_cast<IEntityRenderProxy*>(pCloakMaster->GetProxy(ENTITY_PROXY_RENDER));
-	IEntityRenderProxy* pCloakSlaveRP	 = static_cast<IEntityRenderProxy*>(pCloakSlave->GetProxy(ENTITY_PROXY_RENDER));
+	IEntityRenderComponent* pCloakMasterRP = static_cast<IEntityRenderComponent*>(pCloakMaster->QueryComponent<IEntityRenderComponent>());
+	IEntityRenderComponent* pCloakSlaveRP	 = static_cast<IEntityRenderComponent*>(pCloakSlave->QueryComponent<IEntityRenderComponent>());
 	if (!pCloakMasterRP || !pCloakSlaveRP)
 	{
 		ENTITYEFFECTSCLOAK_LOG("CloakSync() - cloak Master/Slave Render proxy ID invalid, aborting cloak sync");

@@ -130,20 +130,14 @@ void CJaw::UpdateLaser(const SEntityUpdateContext& ctx)
 		GetEntity()->IsHidden()));
 }
 
-void CJaw::Update(SEntityUpdateContext& ctx, int slot)
+void CJaw::Update(SEntityUpdateContext& ctx)
 {
-	CWeapon::Update(ctx, slot);
+	CWeapon::Update(ctx);
 
 	if (!IsSelected())
 		return;
 
-	if(slot == eIUS_Zooming)
-	{
-		UpdateLaser(ctx);
-	}
-
-	if (slot != eIUS_General)
-		return;
+	UpdateLaser(ctx);
 
 	UpdatePendingShot();
 
@@ -176,10 +170,6 @@ void CJaw::Update(SEntityUpdateContext& ctx, int slot)
 					gEnv->pEntitySystem->RemoveEntity(GetEntity()->GetId());	
 			}
 			EnableUpdate(false);
-		}
-		else
-		{
-			RequireUpdate();
 		}
 	}
 }
@@ -225,7 +215,7 @@ void CJaw::OnReset()
 }
 
 //////////////////////////////////////////////////////////////////////////
-void CJaw::ProcessEvent(SEntityEvent &event)
+void CJaw::ProcessEvent(const SEntityEvent &event)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_GAME);
 
@@ -299,7 +289,7 @@ bool CJaw::SetAspectProfile(EEntityAspects aspect, uint8 profile)
 			return true;
 		case eIPhys_NotPhysicalized:
 			{
-				IEntityPhysicalProxy *pPhysicsProxy = GetPhysicalProxy();
+				IEntityPhysicsComponent *pPhysicsProxy = GetPhysicalProxy();
 				if (pPhysicsProxy)
 				{
 					SEntityPhysicalizeParams params;
@@ -329,7 +319,6 @@ void CJaw::Select(bool select)
 			m_playedDropAction = false; //Start auto drop again
 			HideRocket();
 			AutoDrop();
-			RequireUpdate(eIUS_General);
 		}
 	}
 	else
@@ -1115,7 +1104,7 @@ void CJaw::NetSetCurrentAmmoCount( int count )
 
 				SRequestAmmoParams params;
 				params.m_ammo = currentCount;
-				GetGameObject()->InvokeRMI(SvRequestAmmo(), params, eRMI_ToServer);
+			GetGameObject()->InvokeRMI(SvRequestAmmo(), params, eRMI_ToServer);
 			}
 		}
 	}

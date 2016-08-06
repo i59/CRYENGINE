@@ -160,7 +160,7 @@ bool CTornado::NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profil
 }
 
 //------------------------------------------------------------------------
-void CTornado::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CTornado::Update(SEntityUpdateContext &ctx)
 {
 	if (g_pGame->GetIGameFramework()->IsEditing())
 		return;
@@ -281,7 +281,7 @@ void CTornado::HandleEvent(const SGameObjectEvent &event)
 }
 
 //------------------------------------------------------------------------
-void CTornado::ProcessEvent(SEntityEvent &event)
+void CTornado::ProcessEvent(const SEntityEvent &event)
 {
 	switch (event.event)
 	{

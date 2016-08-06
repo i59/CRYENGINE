@@ -56,7 +56,7 @@ void CActionMultiCoopAnimation::UpdateSceneRoot( const QuatT& sceneRoot )
 	}
 }
 
-void CActionMultiCoopAnimation::OnEntityEvent( IEntity *pEntity,SEntityEvent &event )
+void CActionMultiCoopAnimation::OnEntityEvent( IEntity *pEntity, const SEntityEvent &event )
 {
 	if(event.event==ENTITY_EVENT_DONE)
 	{
@@ -362,7 +362,7 @@ void CActionMultiCoopAnimation::SParticipant::ApplyDeltaTransform( const QuatT& 
 void CActionMultiCoopAnimation::SParticipant::SetRenderNearest( IEntity& entity, const bool bSet )
 {
 	bool bRendering = false;
-	if(IEntityRenderProxy* pProxy = (IEntityRenderProxy*)entity.GetProxy(ENTITY_PROXY_RENDER))
+	if(IEntityRenderComponent* pProxy = (IEntityRenderComponent*)entity.QueryComponent<IEntityRenderComponent>())
 	{
 		if(IRenderNode* pRenderNode = pProxy->GetRenderNode())
 		{

@@ -15,20 +15,9 @@ History:
 #include "VicinityDependentObjectMover.h"
 
 #include "EntityUtility/EntityScriptCalls.h"
-#include <GameObjects/GameObject.h>
 #include "GameCache.h"
 
 //////////////////////////////////////////////////////////////////////////
-
-namespace VICINITYDEPENDENTOBJECTMOVER
-{
-	void RegisterEvents( IGameObjectExtension& goExt, IGameObject& gameObject )
-	{
-		gameObject.UnRegisterExtForEvents( &goExt, NULL, 0 );
-		const int iScriptEventID = eGFE_ScriptEvent;
-		gameObject.RegisterExtForEvents( &goExt, &iScriptEventID, 1 );
-	}
-}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -67,16 +56,13 @@ bool CVicinityDependentObjectMover::Init( IGameObject * pGameObject )
 
 void CVicinityDependentObjectMover::PostInit( IGameObject * pGameObject )
 {
-	VICINITYDEPENDENTOBJECTMOVER::RegisterEvents( *this, *pGameObject );
-
 	Reset( !gEnv->IsEditor() );
 }
 
 bool CVicinityDependentObjectMover::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
 {
 	ResetGameObject();
-	VICINITYDEPENDENTOBJECTMOVER::RegisterEvents( *this, *pGameObject );
-
+	
 	CRY_ASSERT_MESSAGE( false, "CVicinityDependentObjectMover::ReloadExtension not implemented" );
 
 	return false;
@@ -106,7 +92,7 @@ void CVicinityDependentObjectMover::FullSerialize( TSerialize serializer )
 	}
 }
 
-void CVicinityDependentObjectMover::Update( SEntityUpdateContext& ctx, int slot )
+void CVicinityDependentObjectMover::Update( SEntityUpdateContext& ctx )
 {
 #if !defined(_RELEASE)
 	if ( gEnv->IsEditing() )
@@ -282,7 +268,7 @@ void CVicinityDependentObjectMover::HandleEvent( const SGameObjectEvent& gameObj
 	}
 }
 
-void CVicinityDependentObjectMover::ProcessEvent( SEntityEvent& entityEvent )
+void CVicinityDependentObjectMover::ProcessEvent(const SEntityEvent& entityEvent )
 {
 	switch( entityEvent.event )
 	{

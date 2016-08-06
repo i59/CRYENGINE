@@ -44,20 +44,21 @@ typedef CRateOfDeathSimple CRateOfDeath_Turret;
 
 
 class CTurret
-	: public CGameObjectExtensionHelper< CTurret, IGameObjectExtension >
+	: public CEntityComponentConversionHelper<CTurret>
 	, public IGameRulesKillListener
 	, public CAIAwarenessToPlayerHelper::IAwarenessEntity
 {
 public:
+	DECLARE_COMPONENT("Turret", 0xAC4DD37213CB487C, 0xBCFD5EC5C2A33CC8)
+
 	CTurret();
 	virtual ~CTurret();
 
 	// IEntityEvent
-	virtual	void ProcessEvent( SEntityEvent &event );
-	virtual ComponentEventPriority GetEventPriority(const int eventID) const;
+	virtual	void ProcessEvent(const SEntityEvent &event );
 	// ~IEntityEvent
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init( IGameObject* pGameObject );
 	virtual void InitClient( int channelId );
 	virtual void PostInit( IGameObject* pGameObject );
@@ -71,14 +72,14 @@ public:
 	virtual void PostSerialize();
 	virtual void SerializeSpawnInfo( TSerialize serializer );
 	virtual ISerializableInfoPtr GetSpawnInfo();
-	virtual void Update( SEntityUpdateContext& context, int updateSlot );
+	virtual void Update( SEntityUpdateContext& context);
 	virtual void PostUpdate( float frameTimeSeconds );
 	virtual void PostRemoteSpawn();
 	virtual void HandleEvent( const SGameObjectEvent& event );
 	virtual void SetChannelId( uint16 id );
 	virtual void SetAuthority( bool authority );
 	virtual void GetMemoryUsage( ICrySizer* pSizer ) const;
-	// ~IGameObjectExtension
+	// ~IEntityComponent
 
 	// IGameRulesKillListener
 	virtual void OnEntityKilledEarly(const HitInfo &hitInfo);

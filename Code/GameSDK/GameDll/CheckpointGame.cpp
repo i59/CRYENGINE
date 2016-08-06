@@ -118,7 +118,7 @@ void CCheckpointGame::WritePlayerInventory(XmlNodeRef parentNode)
 	TSerialize ser = TSerialize(pWriter);
 	CPlayer *pPlayer = static_cast<CPlayer *>(g_pGame->GetIGameFramework()->GetClientActor());
 	CRY_ASSERT(pPlayer);
-	pPlayer->GetInventory()->FullSerialize(ser);
+	pPlayer->GetInventory()->Serialize(ser);
 
 	//add to parent node
 	parentNode->addChild(node);
@@ -173,7 +173,7 @@ void CCheckpointGame::ReadPlayerInventory(XmlNodeRef parentNode)
 	TSerialize ser = TSerialize(pReader);
 	CPlayer *pPlayer = static_cast<CPlayer *>(g_pGame->GetIGameFramework()->GetClientActor());
 	CRY_ASSERT(pPlayer);
-	pPlayer->GetInventory()->FullSerialize(ser);
+	pPlayer->GetInventory()->Serialize(ser);
 
 	// Make sure all the inventory data changes are applied
 	gEnv->pGame->GetIGameFramework()->GetIItemSystem()->SetActorItem(pPlayer, pPlayer->GetCurrentItemId(), false);

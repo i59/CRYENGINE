@@ -230,9 +230,6 @@ void CMelee::Update(float frameTime, uint32 frameId)
 		}
 		m_useMeleeWeaponDelay -= frameTime;
 	}
-
-	if (requireUpdate)
-		m_pWeapon->RequireUpdate(eIUS_FireMode);
 }
 
 //------------------------------------------------------------------------
@@ -415,7 +412,6 @@ void CMelee::StartAttack()
 	m_attacking = true;
 	m_slideKick = false;
 	m_attacked = false;
-	m_pWeapon->RequireUpdate(eIUS_FireMode);
 	m_pWeapon->ExitZoom();
 
 	bool isClient = pOwner ? pOwner->IsClient() : false;
@@ -571,7 +567,6 @@ void CMelee::NetAttack()
 	m_delayTimer = GetDelay();
 
 	m_pWeapon->SetBusy(true);
-	m_pWeapon->RequireUpdate(eIUS_FireMode);
 
 	CPlayer *pOwnerPlayer = m_pWeapon->GetOwnerPlayer();
 	if (pOwnerPlayer)

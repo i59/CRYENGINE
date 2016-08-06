@@ -148,8 +148,6 @@ void CHeavyMountedWeapon::OnReset()
 
 	Physicalize(false, false);
 
-	RequireUpdate(eIUS_General);
-
 	if (m_linkedParentId != 0)
 	{
 		IEntity* pLinkedParent = gEnv->pEntitySystem->GetEntity(m_linkedParentId);
@@ -401,7 +399,7 @@ void CHeavyMountedWeapon::TryRipOffGun()
 	}
 	else
 	{
-		GetGameObject()->InvokeRMI(SvRequestRipOff(), EmptyParams(), eRMI_ToServer);
+	GetGameObject()->InvokeRMI(SvRequestRipOff(), EmptyParams(), eRMI_ToServer);
 	}
 }
 
@@ -557,9 +555,9 @@ bool CHeavyMountedWeapon::UpdateAimAnims( SParams_WeaponFPAiming &aimAnimParams)
 }
 
 
-void CHeavyMountedWeapon::Update( SEntityUpdateContext& ctx, int slot )
+void CHeavyMountedWeapon::Update( SEntityUpdateContext& ctx )
 {
-	BaseClass::Update(ctx, slot);
+	BaseClass::Update(ctx);
 	
 	/*if (m_rotatingSoundID!=INVALID_SOUNDID)
 	{
@@ -591,8 +589,6 @@ void CHeavyMountedWeapon::Update( SEntityUpdateContext& ctx, int slot )
 			pRenderAux->DrawLine(point1, ColorB(0, 192, 0), point2, ColorB(0, 192, 0), 3.0f);
 			pRenderAux->DrawLine(point2, ColorB(0, 192, 0), point3, ColorB(0, 192, 0), 3.0f);
 			pRenderAux->DrawSphere(point3, 0.15f, ColorB(192, 0, 0));
-
-			RequireUpdate(eIUS_General);
 		}
 	}
 }
@@ -662,7 +658,7 @@ void CHeavyMountedWeapon::SetUnMountedConfiguration()
 }
 
 
-void CHeavyMountedWeapon::ProcessEvent(SEntityEvent& event)
+void CHeavyMountedWeapon::ProcessEvent(const SEntityEvent& event)
 {
 	if ((event.event == ENTITY_EVENT_XFORM) && IsMounted() && GetOwnerId())
 	{
@@ -677,7 +673,6 @@ void CHeavyMountedWeapon::ProcessEvent(SEntityEvent& event)
 			/*if (m_rotatingSoundID==INVALID_SOUNDID)
 				m_rotatingSoundID = PlayRotationSound();*/
 			m_RotationSoundTimeOut = 0.15f;
-			RequireUpdate( eIUS_General );
 			m_lastXAngle = xAngle;
 			m_lastZAngle = zAngle;
 		}
@@ -771,13 +766,13 @@ void CHeavyMountedWeapon::InitClient(int channelId)
 		}
 		else
 		{
-			GetGameObject()->InvokeRMI(ClDropped(), EmptyParams(), eRMI_ToClientChannel, channelId);
+		GetGameObject()->InvokeRMI(ClDropped(), EmptyParams(), eRMI_ToClientChannel, channelId);
 		}
 	}
 	
 	if(m_bIsHighlighted && !m_rippingOff)
 	{
-		GetGameObject()->InvokeRMI(ClHeavyWeaponHighlighted(), SNoParams(), eRMI_ToClientChannel, channelId);		 
+	GetGameObject()->InvokeRMI(ClHeavyWeaponHighlighted(), SNoParams(), eRMI_ToClientChannel, channelId);		 
 	}
 }
 
@@ -963,7 +958,7 @@ void CHeavyMountedWeapon::ReadProperties(IScriptTable *pProperties)
 //tSoundID CHeavyMountedWeapon::PlayRotationSound()
 //{
 //	tSoundID result = 0;
-//	IEntityAudioProxy* pIEntityAudioProxy = GetAudioProxy(true);
+//	IEntityAudioComponent* pIEntityAudioProxy = GetAudioProxy(true);
 //	if (pIEntityAudioProxy)
 //	{
 //		const ItemString& soundName = m_stats.fp ? m_sharedparams->pMountParams->rotate_sound_fp : m_sharedparams->pMountParams->rotate_sound_tp;

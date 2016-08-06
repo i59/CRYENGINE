@@ -62,8 +62,6 @@ void CCharge::Update(float frameTime, uint32 frameId)
 				}
 			}
 		}
-
-		m_pWeapon->RequireUpdate(eIUS_FireMode);
 	}
 	else
 	{
@@ -87,8 +85,6 @@ void CCharge::Update(float frameTime, uint32 frameId)
 			if (m_chargeEffectId)
 				ChargeEffect(false);
 		}
-
-		m_pWeapon->RequireUpdate(eIUS_FireMode);
 	}
 }
 
@@ -154,8 +150,6 @@ bool CCharge::Shoot(bool resetAnimation, bool autoreload /* =true */, bool isRem
 	}
 	else if (!m_charging && m_firing)
 		ChargedShoot();
-
-	m_pWeapon->RequireUpdate(eIUS_FireMode);
 
 	return true;
 }

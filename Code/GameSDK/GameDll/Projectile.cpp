@@ -7,7 +7,6 @@
 #include "Bullet.h"
 #include "WeaponSystem.h"
 #include <CryNetwork/ISerialize.h>
-#include "IGameObject.h"
 #include "Actor.h"
 #include "Player.h"
 
@@ -33,14 +32,6 @@
 #include "VTOLVehicleManager/VTOLVehicleManager.h"
 
 #include "Environment/WaterPuddle.h"
-
-namespace Proj
-{
-void RegisterEvents(IGameObjectExtension& goExt, IGameObject& gameObject)
-{
-	gameObject.RegisterExtForEvents(&goExt, NULL, 0);
-}
-}
 
 using namespace HazardSystem;
 
@@ -367,7 +358,7 @@ bool CProjectile::NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 prof
 			return false;
 		}
 
-		IEntityPhysicalProxy* pEPP = (IEntityPhysicalProxy*) GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
+		IEntityPhysicsComponent* pEPP = (IEntityPhysicsComponent*) GetEntity()->QueryComponent<IEntityPhysicsComponent>();
 		if (ser.IsWriting())
 		{
 			if (!pEPP || !pEPP->GetPhysicalEntity() || pEPP->GetPhysicalEntity()->GetType() != type)
@@ -455,7 +446,7 @@ bool CProjectile::Init(IGameObject* pGameObject)
 	LoadGeometry();
 	Physicalize();
 
-	IEntityRenderProxy* pProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+	IEntityRenderComponent* pProxy = static_cast<IEntityRenderComponent*>(pEntity->QueryComponent<IEntityRenderComponent>());
 	if (pProxy && pProxy->GetRenderNode())
 	{
 		pProxy->GetRenderNode()->SetViewDistRatio(255);
@@ -566,8 +557,6 @@ void CProjectile::SetLifeTime(float lifeTime)
 //------------------------------------------------------------------------
 void CProjectile::PostInit(IGameObject* pGameObject)
 {
-	Proj::RegisterEvents(*this, *pGameObject);
-
 	GetGameObject()->EnableUpdateSlot(this, 0);
 }
 
@@ -575,7 +564,6 @@ void CProjectile::PostInit(IGameObject* pGameObject)
 bool CProjectile::ReloadExtension(IGameObject* pGameObject, const SEntitySpawnParams& params)
 {
 	ResetGameObject();
-	Proj::RegisterEvents(*this, *pGameObject);
 	CRY_ASSERT_MESSAGE(false, "CProjectile::ReloadExtension not implemented");
 
 	return false;
@@ -639,7 +627,7 @@ void CProjectile::FullSerialize(TSerialize ser)
 }
 
 //------------------------------------------------------------------------
-void CProjectile::Update(SEntityUpdateContext& ctx, int updateSlot)
+void CProjectile::Update(SEntityUpdateContext& ctx)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 
@@ -696,12 +684,9 @@ void CProjectile::Update(SEntityUpdateContext& ctx, int updateSlot)
 #ifndef _RELEASE
 		if (g_pGameCVars->i_debug_projectiles > 0)
 		{
-			CryWatch("SLOT #%d: Projectile: '%s' %p (physics type %d, bullet type %d)", updateSlot, GetEntity()->GetClass()->GetName(), this, m_pAmmoParams->physicalizationType, m_pAmmoParams->bulletType);
+			CryWatch("Projectile: '%s' %p (physics type %d, bullet type %d)", GetEntity()->GetClass()->GetName(), this, m_pAmmoParams->physicalizationType, m_pAmmoParams->bulletType);
 		}
 #endif
-
-		if (updateSlot != 0)
-			return;
 
 		Vec3 pos = GetEntity()->GetWorldPos();
 
@@ -736,13 +721,13 @@ void CProjectile::HandleEvent(const SGameObjectEvent& event)
 		//==============================================================================
 		// Warning this is called directly from the physics thread! must be thread safe!
 		//==============================================================================
-		EventPhysPostStep* pEvent = (EventPhysPostStep*)event.ptr;
+		EventPhysPostStep* pEvent = (EventPhysPostStep*)event.param;
 		g_pGame->GetWeaponSystem()->OnProjectilePhysicsPostStep(this, pEvent, 1);
 	}
 
 	if (event.event == eGFE_OnCollision)
 	{
-		EventPhysCollision* pCollision = (EventPhysCollision*)event.ptr;
+		EventPhysCollision* pCollision = (EventPhysCollision*)event.param;
 		m_last = pCollision->pt;
 
 		IEntity* pTarget = pCollision->iForeignData[1] == PHYS_FOREIGN_ID_ENTITY ? (IEntity*)pCollision->pForeignData[1] : 0;
@@ -831,7 +816,7 @@ bool CProjectile::ProcessCollisionEvent(IEntity* pTarget) const
 }
 
 //------------------------------------------------------------------------
-void CProjectile::ProcessEvent(SEntityEvent& event)
+void CProjectile::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -974,7 +959,7 @@ void CProjectile::Launch(const Vec3& pos, const Vec3& dir, const Vec3& velocity,
 	SetProjectileFlags(ePFlag_launched);
 	ClearProjectileFlags(ePFlag_destroying | ePFlag_hitListener | ePFlag_needDestruction | ePFlag_hitListener_mp_OnExplosion_only);
 
-	GetGameObject()->EnablePhysicsEvent(true, eEPE_OnCollisionLogged);
+	EnableEvent(ENTITY_EVENT_COLLISION);
 
 	// Enable Post Physics Callbacks
 	if (IPhysicalEntity* pent = GetEntity()->GetPhysics())
@@ -982,7 +967,8 @@ void CProjectile::Launch(const Vec3& pos, const Vec3& dir, const Vec3& velocity,
 		pe_params_flags flags;
 		flags.flagsOR = pef_monitor_poststep;
 		pent->SetParams(&flags);
-		GetGameObject()->EnablePhysicsEvent(true, eEPE_OnPostStepImmediate);
+
+		EnableEvent(ENTITY_EVENT_PHYS_POSTSTEP);
 	}
 
 	// Only for bullets
@@ -1170,7 +1156,8 @@ void CProjectile::DestroyImmediate()
 
 	SetProjectileFlags(ePFlag_destroying);
 
-	GetGameObject()->EnablePhysicsEvent(false, eEPE_OnCollisionLogged | eEPE_OnPostStepImmediate);
+	EnableEvent(ENTITY_EVENT_COLLISION, 0, false);
+	EnableEvent(ENTITY_EVENT_PHYS_POSTSTEP, 0, false);
 
 	DestroyObstructObject();
 
@@ -1493,12 +1480,12 @@ IParticleEffect* CProjectile::GetCachedEffect(const char* effectName) const
 }
 
 //------------------------------------------------------------------------
-IEntityAudioProxy* CProjectile::GetAudioProxy()
+IEntityAudioComponent* CProjectile::GetAudioProxy()
 {
-	IEntityAudioProxy* pIEntityAudioProxy = static_cast<IEntityAudioProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_AUDIO));
+	IEntityAudioComponent* pIEntityAudioProxy = static_cast<IEntityAudioComponent*>(GetEntity()->QueryComponent<IEntityAudioComponent>());
 
 	if (!pIEntityAudioProxy)
-		pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO)).get();
+		pIEntityAudioProxy = &GetEntity()->AcquireExternalComponent<IEntityAudioComponent>();
 
 	assert(pIEntityAudioProxy);
 
@@ -1843,8 +1830,6 @@ void CProjectile::InitWithAI()
 			}
 		}
 	}
-
-	GetGameObject()->SetAIActivation(eGOAIAM_Always);
 }
 
 //----------------------------------------------------------------

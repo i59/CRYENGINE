@@ -31,7 +31,6 @@ void CShotgun::Activate(bool activate)
 	m_load_shell_on_end = false;
 	m_break_reload = false;
 	m_reload_was_broken = false;
-	m_pWeapon->RequireUpdate(eIUS_FireMode);
 	m_shotIndex = 0;
 }
 
@@ -560,8 +559,6 @@ void CShotgun::NetShootEx(const Vec3 &pos, const Vec3 &dir, const Vec3 &vel, con
 	}
 
 	OnShoot(m_pWeapon->GetOwnerId(), 0, ammo, pos, dir, vel);
-
-	m_pWeapon->RequireUpdate(eIUS_FireMode);
 }
 
 //---------------------------------------------------------------------

@@ -40,7 +40,7 @@ void CGrenade::HandleEvent(const SGameObjectEvent &event)
 
 	if (event.event == eGFE_OnCollision)
 	{
-		EventPhysCollision *pCollision = (EventPhysCollision *)event.ptr;
+		EventPhysCollision *pCollision = (EventPhysCollision *)event.param;
 
 		float bouncy, friction;
 		uint32 pierceabilityMat;
@@ -215,7 +215,7 @@ bool CGrenade::ShouldCollisionsDamageTarget() const
 }
 
 //------------------------------------------------------------------------
-void CGrenade::ProcessEvent(SEntityEvent &event)
+void CGrenade::ProcessEvent(const SEntityEvent &event)
 {
 	if (event.event == ENTITY_EVENT_TIMER && event.nParam[0] == ePTIMER_LIFETIME)
 	{

@@ -13,7 +13,6 @@
 #include "StdAfx.h"
 #include "ScriptBind_Item.h"
 #include "Item.h"
-#include "IGameObject.h"
 #include "Player.h"
 #include "PlayerPlugin_Interaction.h"
 

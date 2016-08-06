@@ -526,7 +526,7 @@ void CVTOLVehicleManager::RespawnVTOL(IVehicle* pVehicle, SVTOLInfo& info)
 	CHUDEventDispatcher::CallEvent(hudEvent);
 }
 
-void CVTOLVehicleManager::OnEntityEvent( IEntity *pEntity, SEntityEvent &event )
+void CVTOLVehicleManager::OnEntityEvent( IEntity *pEntity, const SEntityEvent &event )
 {
 	if(event.event == ENTITY_EVENT_DONE)
 	{
@@ -826,7 +826,7 @@ void CVTOLVehicleManager::SetupMovement(EntityId entityId)
 			pMovement->StartDriving(0);
 		}
 
-		IGameObject* pGameObject = pVehicle->GetGameObject(); 
+		auto* pGameObject = (IWrappedGameObject *)pVehicle->GetGameObject(); 
 
 		pGameObject->SetUpdateSlotEnableCondition(pVehicle, IVehicle::eVUS_Always, eUEC_WithoutAI);
 		pGameObject->SetUpdateSlotEnableCondition(pVehicle, IVehicle::eVUS_EnginePowered, eUEC_WithoutAI);

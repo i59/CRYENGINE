@@ -68,7 +68,7 @@ class CActor;
 DECLARE_SHARED_POINTERS(CActor);
 
 class CItem :
-	public CGameObjectExtensionHelper<CItem, IItem, 39>,
+	public CEntityComponentConversionHelper<CItem, IItem, 39>,
 	public IGameObjectProfileManager
 {
 	friend class CScriptBind_Item;
@@ -324,7 +324,7 @@ public:
 	CItem();
 	virtual ~CItem();
 
-	// IItem, IGameObjectExtension
+	// IItem, IEntityComponent
 	static const char* GetWeaponComponentType();
 	virtual const char* GetType() const;
 	virtual bool Init( IGameObject * pGameObject );
@@ -342,11 +342,11 @@ public:
 	virtual void SerializeLTL( TSerialize ser );
 	virtual void SerializeSpawnInfo( TSerialize ser ) {};
 	virtual ISerializableInfoPtr GetSpawnInfo() { return 0;};
-	virtual void Update( SEntityUpdateContext& ctx, int );
+	virtual void Update( SEntityUpdateContext& ctx);
 	virtual void PostUpdate( float frameTime ) {};
 	virtual void PostRemoteSpawn() {};
 	virtual void HandleEvent( const SGameObjectEvent& );
-	virtual void ProcessEvent(SEntityEvent& );
+	virtual void ProcessEvent(const SEntityEvent& );
 	virtual void SetChannelId(uint16 id) {};
 	virtual void SetAuthority(bool auth) {}
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
@@ -574,7 +574,6 @@ public:
 	bool AttachToBack(bool attach);
 	eItemAttachment ChooseAttachmentPoint(bool attach, struct IAttachment **attachmentPt = NULL) const;
 	void EnableUpdate(bool enable, int slot=-1);
-	void RequireUpdate(int slot=-1);
 	void Hide(bool hide, bool remoteUpdate = false);
 	void HideItem(bool hide);
 	virtual void SetBusy(bool busy) { m_scheduler.SetBusy(busy); };
@@ -654,9 +653,9 @@ public:
 
 	virtual void OnAttach(bool attach);
 
-	IEntityAudioProxy *GetAudioProxy(bool create=false);
-	IEntityRenderProxy *GetRenderProxy(bool create=false);
-	IEntityPhysicalProxy *GetPhysicalProxy(bool create=false);
+	IEntityAudioComponent *GetAudioProxy(bool create=false);
+	IEntityRenderComponent *GetRenderProxy(bool create=false);
+	IEntityPhysicsComponent *GetPhysicalProxy(bool create=false);
 		
 	EntityId NetGetOwnerId() const;
 	void NetSetOwnerId(EntityId id);

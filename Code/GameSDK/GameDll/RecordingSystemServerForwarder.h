@@ -14,7 +14,7 @@ class CServerKillCamForwarder
 
 public:
 	void Reset();
-	void ReceivePacket(IActor *pActor, const CActor::KillCamFPData &packet);
+	void ReceivePacket(CActor *pActor, const CActor::KillCamFPData &packet);
 	void Update();
 	void GetMemoryUsage(ICrySizer *pSizer) const
 	{

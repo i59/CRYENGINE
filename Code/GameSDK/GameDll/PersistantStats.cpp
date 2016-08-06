@@ -3046,7 +3046,7 @@ void CPersistantStats::OnEntityKilled(const HitInfo &hitInfo)
 							fullWeaponName.Format("%s" ENV_WEAPON_THROWN, weaponName);
 							killWeaponName = fullWeaponName.c_str();
 
-							const CEnvironmentalWeapon* pEnvWeap = static_cast<const CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(hitInfo.weaponId, "EnvironmentalWeapon"));	
+							const CEnvironmentalWeapon* pEnvWeap = static_cast<const CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(hitInfo.weaponId));
 							if(pEnvWeap)
 							{
 								const float throwDistSquared = hitInfo.pos.GetSquaredDistance(pEnvWeap->GetInitialThrowPos());
@@ -3549,7 +3549,7 @@ void CPersistantStats::OnEntityKilledCheckSpecificMultiKills( const HitInfo &hit
 		hitInfo.type == CGameRules::EHitType::EnvironmentalThrow)
 	{
 		EntityId weaponId = hitInfo.weaponId;
-		CEnvironmentalWeapon* pEnvWeap = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(weaponId, "EnvironmentalWeapon"));
+		CEnvironmentalWeapon* pEnvWeap = static_cast<CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(weaponId));
 		if(pEnvWeap)
 		{
 			bEnvironmental = true;
@@ -4297,7 +4297,7 @@ const char* CPersistantStats::GetItemName(EntityId weaponId)
 
 	//weaponId isn't ID of an item, could be something else
 	//could be an environmental weapon
-	if( CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension( weaponId, "EnvironmentalWeapon" )) )
+	if( CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>( weaponId )) )
 	{
 		return pEnvWeapon->GetClassificationName();
 	}

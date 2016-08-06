@@ -88,7 +88,7 @@ protected:
 			{
 				if( gEnv->bServer )
 				{
-					piActor->GetGameObject()->SetAspectProfile(eEA_Physics, eAP_Ragdoll);
+					static_cast<CActor *>(piActor)->GetGameObject()->SetAspectProfile(eEA_Physics, eAP_Ragdoll);
 				}
 				else
 				{
@@ -158,9 +158,7 @@ private:
 		IActor* pActor = GetRootActor();
 		if (pActor && !m_isDeathReaction)
 		{
-			SGameObjectEvent event(eCGE_ReactionEnd, eGOEF_ToExtensions);
-			event.param = this;
-			pActor->HandleEvent(event);
+			pActor->GetEntity()->SendComponentEvent(eCGE_ReactionEnd, this);
 		}
 	}
 

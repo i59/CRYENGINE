@@ -23,7 +23,7 @@ public:
 	~CLightningBolt();
 
 	virtual void Launch(const Vec3 &pos, const Vec3 &dir, const Vec3 &velocity, float speedScale/* =1.0f */);
-	virtual void Update(SEntityUpdateContext &ctx, int updateSlot);
+	virtual void Update(SEntityUpdateContext &ctx);
 	virtual void HandleEvent(const SGameObjectEvent &);
 	virtual void ReInitFromPool();
 	

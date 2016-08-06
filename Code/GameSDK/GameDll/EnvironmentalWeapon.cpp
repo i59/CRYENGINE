@@ -45,17 +45,6 @@ static bool  s_bRenderFrameStamps		= true;
 static bool  s_bRenderWeaponAABB		= false;
 #endif //#if ALLOW_SWEEP_DEBUGGING
 
-namespace EW
-{
-	void RegisterEvents( IGameObjectExtension& goExt, IGameObject& gameObject )
-	{
-		const int eventID = eGFE_OnCollision;
-		gameObject.UnRegisterExtForEvents( &goExt, NULL, 0 );
-		gameObject.RegisterExtForEvents( &goExt, &eventID, 1 );
-	}
-}
-
-
 // ~Sweep testing
 
 CEnvironmentalWeapon::CEnvironmentalWeapon()
@@ -335,7 +324,7 @@ void CEnvironmentalWeapon::RequestUse(EntityId requesterId)
 	if(!gEnv->bServer && pActor && !pActor->IsStillWaitingOnServerUseResponse())
 	{
 		pActor->SetStillWaitingOnServerUseResponse(true);
-		GetGameObject()->InvokeRMI(SvRequestUseEnvironmentalWeapon(), EnvironmentalWeaponRequestParams(), eRMI_ToServer);
+	GetGameObject()->InvokeRMI(SvRequestUseEnvironmentalWeapon(), EnvironmentalWeaponRequestParams(), eRMI_ToServer);
 	}
 	else
 	{
@@ -531,7 +520,7 @@ void CEnvironmentalWeapon::SetOwner(EntityId ownerId)
 		}
 
 		//Update physics netserialization (Only serialize when the shields aren't being held otherwise we get fighting from 1p/3p animation differences)
-		if(IEntityPhysicalProxy* pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS)))
+		if(IEntityPhysicsComponent* pPhysicsProxy = static_cast<IEntityPhysicsComponent*>(GetEntity()->QueryComponent<IEntityPhysicsComponent>()))
 		{
 			pPhysicsProxy->EnableNetworkSerialization(m_OwnerId == 0);
 		}
@@ -604,7 +593,7 @@ bool CEnvironmentalWeapon::NetSerialize( TSerialize ser, EEntityAspects aspect, 
 	return true;
 }
 
-void CEnvironmentalWeapon::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CEnvironmentalWeapon::Update(SEntityUpdateContext &ctx)
 {
 	Vec3 pos = GetEntity()->GetWorldPos();
 	if ((m_lastPos-pos).GetLengthSquared()>sqr(0.1f))
@@ -1172,7 +1161,7 @@ void CEnvironmentalWeapon::RenderDebugStats() const
 }
 #endif // #ifndef _RELEASE
 
-void CEnvironmentalWeapon::ProcessEvent(SEntityEvent& event)
+void CEnvironmentalWeapon::ProcessEvent(const SEntityEvent& event)
 {
 	switch(event.event)
 	{
@@ -1286,8 +1275,7 @@ void CEnvironmentalWeapon::GetMemoryUsage( ICrySizer *pSizer ) const
 bool CEnvironmentalWeapon::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
 {
 	ResetGameObject();
-	EW::RegisterEvents(*this,*pGameObject);
-
+	
 	CRY_ASSERT_MESSAGE(false, "CEnvironmentalWeapon::ReloadExtension not implemented");
 
 	return true;
@@ -1315,7 +1303,7 @@ void CEnvironmentalWeapon::InitClient(int channelId)
 IMPLEMENT_RMI(CEnvironmentalWeapon, SvRequestUseEnvironmentalWeapon)
 {
 	CGameRules* pGameRules = g_pGame->GetGameRules();
-	IActor* pActor = pGameRules ? pGameRules->GetActorByChannelId(g_pGame->GetIGameFramework()->GetGameChannelId(pNetChannel)) : NULL;
+	CActor* pActor = pGameRules ? static_cast<CActor *>(pGameRules->GetActorByChannelId(g_pGame->GetIGameFramework()->GetGameChannelId(pNetChannel))) : NULL;
 	if(pActor)
 	{
 		if(!Use(pActor->GetEntityId()))
@@ -1432,9 +1420,7 @@ float CEnvironmentalWeapon::GetCurrentHealth() const
 
 void CEnvironmentalWeapon::PostInit( IGameObject *pGameObject )
 {
-	EW::RegisterEvents(*this,*pGameObject);
-
-	pGameObject->EnableUpdateSlot(this,0);
+	GetGameObject()->EnableUpdateSlot(this,0);
 
 	// Cache our on health changed function
 	IScriptTable*  pTable = GetEntity()->GetScriptTable();
@@ -1578,7 +1564,7 @@ void CEnvironmentalWeapon::OnFinishMelee()
 {
 	if(g_pGame->GetIGameFramework()->GetClientActorId() == m_OwnerId)
 	{
-		GetGameObject()->EnablePhysicsEvent(false, eEPE_OnCollisionLogged);
+		EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
 	}
 
 	m_currentAttackState = EAttackStateType_None; 
@@ -1590,7 +1576,7 @@ void CEnvironmentalWeapon::OnFinishChargedThrow()
 {
 	if(g_pGame->GetIGameFramework()->GetClientActorId() == m_OwnerId)
 	{
-		GetGameObject()->EnablePhysicsEvent(false, eEPE_OnCollisionLogged);
+		EnableEvent(ENTITY_EVENT_COLLISION, 0, false);
 	}
 
 	m_currentAttackState = EAttackStateType_None; 
@@ -1659,7 +1645,7 @@ void CEnvironmentalWeapon::HandleEvent( const SGameObjectEvent& evnt )
 
 	if(evnt.event == eGFE_OnCollision && m_entityHitList.size() < s_MaxEntitiesAllowedHitsPerSwing)
 	{
-		const EventPhysCollision	*pEventPhysCollision = static_cast<const EventPhysCollision *>(evnt.ptr);
+		const EventPhysCollision	*pEventPhysCollision = static_cast<const EventPhysCollision *>(evnt.param);
 		if(m_currentAttackState & EAttackStateType_EnactingPrimaryAttack)
 		{
 			// The client doing the melee, or the client that just threw the object, is the one responsible for reporting kills/impacts
@@ -2168,7 +2154,7 @@ bool CEnvironmentalWeapon::HandleChargedThrowCollisionEvent( const EventPhysColl
 						{
 							bool blocked = false;
 							EntityId playerWeaponId = pActor->GetInventory()->GetCurrentItem();
-							CPickAndThrowWeapon* pPickAndThrow = static_cast<CPickAndThrowWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(playerWeaponId, "PickAndThrowWeapon"));
+							CPickAndThrowWeapon* pPickAndThrow = static_cast<CPickAndThrowWeapon*>(gEnv->pEntitySystem->QueryComponent<CPickAndThrowWeapon>(playerWeaponId));
 							if (pPickAndThrow && pPickAndThrow->ShieldsPlayer())
 							{
 								static const float maxDotProduct = cosf(DEG2RAD(65.f));
@@ -2410,7 +2396,7 @@ void CEnvironmentalWeapon::ApplyImpulse(const HitInfo& hitInfo, const EntityId v
 #endif //#ifndef _RELEASE
 		}
 		// OBJECTS
-		else if(IEntityPhysicalProxy* pPhysicsProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
+		else if(IEntityPhysicsComponent* pPhysicsProxy = (IEntityPhysicsComponent*)pEntity->QueryComponent<IEntityPhysicsComponent>())
 		{
 			const Vec3 vImpulseVec  = (hitInfo.impulseScale * hitInfo.dir); 
 			
@@ -2596,7 +2582,7 @@ void CEnvironmentalWeapon::ProcessHitObject( const EntityHitRecord& entityHitRec
 	}
 
 	// OTHER ENVIRONMENTAL WEAPONS
-	CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(entityHitRecord.m_entityId, "EnvironmentalWeapon"));
+	CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(entityHitRecord.m_entityId));
 	if(pEnvWeapon && pEnvWeapon->m_OwnerId)
 	{
 		// If hitting an environmental weapon held by another player... don't want to impulse it!
@@ -2626,7 +2612,7 @@ void CEnvironmentalWeapon::ProcessHitObject( const EntityHitRecord& entityHitRec
 
 void CEnvironmentalWeapon::OnStartChargedThrow()
 {
-	if(IEntityPhysicalProxy* pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS)))
+	if(IEntityPhysicsComponent* pPhysicsProxy = static_cast<IEntityPhysicsComponent*>(GetEntity()->QueryComponent<IEntityPhysicsComponent>()))
 	{
 		pPhysicsProxy->EnableNetworkSerialization(true);
 	}
@@ -2639,7 +2625,7 @@ void CEnvironmentalWeapon::OnStartChargedThrow()
 	bool bOwnerIsLocal = (g_pGame->GetIGameFramework()->GetClientActorId() == m_OwnerId);
 	if(bOwnerIsLocal)
 	{
-		GetGameObject()->EnablePhysicsEvent(true, eEPE_OnCollisionLogged);
+		EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
 	}
 	m_currentAttackState = EAttackStateType_ChargedThrow; 
 	m_throwerId = m_OwnerId; 
@@ -2733,7 +2719,7 @@ void CEnvironmentalWeapon::OnMeleeStartDamagePhaseEvent()
 	// and a hit has been achieved to allow for responsive impact/ragdoll effects 
 	if(g_pGame->GetIGameFramework()->GetClientActorId() == m_OwnerId)
 	{
-		GetGameObject()->EnablePhysicsEvent(true, eEPE_OnCollisionLogged);
+		EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
 
 		pe_params_flags pf; 
 		pf.flagsOR = ref_small_and_fast;
@@ -2757,7 +2743,7 @@ void CEnvironmentalWeapon::OnMeleeEndDamagePhaseEvent()
 	// Don't care about any collisions for a while
 	if(g_pGame->GetIGameFramework()->GetClientActorId() == m_OwnerId)
 	{
-		GetGameObject()->EnablePhysicsEvent(false, eEPE_OnCollisionLogged);
+		EnableEvent(ENTITY_EVENT_COLLISION, 0, false);
 
 		pe_params_flags pf; 
 		pf.flagsAND = ~ref_small_and_fast;
@@ -2868,7 +2854,7 @@ void CEnvironmentalWeapon::DelegateAuthorityOnOwnershipChanged(EntityId prevOwne
 		if(newOwnerId)
 		{
 			// If new owner is a remote player
-			IActor* pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(newOwnerId);
+			CActor* pActor = static_cast<CActor *>(g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(newOwnerId));
 			CRY_ASSERT_MESSAGE(pActor, "CEnvironmentalWeapon::DelegateAuthorityOnOwnershipChanged < Something has gone wrong here - perhaps trying to hand ownership to a player that has left the game?"); 
 			if(pActor) 
 			{

@@ -12,7 +12,7 @@
 class CProjectile;
 
 
-class CDeflectorShield : public CGameObjectExtensionHelper<CDeflectorShield, IGameObjectExtension>
+class CDeflectorShield : public CEntityComponentConversionHelper<CDeflectorShield>
 {
 private:
 	struct SDeflectedEnergy
@@ -35,9 +35,11 @@ private:
 	typedef std::deque<SDeflectedEnergy> TDeflectedEnergies;
 
 public:
+	DECLARE_COMPONENT("DeflectorShield", 0x52636F2C26F943F2, 0xA999BD4512C6B600)
+
 	CDeflectorShield();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
 	virtual bool Init(IGameObject * pGameObject);
 	virtual void PostInit(IGameObject * pGameObject);
@@ -46,21 +48,20 @@ public:
 	virtual bool ReloadExtension(IGameObject * pGameObject, const SEntitySpawnParams &params);
 	virtual void PostReloadExtension(IGameObject * pGameObject, const SEntitySpawnParams &params);
 	virtual bool GetEntityPoolSignature(TSerialize signature);
-	virtual void Release();
+	virtual void Release() { delete this; }
 	virtual void FullSerialize(TSerialize ser);
 	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int pflags);
 	virtual void PostSerialize();
 	virtual void SerializeSpawnInfo(TSerialize ser);
 	virtual ISerializableInfoPtr GetSpawnInfo();
-	virtual void Update(SEntityUpdateContext& ctx, int updateSlot);
+	virtual void Update(SEntityUpdateContext& ctx);
 	virtual void HandleEvent(const SGameObjectEvent& event);
-	virtual void ProcessEvent(SEntityEvent& event);	
+	virtual void ProcessEvent(const SEntityEvent& event);	
 	virtual void SetChannelId(uint16 id);
 	virtual void SetAuthority(bool auth );
-	virtual const void * GetRMIBase() const;
 	virtual void PostUpdate(float frameTime);
 	virtual void PostRemoteSpawn();
-	// ~IGameObjectExtension
+	// ~IEntityComponent
 
 	// Deflection control:
 	void SetNonDeflectedOwnerGroup(int pGroupID);

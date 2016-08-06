@@ -15,7 +15,7 @@
 #define __BoidsProxy_h__
 #pragma once
 
-#include <CryEntitySystem/IEntityProxy.h>
+#include <CryEntitySystem/IEntityComponent.h>
 
 class CFlock;
 class CBoidObject;
@@ -24,37 +24,29 @@ class CBoidObject;
 // Description:
 //    Handles sounds in the entity.
 //////////////////////////////////////////////////////////////////////////
-struct CBoidsProxy : public IEntityBoidsProxy
+struct CBoidsProxy : public IEntityComponent
 {
+	DECLARE_COMPONENT("BoidsProxy", 0xF594D3A2795742B3, 0xACBCAAC041BF11E6)
+
 	CBoidsProxy();
-	~CBoidsProxy();
-	IEntity* GetEntity() const { return m_pEntity; };
+	virtual ~CBoidsProxy();
 
-	// IComponent interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize( const SComponentInitializer& init );
-	//////////////////////////////////////////////////////////////////////////
+	// IEntityComponent
+	virtual void PostInitialize() override;
+	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) override;
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType() { return ENTITY_PROXY_BOIDS; }
-	virtual void Release();
-	virtual void Done() {};
-	virtual	void Update( SEntityUpdateContext &ctx );
-	virtual	void ProcessEvent( SEntityEvent &event );
-	virtual bool Init( IEntity *pEntity,SEntitySpawnParams &params ) { return true; }
-	virtual void Reload( IEntity *pEntity,SEntitySpawnParams &params );
-	virtual void SerializeXML( XmlNodeRef &entityNode,bool bLoading ) {};
-	virtual void Serialize( TSerialize ser );
-	virtual bool NeedSerialize() { return false; };
-	virtual bool GetSignature( TSerialize signature );
-	//////////////////////////////////////////////////////////////////////////
+	virtual void Release() override { delete this; }
+
+	virtual	void Update(SEntityUpdateContext &ctx) override;
+	virtual	void ProcessEvent(const SEntityEvent &event) override;
+
+	virtual void Serialize(TSerialize ser) override;
+	// ~IEntityComponent
 
 	//////////////////////////////////////////////////////////////////////////
 	void SetFlock( CFlock *pFlock );
 	CFlock* GetFlock() { return m_pFlock; }
-	void OnTrigger( bool bEnter,SEntityEvent &event );
+	void OnTrigger( bool bEnter, const SEntityEvent &event );
 
 	virtual void GetMemoryUsage(ICrySizer *pSizer )const
 	{
@@ -65,51 +57,31 @@ private:
 	void OnMove();
 
 private:
-	//////////////////////////////////////////////////////////////////////////
-	// Private member variables.
-	//////////////////////////////////////////////////////////////////////////
-	// Host entity.
-	IEntity *m_pEntity;
-
 	// Flock of items.
 	CFlock *m_pFlock;
 
 	int m_playersInCount;
 };
 
-DECLARE_COMPONENT_POINTERS( CBoidsProxy );
-
 //////////////////////////////////////////////////////////////////////////
 // Description:
 //    Handles sounds in the entity.
 //////////////////////////////////////////////////////////////////////////
-struct CBoidObjectProxy : public IEntityProxy
+struct CBoidObjectProxy : public IEntityComponent
 {
+	DECLARE_COMPONENT("EntityPhysicsComponent", 0x831620AEA44D475C, 0x99C33C7C0B394F51)
+
 	CBoidObjectProxy();
-	~CBoidObjectProxy();
+	virtual ~CBoidObjectProxy();
 	IEntity* GetEntity() const { return m_pEntity; };
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityEvent interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual void Initialize( const SComponentInitializer& init );
-	//////////////////////////////////////////////////////////////////////////
+	// IEntityComponent
+	virtual void PostInitialize() override;
 
-	//////////////////////////////////////////////////////////////////////////
-	// IEntityProxy interface implementation.
-	//////////////////////////////////////////////////////////////////////////
-	virtual EEntityProxy GetType() { return ENTITY_PROXY_BOID_OBJECT; }
-	virtual void Release() { delete this; };
-	virtual void Done() {};
-	virtual	void Update( SEntityUpdateContext &ctx ){};
-	virtual	void ProcessEvent( SEntityEvent &event );
-	virtual bool Init( IEntity *pEntity,SEntitySpawnParams &params ) { return true; }
-	virtual void Reload( IEntity *pEntity,SEntitySpawnParams &params ) {};
-	virtual void SerializeXML( XmlNodeRef &entityNode,bool bLoading ) {};
-	virtual void Serialize( TSerialize ser );
-	virtual bool NeedSerialize() { return false; };
-	virtual bool GetSignature( TSerialize signature );
-	//////////////////////////////////////////////////////////////////////////
+	virtual void Release() override { delete this; }
+
+	virtual	void ProcessEvent(const SEntityEvent &event) override;
+	// ~IEntityComponent
 
 	//////////////////////////////////////////////////////////////////////////
 	void SetBoid( CBoidObject *pBoid ) { m_pBoid = pBoid; };
@@ -129,7 +101,5 @@ private:
 	// Host Flock.
 	CBoidObject *m_pBoid;
 };
-
-DECLARE_COMPONENT_POINTERS( CBoidObjectProxy );
 
 #endif //__BoidsProxy_h__

@@ -16,7 +16,6 @@ History:
 #ifndef _DOOR_PANEL_H_
 #define _DOOR_PANEL_H_
 
-#include <IGameObject.h>
 #include "../State.h"
 #include <CrySystem/Scaleform/IFlashPlayer.h>
 
@@ -108,15 +107,17 @@ struct SDoorPanelResetEvent
 //////////////////////////////////////////////////////////////////////////
 /// DOOR PANEL
 
-class CDoorPanel : public CGameObjectExtensionHelper<CDoorPanel, IGameObjectExtension>, public IFSCommandHandler
+class CDoorPanel : public CEntityComponentConversionHelper<CDoorPanel>, public IFSCommandHandler
 {
 	friend class CDoorPanelBehavior;
 
 public:
+	DECLARE_COMPONENT("DoorPanel", 0xAB844ADB955F4AE3, 0x87EB7CA7B54AF39B)
+
 	CDoorPanel();
 	virtual ~CDoorPanel();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init( IGameObject * pGameObject );
 	virtual void InitClient( int channelId ) {};
 	virtual void PostInit( IGameObject * pGameObject );
@@ -130,15 +131,15 @@ public:
 	virtual void PostSerialize() {};
 	virtual void SerializeSpawnInfo( TSerialize ser ) {}
 	virtual ISerializableInfoPtr GetSpawnInfo() {return 0;}
-	virtual void Update( SEntityUpdateContext& ctx, int slot );
+	virtual void Update( SEntityUpdateContext& ctx );
 	virtual void HandleEvent( const SGameObjectEvent& gameObjectEvent );
-	virtual void ProcessEvent( SEntityEvent& entityEvent );
+	virtual void ProcessEvent(const SEntityEvent& entityEvent );
 	virtual void SetChannelId( uint16 id ) {};
 	virtual void SetAuthority( bool auth ) {};
 	virtual void PostUpdate( float frameTime ) { CRY_ASSERT(false); }
 	virtual void PostRemoteSpawn() {};
 	virtual void GetMemoryUsage( ICrySizer *pSizer ) const;
-	// ~IGameObjectExtension
+	// ~IEntityComponent
 
 	// IFSCommandHandler
 	virtual void HandleFSCommand(const char* pCommand, const char* pArgs, void* pUserData = 0);

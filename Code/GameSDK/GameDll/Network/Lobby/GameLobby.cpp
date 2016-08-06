@@ -6723,7 +6723,7 @@ bool CGameLobby::GetPlayerDisplayNameFromEntity(EntityId entityId, CryFixedStrin
 {
 	bool bFound = false;
 
-	IGameObject	*pGameObject = g_pGame->GetIGameFramework()->GetGameObject(entityId);
+	IGameObject	*pGameObject = gEnv->pEntitySystem->QueryComponent<IGameObject>(entityId);
 	const int channelId = pGameObject ? pGameObject->GetChannelId() : 0;
 	if (channelId)
 	{

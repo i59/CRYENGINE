@@ -243,7 +243,7 @@ private:
 	void SendSoundSystemGameHint( const EAudioHint audioHint );
 	void SetupLightSource( CSmartMine& smartMine );
 	
-	IEntityTriggerProxy* GetTriggerProxyForSmartMine( CSmartMine& smartMine ) const;
+	IEntityTriggerComponent* GetTriggerProxyForSmartMine( CSmartMine& smartMine ) const;
 
 	void EnableSmartMineUpdate( CSmartMine& smartMine );
 	void DisableSmartMineUpdate( CSmartMine& smartMine );
@@ -561,10 +561,10 @@ void CSmartMineBehavior::SetupSmartMine( CSmartMine& smartMine, const SmartMineS
 	Physicalize( smartMine, m_properties.m_initialPhysicsType );
 
 	// Other proxies
-	smartMine.GetEntity()->CreateProxy(ENTITY_PROXY_TRIGGER);
-	smartMine.GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO);
+	smartMine.GetEntity()->AcquireExternalComponent<IEntityTriggerComponent>();
+	smartMine.GetEntity()->AcquireExternalComponent<IEntityAudioComponent>();
 	
-	IEntityTriggerProxy* pTriggerProxy = GetTriggerProxyForSmartMine( smartMine );
+	IEntityTriggerComponent* pTriggerProxy = GetTriggerProxyForSmartMine( smartMine );
 	if (pTriggerProxy != NULL)
 	{
 		const Vec3& triggerBox = smartMineProperties.m_triggerBox;
@@ -691,25 +691,19 @@ void CSmartMineBehavior::SetupLightSource( CSmartMine& smartMine )
 	}
 }
 
-IEntityTriggerProxy* CSmartMineBehavior::GetTriggerProxyForSmartMine( CSmartMine& smartMine ) const
+IEntityTriggerComponent* CSmartMineBehavior::GetTriggerProxyForSmartMine( CSmartMine& smartMine ) const
 {
-	return static_cast<IEntityTriggerProxy*>(smartMine.GetEntity()->GetProxy(ENTITY_PROXY_TRIGGER));
+	return static_cast<IEntityTriggerComponent*>(smartMine.GetEntity()->QueryComponent<IEntityTriggerComponent>());
 }
 
 void CSmartMineBehavior::EnableSmartMineUpdate( CSmartMine& smartMine )
 {
-	if (smartMine.GetGameObject()->GetUpdateSlotEnables( &smartMine, SMART_MINE_MAIN_UPDATE_SLOT ) == 0)
-	{
-		smartMine.GetGameObject()->EnableUpdateSlot( &smartMine, SMART_MINE_MAIN_UPDATE_SLOT );
-	}
+	smartMine.GetGameObject()->EnableUpdateSlot( &smartMine, SMART_MINE_MAIN_UPDATE_SLOT );
 }
 
 void CSmartMineBehavior::DisableSmartMineUpdate( CSmartMine& smartMine )
 {
-	if (smartMine.GetGameObject()->GetUpdateSlotEnables( &smartMine, SMART_MINE_MAIN_UPDATE_SLOT ) > 0)
-	{
-		smartMine.GetGameObject()->DisableUpdateSlot( &smartMine, SMART_MINE_MAIN_UPDATE_SLOT );
-	}
+	smartMine.GetGameObject()->DisableUpdateSlot( &smartMine, SMART_MINE_MAIN_UPDATE_SLOT );
 }
 
 void CSmartMineBehavior::UpdateVisualState( CSmartMine& smartMine, const EVisualState visualState )

@@ -146,11 +146,6 @@ void CFireMode::Update(float frameTime, uint32 frameId)
 	{
 		keepUpdating |= m_plugins[i]->Update(frameTime, frameId);
 	}
-
-	if (keepUpdating)
-	{
-		m_pWeapon->RequireUpdate(eIUS_FireMode);
-	}
 }
 
 void CFireMode::Activate(bool activate)

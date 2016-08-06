@@ -207,7 +207,7 @@ public:
 				bool affected = stl::find(m_entitiesAffected, pEntity->GetId());
 				if(!affected)
 				{
-					IEntityPhysicalProxy* pPhysicalProxy = static_cast<IEntityPhysicalProxy*>(pEntity->GetProxy(ENTITY_PROXY_PHYSICS));
+					IEntityPhysicsComponent* pPhysicalProxy = static_cast<IEntityPhysicsComponent*>(pEntity->QueryComponent<IEntityPhysicsComponent>());
 					if(pPhysicalProxy)
 					{
 						pPhysicalProxy->GetWorldBounds(bounds);

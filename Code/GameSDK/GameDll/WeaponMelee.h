@@ -28,6 +28,7 @@ class CWeaponMelee : public CWeapon
 {
 	typedef CWeapon BaseClass;
 public:
+	DECLARE_COMPONENT("WeaponMelee", 0x1CA7D00443394D82, 0xB6E5512BD6DD80BE)
 
 	enum EMeleeStatus
 	{
@@ -48,7 +49,7 @@ protected:
 	virtual void StartFire();
 	virtual void MeleeAttack( bool bShort );
 	virtual void Select(bool select);
-	virtual void Update(SEntityUpdateContext& ctx, int);
+	virtual void Update(SEntityUpdateContext& ctx);
 	virtual void SetOwnerId(EntityId ownerId);
 	virtual bool CanModify() const;
 	virtual bool CanMeleeAttack() const;

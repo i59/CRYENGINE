@@ -278,16 +278,9 @@ EntityId CVehicleActionDeployRope::CreateRope(IPhysicalEntity *pLinkedEntity, co
 
 	pRopeEntity->SetFlags(pRopeEntity->GetFlags() | ENTITY_FLAG_CASTSHADOW);
 
-	pRopeEntity->CreateProxy(ENTITY_PROXY_ROPE);
+	auto &ropeComponent = pRopeEntity->AcquireExternalComponent<IEntityRopeComponent>();
 
-	IEntityRopeProxy	*pEntityRopeProxy = (IEntityRopeProxy *)pRopeEntity->GetProxy(ENTITY_PROXY_ROPE);
-
-	if(!pEntityRopeProxy)
-	{
-		return 0;
-	}
-
-	IRopeRenderNode	*pRopeNode = pEntityRopeProxy->GetRopeRenderNode();
+	IRopeRenderNode	*pRopeNode = ropeComponent.GetRopeRenderNode();
 
 	if(!pRopeNode)
 	{
@@ -347,14 +340,14 @@ IRopeRenderNode *CVehicleActionDeployRope::GetRopeRenderNode(EntityId ropeId)
 		return NULL;
 	}
 
-	IEntityRopeProxy	*pEntityProxy = (IEntityRopeProxy *)pEntity->GetProxy(ENTITY_PROXY_ROPE);
+	auto *pRopeComponent = pEntity->QueryComponent<IEntityRopeComponent>();
 
-	if(!pEntityProxy)
+	if(!pRopeComponent)
 	{
 		return NULL;
 	}
 
-	return pEntityProxy->GetRopeRenderNode();
+	return pRopeComponent->GetRopeRenderNode();
 }
 
 //------------------------------------------------------------------------

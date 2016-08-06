@@ -52,7 +52,7 @@ public:
 		case eFE_Activate:
 			if (IsPortActive(pActInfo, 0) && pActInfo->pEntity)
 			{
-				CTornado* pTornado = (CTornado*)g_pGame->GetIGameFramework()->QueryGameObjectExtension(pActInfo->pEntity->GetId(), "Tornado");
+				CTornado* pTornado = (CTornado*)gEnv->pEntitySystem->QueryComponent<CTornado>(pActInfo->pEntity->GetId());
 
 				if (pTornado)
 				{ 

@@ -405,7 +405,7 @@ void CDoorPanelBehavior::SetupDoorPanel( CDoorPanel& doorPanel )
 	SwitchSlot(doorPanel, DOOR_PANEL_MODEL_NORMAL_SLOT);
 
 	// Other proxies
-	pEntity->CreateProxy( ENTITY_PROXY_AUDIO );
+	pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 }
 
 bool CDoorPanelBehavior::SetupFlash( CDoorPanel& doorPanel )
@@ -427,7 +427,7 @@ bool CDoorPanelBehavior::SetupFlash( CDoorPanel& doorPanel )
 	}
 	else
 	{
-		IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent*>(pEntity->QueryComponent<IEntityRenderComponent>());
 		if (pRenderProxy)
 		{
 			pOriginalMaterial = pRenderProxy->GetRenderMaterial(DOOR_PANEL_MODEL_NORMAL_SLOT);
@@ -471,7 +471,7 @@ bool CDoorPanelBehavior::SetupFlash( CDoorPanel& doorPanel )
 			CRY_ASSERT(pEntityToShareScreen != NULL);
 			if (pEntityToShareScreen != NULL)
 			{
-				IEntityRenderProxy* pEntityToShareRenderProxy = static_cast<IEntityRenderProxy*>(pEntityToShareScreen->GetProxy(ENTITY_PROXY_RENDER));
+				IEntityRenderComponent* pEntityToShareRenderProxy = static_cast<IEntityRenderComponent*>(pEntityToShareScreen->QueryComponent<IEntityRenderComponent>());
 				if (pEntityToShareRenderProxy)
 				{
 					pAnimatedMaterial = pEntityToShareRenderProxy->GetRenderMaterial(DOOR_PANEL_MODEL_NORMAL_SLOT);
@@ -562,7 +562,7 @@ IMaterial* CDoorPanelBehavior::CreateClonedMaterial( IEntity* pEntity, const int
 
 	IMaterial* pClonedMaterial = NULL;
 
-	IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+	IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent*>(pEntity->QueryComponent<IEntityRenderComponent>());
 	if (pRenderProxy)
 	{
 		IMaterial* pOriginalMaterial = pRenderProxy->GetRenderMaterial(iSlotIndex);
@@ -661,7 +661,7 @@ void CDoorPanelBehavior::DeinitFlashResources( CDoorPanel& doorPanel )
 		{
 			IEntity* pEntity = doorPanel.GetEntity();
 
-			IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+			IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent*>(pEntity->QueryComponent<IEntityRenderComponent>());
 			if (pRenderProxy)
 			{
 				IMaterial* pMaterial = pRenderProxy->GetRenderMaterial(DOOR_PANEL_MODEL_NORMAL_SLOT);

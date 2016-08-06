@@ -43,7 +43,7 @@ void CRocket::HandleEvent(const SGameObjectEvent &event)
 
 	if (event.event == eGFE_OnCollision && !m_detonatorFired)
 	{		
-		if (EventPhysCollision *pCollision = reinterpret_cast<EventPhysCollision*>(event.ptr))
+		if (EventPhysCollision *pCollision = reinterpret_cast<EventPhysCollision*>(event.param))
 		{
 			if (m_pAmmoParams->safeExplosion>0.0f)
 			{
@@ -167,7 +167,7 @@ bool CRocket::ShouldCollisionsDamageTarget() const
 
 
 
-void CRocket::ProcessEvent(SEntityEvent &event)
+void CRocket::ProcessEvent(const SEntityEvent &event)
 {
 	if (event.event == ENTITY_EVENT_TIMER && event.nParam[0] == ePTIMER_LIFETIME)
 	{

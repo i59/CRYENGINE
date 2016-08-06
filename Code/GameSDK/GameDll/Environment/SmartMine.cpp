@@ -14,7 +14,6 @@ History:
 #include "StdAfx.h"
 #include "SmartMine.h"
 
-#include <GameObjects/GameObject.h>
 #include "AutoAimManager.h"
 #include "TacticalManager.h"
 #include "Game.h"
@@ -24,22 +23,6 @@ History:
 #include <IItemSystem.h>
 
 DEFINE_STATE_MACHINE( CSmartMine, Behavior );
-
-namespace SM
-{
-	void RegisterEvents( IGameObjectExtension& goExt, IGameObject& gameObject )
-	{
-		const int events[] = {	eGFE_ScriptEvent,
-
-														eMineGameObjectEvent_RegisterListener, 
-														eMineGameObjectEvent_UnRegisterListener, 
-														eMineGameObjectEvent_OnNotifyDestroy};
-
-		gameObject.UnRegisterExtForEvents( &goExt, NULL, 0 );
-		gameObject.RegisterExtForEvents( &goExt, events, (sizeof(events) / sizeof(int)) );
-	}
-}
-
 
 CSmartMine::CSmartMine()
 	: m_inTacticalManager( false )
@@ -67,14 +50,12 @@ bool CSmartMine::Init( IGameObject * pGameObject )
 
 void CSmartMine::PostInit( IGameObject * pGameObject )
 {
-	SM::RegisterEvents( *this, *pGameObject );
 	StateMachineInitBehavior();
 }
 
 bool CSmartMine::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
 {
 	ResetGameObject();
-	SM::RegisterEvents( *this, *pGameObject );
 
 	CRY_ASSERT_MESSAGE(false, "CSmartMine::ReloadExtension not implemented");
 
@@ -124,10 +105,8 @@ void CSmartMine::FullSerialize( TSerialize ser )
 	StateMachineSerializeBehavior( SStateEventSerialize( ser ) );
 }
 
-void CSmartMine::Update( SEntityUpdateContext& ctx, int slot )
+void CSmartMine::Update( SEntityUpdateContext& ctx )
 {
-	CRY_ASSERT( slot == SMART_MINE_MAIN_UPDATE_SLOT );
-
 	StateMachineHandleEventBehavior( SSmartMineEvent_Update(ctx.fFrameTime) );
 }
 
@@ -176,7 +155,7 @@ void CSmartMine::HandleEvent( const SGameObjectEvent& gameObjectEvent )
 	}
 }
 
-void CSmartMine::ProcessEvent( SEntityEvent& entityEvent )
+void CSmartMine::ProcessEvent(const SEntityEvent& entityEvent )
 {
 	switch(entityEvent.event)
 	{
@@ -403,12 +382,7 @@ void CSmartMine::NotifyMineListenersEvent( const EMineEventListenerGameObjectEve
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity( entityId );
 		if (pEntity)
 		{
-			CGameObject* pGameObject = static_cast<CGameObject*>(pEntity->GetProxy(ENTITY_PROXY_USER));
-			if (pGameObject != NULL)
-			{
-				SGameObjectEvent goEvent( (uint32)event, eGOEF_ToExtensions, IGameObjectSystem::InvalidExtensionID, (void*)(&(thisEntityId)) ); // This entity's id is sent as parameter
-				pGameObject->SendEvent( goEvent );
-			}
+			pEntity->SendComponentEvent(event, (void*)(&(thisEntityId)));
 		}
 
 		++iter;
@@ -431,10 +405,7 @@ void CSmartMine::OnDisabled()
 		return;
 	m_enabled = false;
 	RemoveFromTacticalManager();
-	if (GetGameObject()->GetUpdateSlotEnables( this, SMART_MINE_MAIN_UPDATE_SLOT ) > 0)
-	{
-		GetGameObject()->DisableUpdateSlot( this, SMART_MINE_MAIN_UPDATE_SLOT );
-	}
+	GetGameObject()->DisableUpdateSlot( this, SMART_MINE_MAIN_UPDATE_SLOT );
 	GetEntity()->Hide( true );
 }
 

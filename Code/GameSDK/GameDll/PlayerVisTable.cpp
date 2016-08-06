@@ -716,7 +716,7 @@ void SDeferredLinetestReceiver::OnDataReceived( const QueuedRayID& rayID, const 
 				else if(IEntity* pTarget = gEnv->pEntitySystem->GetEntityFromPhysics(result->pCollider))
 				{
 					// Test if this is an environmental weapon. If so, get its OWNER (the owner is still visible). 
-					CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(pTarget->GetId(), "EnvironmentalWeapon"));
+					CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(pTarget->GetId()));
 					if(pEnvWeapon && pEnvWeapon->GetOwner() == visEntry.entityId)
 					{
 						visEntry.flags |= eVF_Visible | eVF_VisibleThroughGlass;

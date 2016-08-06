@@ -458,7 +458,7 @@ bool CItem::SetGeometry(int slot, const ItemString& name, const ItemString& mate
 	else if (useParentMaterial && pParentEntity)
 	{
 		ICharacterInstance* pParentCharacter = pParentEntity->GetCharacter(slot);
-		IEntityRenderProxy* pParentRenderProxy = static_cast<IEntityRenderProxy*>(pParentEntity->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRenderComponent* pParentRenderProxy = static_cast<IEntityRenderComponent*>(pParentEntity->QueryComponent<IEntityRenderComponent>());
 		if (pParentCharacter)
 			pOverrideMaterial = pParentCharacter->GetIMaterial();
 		else if (pParentRenderProxy)
@@ -467,7 +467,7 @@ bool CItem::SetGeometry(int slot, const ItemString& name, const ItemString& mate
 	if (pOverrideMaterial)
 	{
 		ICharacterInstance* pCharacter = GetEntity()->GetCharacter(slot);
-		IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent*>(GetEntity()->QueryComponent<IEntityRenderComponent>());
 		OverrideAttachmentMaterial(pOverrideMaterial, this, slot);
 		if (pCharacter)
 			pCharacter->SetIMaterial_Instance(pOverrideMaterial);
@@ -746,7 +746,7 @@ const Matrix33 &CItem::GetSlotHelperRotation(int slot, const char *helper, bool 
 //    return;
 //
 //	bool synchSound = false;
-//	IEntityAudioProxy *pIEntityAudioProxy = GetAudioProxy(false);
+//	IEntityAudioComponent *pIEntityAudioProxy = GetAudioProxy(false);
 //	if (pIEntityAudioProxy)
 //	{
 //		if(synchSound)
@@ -760,7 +760,7 @@ const Matrix33 &CItem::GetSlotHelperRotation(int slot, const char *helper, bool 
 void CItem::Quiet()
 {
 	REINST("needs verification!");
-	/*IEntityAudioProxy *pIEntityAudioProxy = GetAudioProxy(false);
+	/*IEntityAudioComponent *pIEntityAudioProxy = GetAudioProxy(false);
 	if (pIEntityAudioProxy)
 	{
 		pIEntityAudioProxy->StopAllSounds();
@@ -770,7 +770,7 @@ void CItem::Quiet()
 //------------------------------------------------------------------------
 //ISound *CItem::GetISound(tSoundID id)
 //{
-//	IEntityAudioProxy *pIEntityAudioProxy = GetAudioProxy(false);
+//	IEntityAudioComponent *pIEntityAudioProxy = GetAudioProxy(false);
 //	if (pIEntityAudioProxy)
 //		return pIEntityAudioProxy->GetSound(id);
 //
@@ -778,34 +778,30 @@ void CItem::Quiet()
 //}
 
 //------------------------------------------------------------------------
-IEntityAudioProxy *CItem::GetAudioProxy(bool create)
+IEntityAudioComponent *CItem::GetAudioProxy(bool create)
 {
-	IEntityAudioProxy *pIEntityAudioProxy = (IEntityAudioProxy *)GetEntity()->GetProxy(ENTITY_PROXY_AUDIO);
+	if (create)
+		return &GetEntity()->AcquireExternalComponent<IEntityAudioComponent>();
 
-	if (!pIEntityAudioProxy && create)
-		pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr> (GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO)).get();
-
-	return pIEntityAudioProxy;
+	return GetEntity()->QueryComponent<IEntityAudioComponent>();
 }
 
 //------------------------------------------------------------------------
-IEntityRenderProxy *CItem::GetRenderProxy(bool create)
+IEntityRenderComponent *CItem::GetRenderProxy(bool create)
 {
-	IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy *)GetEntity()->GetProxy(ENTITY_PROXY_RENDER);
-	if (!pRenderProxy && create)
-		pRenderProxy = crycomponent_cast<IEntityRenderProxyPtr> (GetEntity()->CreateProxy(ENTITY_PROXY_RENDER)).get();
+	if (create)
+		return &GetEntity()->AcquireExternalComponent<IEntityRenderComponent>();
 
-	return pRenderProxy;
+	return GetEntity()->QueryComponent<IEntityRenderComponent>();
 }
 
 //------------------------------------------------------------------------
-IEntityPhysicalProxy *CItem::GetPhysicalProxy(bool create)
+IEntityPhysicsComponent *CItem::GetPhysicalProxy(bool create)
 {
-	IEntityPhysicalProxy *pPhysicalProxy = (IEntityPhysicalProxy *)GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
-	if (!pPhysicalProxy && create)
-		pPhysicalProxy = crycomponent_cast<IEntityPhysicalProxyPtr> (GetEntity()->CreateProxy(ENTITY_PROXY_PHYSICS)).get();
+	if (create)
+		return &GetEntity()->AcquireExternalComponent<IEntityPhysicsComponent>();
 
-	return pPhysicalProxy;
+	return GetEntity()->QueryComponent<IEntityPhysicsComponent>();
 }
 
 //------------------------------------------------------------------------

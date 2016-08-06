@@ -331,7 +331,7 @@ void CPlayerPlugin_Interaction::UpdateInteractionInfo()
 					{
 						const EntityId envWeaponId = desiredInteraction == eInteraction_Grab ? m_interactionInfo.interactiveEntityId : pInteractor->GetOverSlotIdx();
 
-						const CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(envWeaponId, "EnvironmentalWeapon"));
+						const CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(envWeaponId));
 						if( !pEnvWeapon || !pEnvWeapon->CanBeUsedByPlayer(m_ownerPlayer))
 						{
 							m_interactionInfo.interactionType = eInteraction_None;

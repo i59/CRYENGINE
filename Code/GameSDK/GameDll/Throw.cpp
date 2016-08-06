@@ -117,8 +117,6 @@ void CThrow::Activate(bool activate)
 		{
 			m_projectileLifeTime = pAmmoParams->lifetime;
 		}
-
-		m_pWeapon->RequireUpdate(eIUS_FireMode);
 	}
 	else
 	{
@@ -237,8 +235,6 @@ void CThrow::Update(float frameTime, uint32 frameId)
 			const Vec3 helperPos = m_pWeapon->GetSlotHelperPos(m_pWeapon->GetStats().fp ? eIGS_FirstPerson : eIGS_ThirdPerson, "grenade_term"/*m_fireParams->fireparams.helper->c_str()*/, true);
 			gEnv->pRenderer->DrawLabel(helperPos, 3.0f, "%.2f", (m_projectileLifeTime - primedTime));
 		}
-
-		m_pWeapon->RequireUpdate(eIUS_FireMode);
 	}
 	
 	m_predicted = false;
@@ -255,7 +251,6 @@ void CThrow::Update(float frameTime, uint32 frameId)
 			}
 		}
 		CalculateTrajectory();
-		m_pWeapon->RequireUpdate(eIUS_FireMode);
 	}
 }
 
@@ -379,8 +374,6 @@ void CThrow::StartFireInternal()
 	}
 		
 	m_pWeapon->RequestStartFire();
-
-	m_pWeapon->RequireUpdate(eIUS_FireMode);
 }
 
 //------------------------------------------------------------------------
@@ -412,8 +405,6 @@ void CThrow::StopFire()
 
 		m_pWeapon->RequestStopFire();
 
-		m_pWeapon->RequireUpdate(eIUS_FireMode);
-
 		if (m_fireParams->throwparams.crosshairblink_enabled)
 		{
 			SHUDEvent hudEvent(eHUDEvent_OnGrenadeThrow);
@@ -444,7 +435,6 @@ void CThrow::NetStopFire()
 	{
 		CCCPOINT(Throw_NetStop);
 		DoThrow();
-		m_pWeapon->RequireUpdate(eIUS_FireMode);
 	}
 }
 
@@ -738,8 +728,6 @@ void CThrow::NetShootEx(const Vec3 &pos, const Vec3 &dir, const Vec3 &vel, const
 	{
 		pAmmo->GetGameObject()->BindToNetwork();
 	}
-
-	m_pWeapon->RequireUpdate(eIUS_FireMode);
 }
 
 //------------------------------------------------------------------------

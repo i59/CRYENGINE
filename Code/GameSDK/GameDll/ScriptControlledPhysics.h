@@ -20,11 +20,7 @@ History:
 # pragma once
 #endif
 
-
-#include "IGameObject.h"
-
-
-class CScriptControlledPhysics: public CGameObjectExtensionHelper<CScriptControlledPhysics, IGameObjectExtension>,
+class CScriptControlledPhysics: public CEntityComponentConversionHelper<CScriptControlledPhysics>,
 	CScriptableBase
 {
 public:
@@ -33,7 +29,7 @@ public:
 
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init( IGameObject * pGameObject );
 	using CScriptableBase::Init;
 
@@ -49,15 +45,15 @@ public:
 	virtual void PostSerialize() {}
 	virtual void SerializeSpawnInfo( TSerialize ser ) {}
 	virtual ISerializableInfoPtr GetSpawnInfo() {return 0;}
-	virtual void Update( SEntityUpdateContext& ctx, int slot ) {};
+	virtual void Update( SEntityUpdateContext& ctx ) {};
 	virtual void HandleEvent( const SGameObjectEvent& );
-	virtual void ProcessEvent(SEntityEvent& ) {};
+	virtual void ProcessEvent(const SEntityEvent& ) {};
 	virtual void SetChannelId(uint16 id) {};
 	virtual void SetAuthority(bool auth) {}
 	virtual void PostUpdate(float frameTime) { assert(false); }
 	virtual void PostRemoteSpawn() {};
 
-	//~IGameObjectExtension
+	// ~IEntityComponent
 	int Reset(IFunctionHandler *pH);
 	int GetSpeed(IFunctionHandler *pH);
 	int GetAcceleration(IFunctionHandler *pH);

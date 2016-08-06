@@ -128,7 +128,6 @@ void CVehicleWeapon::StartUse(EntityId userId)
 	m_stats.used = true;
 
 	EnableUpdate(true, eIUS_General);
-	RequireUpdate(eIUS_General);
 
   if (OutOfAmmo(false))
     Reload(false);
@@ -201,12 +200,10 @@ void CVehicleWeapon::StartFire()
 }
 
 //------------------------------------------------------------------------
-void CVehicleWeapon::Update( SEntityUpdateContext& ctx, int update)
+void CVehicleWeapon::Update( SEntityUpdateContext& ctx)
 {
-	CWeapon::Update(ctx, update);
+	CWeapon::Update(ctx);
 
-	if(update==eIUS_General)
-  { 
     if (m_fm && m_fm->IsFiring())
     {
       m_dtWaterLevelCheck -= ctx.fFrameTime;      
@@ -224,7 +221,6 @@ void CVehicleWeapon::Update( SEntityUpdateContext& ctx, int update)
 		{
 			UpdateMounted(ctx.fFrameTime);
 		}
-	}
 }
 
 //------------------------------------------------------------------------

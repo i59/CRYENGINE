@@ -62,7 +62,7 @@ void CItem::InitClient(int channelId)
 		}
 #endif
 		if(result)
-			GetGameObject()->InvokeRMI(ClAttachInitialAccessory(), AccessoryParams(classId), eRMI_ToClientChannel, channelId);
+		GetGameObject()->InvokeRMI(ClAttachInitialAccessory(), AccessoryParams(classId), eRMI_ToClientChannel, channelId);
 	}
 
 	IActor *pOwner=GetOwnerActor();
@@ -76,16 +76,16 @@ void CItem::InitClient(int channelId)
 	{
 		if (!m_stats.mounted && !m_stats.used)
 		{
-			pOwner->GetGameObject()->InvokeRMIWithDependentObject(CActor::ClPickUp(), 
+			pOwner->InvokeRMIWithDependentObject(CActor::ClPickUp(), 
 				CActor::PickItemParams(GetEntityId(), m_stats.selected, false), eRMI_ToClientChannel, GetEntityId(), channelId);
-			//GetOwnerActor()->GetGameObject()->InvokeRMI(CActor::ClPickUp(), 
+			//GetOwnerActor()->InvokeRMI(CActor::ClPickUp(), 
 			//	CActor::PickItemParams(GetEntityId(), m_stats.selected, false), eRMI_ToClientChannel, channelId);
 		}
 	}
 
 	if (m_stats.mounted && m_stats.used)
 	{
-		pOwner->GetGameObject()->InvokeRMIWithDependentObject(CActor::ClStartUse(), 
+		pOwner->InvokeRMIWithDependentObject(CActor::ClStartUse(), 
 			CActor::ItemIdParam(GetEntityId()), eRMI_ToClientChannel, GetEntityId(), channelId);
 	}
 }
@@ -115,7 +115,7 @@ IMPLEMENT_RMI(CItem, SvRequestAttachAccessory)
 		if (accessoryName[0] != '\0' && pInventory->GetCountOfClass(accessoryName)>0)
 		{
 			DoSwitchAccessory(accessoryName);
-			GetGameObject()->InvokeRMI(ClAttachAccessory(), params, eRMI_ToAllClients|eRMI_NoLocalCalls);
+		GetGameObject()->InvokeRMI(ClAttachAccessory(), params, eRMI_ToAllClients|eRMI_NoLocalCalls);
 
 			return true;
 		}
@@ -185,7 +185,7 @@ IMPLEMENT_RMI(CItem, SvRequestDetachAccessory)
 		if (accessoryName[0] != '\0')
 		{
 			AttachAccessory(accessoryName, false, true, true);
-			GetGameObject()->InvokeRMI(ClDetachAccessory(), params, eRMI_ToRemoteClients);
+		GetGameObject()->InvokeRMI(ClDetachAccessory(), params, eRMI_ToRemoteClients);
 
 			return true;
 		}

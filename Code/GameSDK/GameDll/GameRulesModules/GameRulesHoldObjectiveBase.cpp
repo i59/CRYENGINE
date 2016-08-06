@@ -410,7 +410,7 @@ void CGameRulesHoldObjectiveBase::CleanUpEntity(SHoldEntityDetails *pDetails)
 }
 
 //------------------------------------------------------------------------
-void CGameRulesHoldObjectiveBase::OnEntityEvent( IEntity *pEntity,SEntityEvent &event )
+void CGameRulesHoldObjectiveBase::OnEntityEvent( IEntity *pEntity, const SEntityEvent &event )
 {
 	EntityId insideId = (EntityId) event.nParam[0];
 	int teamId = g_pGame->GetGameRules()->GetTeam(insideId);
@@ -957,7 +957,7 @@ void CGameRulesHoldObjectiveBase::UpdateEffect(float frameTime)
 		Vec3 currentColor = LERP(*m_effectData.pPrevCol,*m_effectData.pDestCol,lerpValue);
 
 		// Set ring color
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pRingEntity->GetProxy(ENTITY_PROXY_RENDER);
+		IEntityRenderComponent* pRenderProxy = (IEntityRenderComponent*)pRingEntity->QueryComponent<IEntityRenderComponent>();
 		if(pRenderProxy)
 		{
 			IMaterial* pRingMaterial = pRenderProxy->GetRenderMaterial();
@@ -1006,7 +1006,7 @@ void CGameRulesHoldObjectiveBase::SetRingAlpha(IEntity* pRingEntity,float alpha)
 {
 	if(pRingEntity)
 	{
-		IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pRingEntity->GetProxy(ENTITY_PROXY_RENDER);
+		IEntityRenderComponent* pRenderProxy = (IEntityRenderComponent*)pRingEntity->QueryComponent<IEntityRenderComponent>();
 		if(pRenderProxy)
 		{
 			IMaterial* pRindMaterial = pRenderProxy->GetRenderMaterial();

@@ -234,47 +234,6 @@ LoadoutScriptModelData ScriptModelData[] =
 	},
 };
 
-namespace
-{
-	void RegisterGOEvents( CPlayer& player, IGameObject& gameObject )
-	{
-		const int eventToRegister [] =
-		{
-			// CPlayer
-			eGFE_OnCollision,
-			eCGE_AnimateHands,
-			eCGE_SetTeam,
-			eCGE_Launch,
-			eCGE_CoverTransitionEnter,
-			eCGE_CoverTransitionExit,
-			eGFE_RagdollPhysicalized,
-			eGFE_StoodOnChange,
-
-			// CActor
-			eCGE_OnShoot,
-			eCGE_Ragdollize,
-			eGFE_EnableBlendRagdoll,
-			eGFE_DisableBlendRagdoll,
-			eCGE_EnablePhysicalCollider,
-			eCGE_DisablePhysicalCollider,
-			eGFE_BecomeLocalPlayer,
-
-			// HitDeath.
-			eCGE_ReactionEnd,
-
-			// MovementTransitonsController.
-			eCGE_AllowStartTransitionEnter,			
-			eCGE_AllowStartTransitionExit,			
-			eCGE_AllowStopTransitionEnter,						
-			eCGE_AllowStopTransitionExit,					
-			eCGE_AllowDirectionChangeTransitionEnter,
-			eCGE_AllowDirectionChangeTransitionExit
-		};
-
-		gameObject.RegisterExtForEvents( &player, eventToRegister, sizeof(eventToRegister)/sizeof(int) );
-	}
-}
-
 //--------------------
 //this function will be called from the engine at the right time, since bones editing must be placed at the right time.
 int PlayerProcessBones(ICharacterInstance *pCharacter,void *pvPlayer)
@@ -574,7 +533,7 @@ CPlayer::CPlayer()
 	m_pMasterFader = new CMasterFader();
 	m_closeToWallFadeoutAmount = 0.f;
 
-	m_pIEntityAudioProxy = IEntityAudioProxyPtr();
+	m_pIEntityAudioProxy = nullptr;
 	m_fLastEffectFootStepTime = 0.f;
 
 	m_vehicleViewDir.Set(0,1,0);
@@ -697,9 +656,6 @@ CPlayer::~CPlayer()
 	SAFE_DELETE(m_pSprintStamina);
 
 	m_pVehicleClient = NULL;
-
-	if (m_pInteractor)
-		GetGameObject()->ReleaseExtension("Interactor");
 
 	CGameRules *pGameRules = g_pGame->GetGameRules();
 	IGameRulesPlayerStatsModule *playerStats = pGameRules ? pGameRules->GetPlayerStatsModule() : NULL;
@@ -837,7 +793,7 @@ bool CPlayer::Init(IGameObject * pGameObject)
 	InitMannequinParams();
 	Revive(kRFR_FromInit);
 
-	if(IEntityRenderProxy* pProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
+	if(IEntityRenderComponent* pProxy = (IEntityRenderComponent*)pEntity->QueryComponent<IEntityRenderComponent>())
 	{
 		if(IRenderNode* pRenderNode = pProxy->GetRenderNode())
 			pRenderNode->SetRndFlags(ERF_REGISTER_BY_POSITION,true);
@@ -890,8 +846,6 @@ bool CPlayer::Init(IGameObject * pGameObject)
 
 	m_logPingTimer = 0.0f;
 
-	UpdateAutoDisablePhys(m_stats.isRagDoll);
-
 	if (gEnv->bServer && gEnv->bMultiplayer && pGameRules)
 	{
 		IGameRulesPlayerStatsModule *playerStats = pGameRules->GetPlayerStatsModule();
@@ -933,8 +887,8 @@ bool CPlayer::Init(IGameObject * pGameObject)
 
 void CPlayer::PostInit( IGameObject * pGameObject )
 {
-	RegisterGOEvents( *this, *GetGameObject() );
-	RegisterEvent( ENTITY_EVENT_PREPHYSICSUPDATE, IComponent::EComponentFlags_Enable );
+	EnableEvent(ENTITY_EVENT_PREPHYSICSUPDATE, 10000, true);
+	EnableEvent(ENTITY_EVENT_COLLISION, 0, true);
 
 	CCCPOINT(PlayerState_PostInit);
 
@@ -1108,10 +1062,7 @@ void CPlayer::InitLocalPlayer()
 	GetGameObject()->SetUpdateSlotEnableCondition( this, 0, eUEC_WithoutAI );
 
 	IInteractor * pInteractor = GetInteractor();
-	if (!GetGameObject()->GetUpdateSlotEnables(pInteractor, 0))
-	{
-		GetGameObject()->EnableUpdateSlot(pInteractor, 0);
-	}
+	GetGameObject()->EnableUpdateSlot(pInteractor, 0);
 	
 	if(!gEnv->bMultiplayer)
 	{
@@ -1152,8 +1103,8 @@ void CPlayer::InitLocalPlayer()
 			m_playerHealthEffect.Stop();
 		}
 
-		m_pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(GetEntity()->CreateProxy(ENTITY_PROXY_AUDIO));
-		//m_pIEntityAudioProxy->SetFlags(m_pIEntityAudioProxy->GetFlags()|IEntityAudioProxy::FLAG_DELEGATE_SOUND_ANIM_EVENTS);
+		m_pIEntityAudioProxy = &GetEntity()->AcquireExternalComponent<IEntityAudioComponent>();
+		//m_pIEntityAudioProxy->SetFlags(m_pIEntityAudioProxy->GetFlags()|IEntityAudioComponent::FLAG_DELEGATE_SOUND_ANIM_EVENTS);
 
 		if (m_pIEntityAudioProxy != NULL)
 		{
@@ -1225,19 +1176,13 @@ void CPlayer::InitLocalPlayer()
 
 bool CPlayer::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
 {
-	GetGameObject()->UnRegisterExtForEvents( this, NULL, 0 );
-
 	bool bResult = CActor::ReloadExtension(pGameObject, params);
-
-	RegisterGOEvents( *this, *pGameObject );
 
 	m_animationProxy.OnReload();
 	m_animationProxyUpper.OnReload();
 
 	if (m_pPickAndThrowProxy)
 		m_pPickAndThrowProxy->OnReloadExtension();
-
-	UpdateAutoDisablePhys(m_stats.isRagDoll);
 
 	if (m_isAIControlled)
 	{
@@ -1311,7 +1256,7 @@ void CPlayer::ResetAnimationState()
 	}
 }
 
-void CPlayer::ProcessEvent(SEntityEvent& event)
+void CPlayer::ProcessEvent(const SEntityEvent& event)
 {
 	if (event.event == ENTITY_EVENT_XFORM)
 	{
@@ -1462,7 +1407,7 @@ void CPlayer::ProcessEvent(SEntityEvent& event)
 				m_stealthKill.ForceFinishKill();
 			}
 			// Force exit pick and throw
-			CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(m_stats.pickAndThrowEntity, "EnvironmentalWeapon"));
+			CEnvironmentalWeapon *pEnvWeapon = gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(m_stats.pickAndThrowEntity);
 			if( pEnvWeapon )
 			{
 				pEnvWeapon->ForceDrop();
@@ -1550,7 +1495,7 @@ void CPlayer::AddViewAngleOffsetForFrame(const Ang3 &offset)
 	}
 }
 
-void CPlayer::Update(SEntityUpdateContext& ctx, int updateSlot)
+void CPlayer::Update(SEntityUpdateContext& ctx)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 
@@ -1665,7 +1610,7 @@ void CPlayer::Update(SEntityUpdateContext& ctx, int updateSlot)
 
 	m_stats.zeroVelocityForTime = (float)__fsel(m_stats.zeroVelocityForTime, m_stats.zeroVelocityForTime, 0.f) - ctx.fFrameTime;
 
-	CActor::Update(ctx,updateSlot);
+	CActor::Update(ctx);
 
 	float fHealth = m_health.GetHealth();
 
@@ -3377,7 +3322,7 @@ void CPlayer::SpawnCorpse()
 				}
 
 				// Set ViewDistRatio.
-				if(IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
+				if(IEntityRenderComponent* pRenderProxy = (IEntityRenderComponent*)pEntity->QueryComponent<IEntityRenderComponent>())
 				{
 					if(IRenderNode* pRenderNode = pRenderProxy->GetRenderNode())
 					{
@@ -3704,10 +3649,7 @@ void CPlayer::Revive( EReasonForRevive reasonForRevive )
 
 		// restore interactor
 		IInteractor * pInteractor = GetInteractor();
-		if (!GetGameObject()->GetUpdateSlotEnables(pInteractor, 0))
-		{
-			GetGameObject()->EnableUpdateSlot(pInteractor, 0);
-		}
+		GetGameObject()->EnableUpdateSlot(pInteractor, 0);
 	}	
 
 	m_torsoAimIK.Reset();
@@ -4057,8 +3999,6 @@ void CPlayer::OnRagdollize()
 
 	if (pStats && (!pStats->isRagDoll || gEnv->pSystem->IsSerializingFile()))
 	{
-		GetGameObject()->SetAutoDisablePhysicsMode(eADPM_Never);
-
 		ICharacterInstance *pCharacter = GetEntity()->GetCharacter(0);
 		if (pCharacter)
 		{
@@ -4073,17 +4013,14 @@ void CPlayer::OnRagdollize()
 		{
 			m_pHitDeathReactions->OnRagdollize( false );
 		}
-		else
+		else if(auto *pAnimatedCharacter = GetEntity()->QueryComponent<IAnimatedCharacter>())
 		{
 			SRagdollizeParams params;
 			params.mass = GetActorPhysics().mass;
 			params.sleep = false;
 			params.stiffness = GetActorParams().fallNPlayStiffness_scale;
 
-			SGameObjectEvent event( eGFE_QueueRagdollCreation, eGOEF_ToExtensions );
-			event.ptr = &params;
-
-			GetGameObject()->SendEvent( event );
+			pAnimatedCharacter->SetRagdollizeParams(params);
 		}
 
 		pStats->isRagDoll = true;
@@ -4121,8 +4058,6 @@ void CPlayer::PostRagdollPhysicalized( bool fallAndPlay )
 			pCharacter->EnableProceduralFacialAnimation(false);
 		}
 	}
-
-	GetGameObject()->SetAutoDisablePhysicsMode(eADPM_Never);
 }
 
 void CPlayer::PostPhysicalize()
@@ -4662,7 +4597,7 @@ void CPlayer::UpdateHealthRegeneration(float fHealth, float frameTime)
 	}
 }
 
-void CPlayer::SerializeXML( XmlNodeRef& node, bool bLoading )
+void CPlayer::SerializeXML( XmlNodeRef& node, bool bLoading, bool bFromInit )
 {
 }
 
@@ -4774,7 +4709,7 @@ void CPlayer::SelectItem(EntityId itemId, bool keepHistory, bool forceSelect)
 	{
 		//check we actually have a pick and throw weapon, we could be just selecting it now
 		EntityId currentItem = GetCurrentItemId();
-		if( currentItem != 0 && g_pGame->GetIGameFramework()->QueryGameObjectExtension( currentItem, "PickAndThrowWeapon" ) )
+		if( currentItem != 0 && gEnv->pEntitySystem->QueryComponent<CPickAndThrowWeapon>( currentItem ) )
 		{
 			return;
 		}
@@ -5259,7 +5194,7 @@ void CPlayer::NetSerialize_InteractiveObject( TSerialize ser, bool bReading )
 	{
 		if( interactingEntityId != 0)
 		{
-			CInteractiveObjectEx *pInteractiveObjEx = static_cast<CInteractiveObjectEx*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(interactingEntityId, "InteractiveObjectEx"));
+			CInteractiveObjectEx *pInteractiveObjEx = static_cast<CInteractiveObjectEx*>(gEnv->pEntitySystem->QueryComponent<CInteractiveObjectEx>(interactingEntityId));
 			if(pInteractiveObjEx)
 			{
 				// Make sure we run through the interactive objects start use func, rather than bypassing, else its state will not be set to eState_InUse
@@ -5926,14 +5861,14 @@ void CPlayer::HandleEvent( const SGameObjectEvent& event )
 		StateMachineHandleEventMovement( SStateEventGroundColliderChanged( event.paramAsBool ) );
 		break;
 	case eGFE_RagdollPhysicalized:
-		PostRagdollPhysicalized( static_cast<SRagdollizeParams*> (event.ptr)->sleep );
+		PostRagdollPhysicalized( static_cast<SRagdollizeParams*> (event.param)->sleep );
 		StateMachineHandleEventMovement(PLAYER_EVENT_RAGDOLL_PHYSICALIZED);
 		// Let actor handle it too
 		CActor::HandleEvent(event); 
 		break;
 	case eGFE_OnCollision:
 		{
-			EventPhysCollision *physCollision = reinterpret_cast<EventPhysCollision *>(event.ptr);
+			EventPhysCollision *physCollision = reinterpret_cast<EventPhysCollision *>(event.param);
 			OnCollision(physCollision);
 		}
 		break;
@@ -6037,7 +5972,6 @@ void CPlayer::HandleEvent( const SGameObjectEvent& event )
 
 				if (event.event == eGFE_BecomeLocalPlayer)
 				{
-					GetGameObject()->SetAutoDisablePhysicsMode(eADPM_Never);
 					CGodMode::GetInstance().ClearCheckpointData();
 					if (gEnv->bMultiplayer)
 					{
@@ -6610,8 +6544,6 @@ void CPlayer::SwitchDemoModeSpectator(bool activate)
 		pSS->SetGlobalValue( "g_localActor", GetGameObject()->GetEntity()->GetScriptTable() );
 		pSS->SetGlobalValue( "g_localActorId", ScriptHandle( GetGameObject()->GetEntityId() ) );
 	}
-
-	GetGameObject()->SetAutoDisablePhysicsMode(eADPM_Never);
 }
 
 #if !defined(_RELEASE) || defined(PERFORMANCE_BUILD)
@@ -7365,7 +7297,7 @@ void CPlayer::NotifyObjectGrabbed(bool bIsGrab, EntityId objectId, bool bIsNPC, 
 	CALL_PLAYER_EVENT_LISTENERS(OnObjectGrabbed(this, bIsGrab, objectId, bIsNPC, bIsTwoHanded));
 
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity(objectId);
-	IEntityScriptProxy* pScriptProx = (IEntityScriptProxy*)pEntity->GetProxy(ENTITY_PROXY_SCRIPT);
+	IEntityScriptComponent* pScriptProx = (IEntityScriptComponent*)pEntity->QueryComponent<IEntityScriptComponent>();
 	IScriptTable *pTable = pScriptProx->GetScriptTable();
 
 	if(pTable && pTable->HaveValue("OnPickup"))
@@ -7745,7 +7677,7 @@ void CPlayer::RequestEnterPickAndThrow( EntityId entityPicked )
 	}
 	else
 	{
-		CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(entityPicked, "EnvironmentalWeapon"));
+		CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(entityPicked));
 		if(pEnvWeapon)
 		{
 			pEnvWeapon->RequestUse(GetEntityId());
@@ -7832,7 +7764,7 @@ IInteractor *CPlayer::GetInteractor()
 	if(IsClient())
 	{
 		if (!m_pInteractor)
-			m_pInteractor = (IInteractor*) GetGameObject()->AcquireExtension("Interactor");
+			m_pInteractor = &GetEntity()->AcquireExternalComponent<IInteractor>();
 		return m_pInteractor;
 	}
 
@@ -9819,7 +9751,7 @@ void CPlayer::CommitKnockDown()
 	float knowDownSpeed = 1.0f;
 	StartInteractiveActionByName("KnockDown", false, knowDownSpeed);
 
-	IEntityPhysicalProxy *pPhysicsProxy=static_cast<IEntityPhysicalProxy *>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS));
+	IEntityPhysicsComponent *pPhysicsProxy=static_cast<IEntityPhysicsComponent *>(GetEntity()->QueryComponent<IEntityPhysicsComponent>());
 	if (pPhysicsProxy)
 	{
 		AABB bbox;

@@ -631,7 +631,7 @@ void CStealthKill::Enter(int targetEntityId, int animIndex)
 	if(!gEnv->bServer && m_pPlayer->IsClient())
 	{
 		CPlayer::SStealthKillRequestParams requestParams(m_targetId, m_animIndex);
-		m_pPlayer->GetGameObject()->InvokeRMI(CPlayer::SvRequestStealthKill(), requestParams, eRMI_ToServer);
+		m_pPlayer->InvokeRMI(CPlayer::SvRequestStealthKill(), requestParams, eRMI_ToServer);
 	}
 
 	CHANGED_NETWORK_STATE(m_pPlayer, CPlayer::ASPECT_STEALTH_KILL);

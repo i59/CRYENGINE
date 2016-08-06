@@ -136,7 +136,7 @@ void CUIEntityDynTexTag::OnInstanceDestroyed( IUIElement* pSender, IUIElement* p
 }
 
 ////////////////////////////////////////////////////////////////////////////
-void CUIEntityDynTexTag::OnEntityEvent( IEntity *pEntity,SEntityEvent &event )
+void CUIEntityDynTexTag::OnEntityEvent( IEntity *pEntity, const SEntityEvent &event )
 {
 	assert(event.event == ENTITY_EVENT_DONE);
 	RemoveAllEntityTags( pEntity->GetId(), false );
@@ -170,7 +170,7 @@ void CUIEntityDynTexTag::OnAddTaggedEntity( EntityId entityId, const char* uiEle
 				IMaterial* pMat = gEnv->p3DEngine->GetMaterialManager()->CloneMaterial(pMatTemplate);
 				pTagEntity->SetMaterial(pMat);
 			}
-			IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*) pTagEntity->GetProxy( ENTITY_PROXY_RENDER );
+			IEntityRenderComponent* pRenderProxy = (IEntityRenderComponent*) pTagEntity->QueryComponent<IEntityRenderComponent>();
 			if (pRenderProxy)
 			{
 				IRenderNode *pRenderNode = pRenderProxy->GetRenderNode();

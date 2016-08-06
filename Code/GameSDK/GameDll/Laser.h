@@ -100,7 +100,7 @@ public:
 
 	virtual void OnAttach(bool attach);
 	virtual void OnParentSelect(bool select);
-	virtual void Update(SEntityUpdateContext& ctx, int slot);
+	virtual void Update(SEntityUpdateContext& ctx);
 
 	virtual bool ResetParams();
 	//~IItem

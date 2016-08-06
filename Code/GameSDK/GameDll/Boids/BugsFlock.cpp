@@ -50,7 +50,7 @@ void CBugsFlock::CreateBoids( SBoidsCreateContext &ctx )
 
 	if (m_pEntity)
 	{
-		IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)m_pEntity->GetProxy(ENTITY_PROXY_RENDER);
+		IEntityRenderComponent *pRenderProxy = (IEntityRenderComponent*)m_pEntity->QueryComponent<IEntityRenderComponent>();
 		if (pRenderProxy)
 			pRenderProxy->ClearSlots();
 	}

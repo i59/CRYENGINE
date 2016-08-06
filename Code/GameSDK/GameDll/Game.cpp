@@ -775,7 +775,6 @@ bool CGame::Init(IGameFramework *pFramework)
 
 	RegisterConsoleVars();
 	RegisterConsoleCommands();
-	RegisterGameObjectEvents();
 
 
 	if (!gEnv->IsDedicated())
@@ -3819,45 +3818,6 @@ void CGame::CheckReloadLevel()
 	gEnv->pConsole->ExecuteString(command.c_str());
 }
 
-void CGame::RegisterGameObjectEvents()
-{
-	IGameObjectSystem* pGOS = m_pFramework->GetIGameObjectSystem();
-
-	pGOS->RegisterEvent(eCGE_OnShoot,"OnShoot");
-	pGOS->RegisterEvent(eCGE_ActorRevive,"ActorRevive");
-	pGOS->RegisterEvent(eCGE_VehicleDestroyed,"VehicleDestroyed");
-	pGOS->RegisterEvent(eCGE_VehicleTransitionEnter,"VehicleTransitionEnter");
-	pGOS->RegisterEvent(eCGE_VehicleTransitionExit,"VehicleTransitionExit");
-	pGOS->RegisterEvent(eCGE_HUD_PDAMessage,"HUD_PDAMessage");
-	pGOS->RegisterEvent(eCGE_HUD_TextMessage,"HUD_TextMessage");
-	pGOS->RegisterEvent(eCGE_TextArea,"TextArea");
-	pGOS->RegisterEvent(eCGE_HUD_Break,"HUD_Break");
-	pGOS->RegisterEvent(eCGE_HUD_Reboot,"HUD_Reboot");
-	pGOS->RegisterEvent(eCGE_InitiateAutoDestruction,"InitiateAutoDestruction");
-	pGOS->RegisterEvent(eCGE_Event_Collapsing,"Event_Collapsing");
-	pGOS->RegisterEvent(eCGE_Event_Collapsed,"Event_Collapsed");
-	pGOS->RegisterEvent(eCGE_MultiplayerChatMessage,"MultiplayerChatMessage");
-	pGOS->RegisterEvent(eCGE_ResetMovementController,"ResetMovementController");
-	pGOS->RegisterEvent(eCGE_AnimateHands,"AnimateHands");
-	pGOS->RegisterEvent(eCGE_EnablePhysicalCollider,"EnablePhysicalCollider");
-	pGOS->RegisterEvent(eCGE_DisablePhysicalCollider,"DisablePhysicalCollider");
-	pGOS->RegisterEvent(eCGE_SetTeam, "SetTeam");
-	pGOS->RegisterEvent(eCGE_Launch, "Launch");
-	// [*DavidR | 1/Sep/2009] CHECK: Can we put this on some HitDeathReaction 
-	// initialization code?
-	pGOS->RegisterEvent(eCGE_ReactionEnd, "ReactionEnd");
-	pGOS->RegisterEvent(eCGE_CoverTransitionEnter,"CoverTransitionEnter");
-	pGOS->RegisterEvent(eCGE_CoverTransitionExit,"CoverTransitionExit");
-	pGOS->RegisterEvent(eCGE_AllowStartTransitionEnter,"AllowStartTransitionEnter");
-	pGOS->RegisterEvent(eCGE_AllowStartTransitionExit,"AllowStartTransitionExit");
-	pGOS->RegisterEvent(eCGE_AllowStopTransitionEnter,"AllowStopTransitionEnter");
-	pGOS->RegisterEvent(eCGE_AllowStopTransitionExit,"AllowStopTransitionExit");
-	pGOS->RegisterEvent(eCGE_AllowDirectionChangeTransitionEnter,"AllowDirectionChangeTransitionEnter");
-	pGOS->RegisterEvent(eCGE_AllowDirectionChangeTransitionExit,"AllowDirectionChangeTransitionExit");
-	pGOS->RegisterEvent(eCGE_Ragdollize,"Ragdollize");
-	pGOS->RegisterEvent(eCGE_ItemTakenFromCorpse, "ItemTakeFromCorpse");
-}
-
 void CGame::GetMemoryStatistics(ICrySizer * s)
 {
 	s->AddObject( m_pGameAudio );
@@ -4979,7 +4939,7 @@ void CGame::OnSystemEvent(ESystemEvent event, UINT_PTR wparam, UINT_PTR lparam)
 
 					if (pLocalPlayerEntity != NULL)
 					{
-						IEntityAudioProxy* const pIEntityAudioProxy = (IEntityAudioProxy*)pLocalPlayerEntity->GetProxy(ENTITY_PROXY_AUDIO);
+						IEntityAudioComponent* const pIEntityAudioProxy = (IEntityAudioComponent*)pLocalPlayerEntity->QueryComponent<IEntityAudioComponent>();
 
 						if (pIEntityAudioProxy != NULL)
 						{

@@ -27,9 +27,11 @@ class CDebugGun :
   public CWeapon
 {
 public:
+	DECLARE_COMPONENT("DebugGun", 0x6B31688A68F84464, 0xB0074EA6116096E5)
+
   CDebugGun();
   void OnAction(EntityId actorId, const ActionId& actionId, int activationMode, float value);
-  void Update(SEntityUpdateContext& ctx, int update);
+  void Update(SEntityUpdateContext& ctx);
   void Shoot( bool bPrimary);
 	virtual void GetMemoryUsage(ICrySizer * s) const
 	{

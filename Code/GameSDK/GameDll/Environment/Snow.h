@@ -15,15 +15,16 @@ History:
 #define __SNOW_H__
 #pragma once
 
-#include <IGameObject.h>
 
-class CSnow : public CGameObjectExtensionHelper<CSnow, IGameObjectExtension>
+class CSnow : public CEntityComponentConversionHelper<CSnow>
 {
 public:
+	DECLARE_COMPONENT("Snow", 0xD55811D479984BD4, 0x906009BF96954454)
+
 	CSnow();
 	virtual ~CSnow();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init(IGameObject *pGameObject);
 	virtual void InitClient(int channelId) {};
 	virtual void PostInit(IGameObject *pGameObject);
@@ -37,16 +38,16 @@ public:
 	virtual void PostSerialize() {}
 	virtual void SerializeSpawnInfo( TSerialize ser ) {}
 	virtual ISerializableInfoPtr GetSpawnInfo() {return 0;}
-	virtual void Update( SEntityUpdateContext &ctx, int updateSlot);
+	virtual void Update( SEntityUpdateContext &ctx);
 	virtual void PostUpdate(float frameTime ) {};
 	virtual void PostRemoteSpawn() {};
 	virtual void HandleEvent( const SGameObjectEvent &);
-	virtual void ProcessEvent(SEntityEvent &);
+	virtual void ProcessEvent(const SEntityEvent &);
 	virtual void SetChannelId(uint16 id) {}
 	virtual void SetAuthority(bool auth);
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const { pSizer->Add(*this); }
 	
-	//~IGameObjectExtension
+	// ~IEntityComponent
 
 	bool Reset();
 

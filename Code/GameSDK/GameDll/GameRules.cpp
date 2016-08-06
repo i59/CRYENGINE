@@ -866,9 +866,11 @@ void CGameRules::PostInit( IGameObject * pGameObject )
 	CCCPOINT(GameRules_PostInit);
 	INDENT_LOG_DURING_SCOPE(true, "During CGameRules::PostInit");
 
-	pGameObject->EnableUpdateSlot(this, 0);
-	pGameObject->SetUpdateSlotEnableCondition(this, 0, eUEC_WithoutAI);
-	pGameObject->EnablePostUpdates(this);
+	auto *pWrappedGameObject = (IWrappedGameObject *)pGameObject;
+
+	pWrappedGameObject->EnableUpdateSlot(this, 0);
+	pWrappedGameObject->SetUpdateSlotEnableCondition(this, 0, eUEC_WithoutAI);
+	pWrappedGameObject->EnablePostUpdates(this);
 	
 	IConsole *pConsole=gEnv->pConsole;
 	RegisterConsoleCommands(pConsole);
@@ -1058,7 +1060,7 @@ void CGameRules::PostSerialize()
 }
 
 //------------------------------------------------------------------------
-void CGameRules::Update( SEntityUpdateContext& ctx, int updateSlot )
+void CGameRules::Update( SEntityUpdateContext& ctx )
 {
 	CryWatch3DTick(ctx.fFrameTime);
 
@@ -1081,9 +1083,6 @@ void CGameRules::Update( SEntityUpdateContext& ctx, int updateSlot )
 	//Will always be valid
 	CSmokeManager::GetSmokeManager()->Update(ctx.fFrameTime);
 	CActorManager::GetActorManager()->Update(ctx.fFrameTime);
-
-	if (updateSlot!=0)
-		return;
 
 	ProcessQueuedExplosions();
 
@@ -1579,7 +1578,7 @@ void CGameRules::HandleEvent( const SGameObjectEvent& event)
 }
 
 //------------------------------------------------------------------------
-void CGameRules::ProcessEvent( SEntityEvent& event)
+void CGameRules::ProcessEvent(const SEntityEvent& event)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_GAME);
 
@@ -1766,7 +1765,7 @@ void CGameRules::ProcessEvent( SEntityEvent& event)
 		m_clientStateScript=0;
 		m_serverStateScript=0;
 
-		IEntityScriptProxy *pScriptProxy=static_cast<IEntityScriptProxy *>(GetEntity()->GetProxy(ENTITY_PROXY_SCRIPT));
+		IEntityScriptComponent *pScriptProxy=static_cast<IEntityScriptComponent *>(GetEntity()->QueryComponent<IEntityScriptComponent>());
 		if (pScriptProxy)
 		{
 			const char *stateName=pScriptProxy->GetState();
@@ -2654,7 +2653,7 @@ void CGameRules::OnClientDisconnect(int channelId, EDisconnectionCause cause, co
 
 	if (keepClient)
 	{
-		pActor->GetGameObject()->SetAspectProfile(eEA_Physics, eAP_NotPhysicalized);
+		((CActor *)pActor)->GetGameObject()->SetAspectProfile(eEA_Physics, eAP_NotPhysicalized);
 
 		return;
 	}
@@ -2859,7 +2858,7 @@ void CGameRules::OnItemPickedUp(EntityId itemId, EntityId actorId)
 //------------------------------------------------------------------------
 void CGameRules::OnPickupEntityDetached(EntityId entityId, EntityId actorId, bool isOnRemove, const char *pExtensionName)
 {
-	CCarryEntity *pCarryEntity = static_cast<CCarryEntity*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(entityId, pExtensionName));
+	CCarryEntity *pCarryEntity = gEnv->pEntitySystem->QueryComponent<CCarryEntity>(entityId);
 	if (pCarryEntity)
 	{
 		pCarryEntity->AttachTo(0);
@@ -2881,7 +2880,7 @@ void CGameRules::OnPickupEntityAttached(EntityId entityId, EntityId actorId, con
 		static_cast<CPlayer*>(pActor)->ExitPickAndThrow(true);
 	}
 
-	CCarryEntity *pCarryEntity = static_cast<CCarryEntity*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(entityId, pExtensionName));
+	CCarryEntity *pCarryEntity = gEnv->pEntitySystem->QueryComponent<CCarryEntity>(entityId);
 	if (pCarryEntity)
 	{
 		pCarryEntity->AttachTo(actorId);
@@ -3360,7 +3359,7 @@ void CGameRules::RevivePlayerMP(IActor *pActor, IEntity *pSpawnPoint, int teamId
 	GetSpawningModule()->SetLastSpawn(pActor->GetEntityId(), spawnPointId);
 	int index = GetSpawningModule()->GetSpawnIndexForEntityId(spawnPointId);
 	CryLog("CGameRules::RevivePlayerMP() spawning at eid=%d, '%s' spawn index %d, position (%.3f, %.3f, %.3f)", spawnPointId, pSpawnPoint->GetName(), index, rWorldTM.GetTranslation().x, rWorldTM.GetTranslation().y, rWorldTM.GetTranslation().z);
-	pActor->GetGameObject()->InvokeRMI(CActor::ClRevive(), CActor::ReviveParams(teamId, index, pCActor->GetNetPhysCounter(), modelIndex), eRMI_ToAllClients);
+	pCActor->GetGameObject()->InvokeRMI(CActor::ClRevive(), CActor::ReviveParams(teamId, index, pCActor->GetNetPhysCounter(), modelIndex), eRMI_ToAllClients);
 
 	if(strlen(g_pGameCVars->g_forceHeavyWeapon->GetString()) > 0)
 	{
@@ -3438,7 +3437,7 @@ void CGameRules::ClearInventory(IActor *pActor)
 				pInventory->AddItem(pickAndThrowId);
 
 			if(gEnv->bServer)
-				pActor->GetGameObject()->InvokeRMI(CActor::ClClearInventory(), CActor::NoParams(), eRMI_ToRemoteClients);
+				static_cast<CActor *>(pActor)->GetGameObject()->InvokeRMI(CActor::ClClearInventory(), CActor::NoParams(), eRMI_ToRemoteClients);
 		}
 	}
 }
@@ -3547,7 +3546,7 @@ void CGameRules::RevivePlayerInVehicle(IActor *pActor, EntityId vehicleId, int s
 	pCActor->SetMaxHealth(100);
 
 	if (!m_pGameFramework->IsChannelOnHold(pActor->GetChannelId()))
-		pActor->GetGameObject()->SetAspectProfile(eEA_Physics, eAP_Alive);
+		((CActor *)pActor)->GetGameObject()->SetAspectProfile(eEA_Physics, eAP_Alive);
 
 	if (clearInventory && !gEnv->bMultiplayer)
 	{
@@ -3579,7 +3578,7 @@ void CGameRules::RenamePlayer(IActor *pActor, const char *name)
 
 		GetGameObject()->InvokeRMIWithDependentObject(ClRenameEntity(), params, eRMI_ToAllClients, params.entityId);
 
-		if (INetChannel* pNetChannel = pActor->GetGameObject()->GetNetChannel())
+		if (INetChannel* pNetChannel = ((CActor *)pActor)->GetGameObject()->GetNetChannel())
 			pNetChannel->SetNickname(fixed.c_str());
 
 		m_pGameplayRecorder->Event(pActorEntity, GameplayEvent(eGE_Renamed, fixed));
@@ -3832,14 +3831,14 @@ void CGameRules::KillPlayer(IActor* pActor, const bool inDropItem, const bool in
 			const EntityId stuckToEntityId = pProjectileSrc->GetStuckToEntityId();
 			if(stuckToEntityId && pShooter->IsFriendlyEntity(stuckToEntityId))
 			{
-				pShooter->GetGameObject()->InvokeRMI(CPlayer::ClIncrementIntStat(), CPlayer::SIntStatParams(EIPS_C4AttachedToTeamMateKills), eRMI_ToClientChannel, pShooter->GetChannelId());
+				pShooter->InvokeRMI(CPlayer::ClIncrementIntStat(), CPlayer::SIntStatParams(EIPS_C4AttachedToTeamMateKills), eRMI_ToClientChannel, pShooter->GetChannelId());
 			}
 		}
 	}
 
 	pCActor->NetKill(params);
 
-	pActor->GetGameObject()->InvokeRMI(CActor::ClKill(), params, eRMI_ToAllClients|eRMI_NoLocalCalls);
+	pCActor->GetGameObject()->InvokeRMI(CActor::ClKill(), params, eRMI_ToAllClients|eRMI_NoLocalCalls);
 
 	if (gEnv->bMultiplayer && g_pGameCVars->g_useNetSyncToSpeedUpRMIs)
 	{
@@ -3899,7 +3898,7 @@ void CGameRules::MovePlayer(IActor *pActor, const Vec3 &pos, const Quat &orienta
 
 	CActor::MoveParams params(pos, orientation);
 	//move player on client
-	pActor->GetGameObject()->InvokeRMI(CActor::ClMoveTo(), params, eRMI_ToClientChannel|eRMI_NoLocalCalls, pActor->GetChannelId());
+	static_cast<CActor *>(pActor)->GetGameObject()->InvokeRMI(CActor::ClMoveTo(), params, eRMI_ToClientChannel|eRMI_NoLocalCalls, pActor->GetChannelId());
 
 	//move player on server
 	static_cast<CActor*>(pActor)->OnTeleported();
@@ -4189,7 +4188,7 @@ void CGameRules::StartVoting(IActor *pActor, EVotingState t, EntityId id, const 
 				CryLog("Voting: Requesting kick vote against player '%s'", pEntity->GetName());			
 		}
 
-    GetGameObject()->InvokeRMIWithDependentObject(SvStartVoting(), params, eRMI_ToServer, entityId);
+    InvokeRMIWithDependentObject(SvStartVoting(), params, eRMI_ToServer, entityId);
 	}
 }
 
@@ -4766,13 +4765,8 @@ bool CGameRules::SetTeam_Common(int teamId, EntityId entityId, bool& bIsPlayer)
 
 	m_pGameplayRecorder->Event(pEntity, GameplayEvent(eGE_ChangedTeam, 0, (float)teamId));
 
-	IGameObject* pGameObject = m_pGameFramework->GetGameObject(entityId);
-
-	if(pGameObject)
-	{
-		STeamChangeInfo teamChangeInfo = {oldTeam, teamId};
-		pGameObject->SendEvent(SGameObjectEvent(eCGE_SetTeam, eGOEF_ToAll, IGameObjectSystem::InvalidExtensionID, & teamChangeInfo));
-	}
+	STeamChangeInfo teamChangeInfo = {oldTeam, teamId};
+	pEntity->SendComponentEvent(eCGE_SetTeam, &teamChangeInfo);
 
 	if (teamId && !oldTeam)
 	{
@@ -5571,12 +5565,12 @@ bool CGameRules::OnCollision(const SGameCollision& event)
 		CEnvironmentalWeapon *pEnvWeapon = NULL;		
 		if(event.pSrcEntity)
 		{
-			pEnvWeapon = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(event.pSrcEntity->GetId(), "EnvironmentalWeapon"));
+			pEnvWeapon = gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(event.pSrcEntity->GetId());
 		}
 
 		if(!pEnvWeapon && event.pTrgEntity)
 		{
-			pEnvWeapon = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(event.pTrgEntity->GetId(), "EnvironmentalWeapon")); 
+			pEnvWeapon = gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(event.pTrgEntity->GetId());
 		}
 
 		if(pEnvWeapon)
@@ -8244,7 +8238,7 @@ void CGameRules::OnComplete(SHostMigrationInfo& hostMigrationInfo)
 }
 
 //------------------------------------------------------------------------
-void CGameRules::OnEntityEvent( IEntity *pEntity, SEntityEvent &event )
+void CGameRules::OnEntityEvent( IEntity *pEntity, const SEntityEvent &event )
 {
 	if (event.event == ENTITY_EVENT_DONE)
 	{
@@ -8309,7 +8303,7 @@ void CGameRules::OnHostMigrationStateChanged()
 				if(envWeaponId)
 				{
 					CryLog("CGameRules::OnHostMigrationStateChanged - But has previous one");
-					CEnvironmentalWeapon* pEnvWeap = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(envWeaponId, "EnvironmentalWeapon"));
+					CEnvironmentalWeapon* pEnvWeap = gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(envWeaponId);
 					if(pEnvWeap)
 					{
 						pEnvWeap->OnHostMigration(Quat(ZERO), Vec3(ZERO), Vec3(ZERO));
@@ -8807,7 +8801,7 @@ bool CGameRules::IsInsideForbiddenArea(const Vec3& pos, bool doResetCheck, IEnti
 		IEntity* pEntity = gEnv->pEntitySystem->GetEntity(shapeId);
 		if(pEntity)
 		{
-			IEntityAreaProxy *pAreaProxy = (IEntityAreaProxy*)pEntity->GetProxy(ENTITY_PROXY_AREA);
+			IEntityAreaComponent *pAreaProxy = (IEntityAreaComponent*)pEntity->QueryComponent<IEntityAreaComponent>();
 			if(pAreaProxy)
 			{
 				bool inside = pAreaProxy->CalcPointWithin(INVALID_ENTITYID, pos);

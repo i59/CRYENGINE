@@ -47,8 +47,6 @@ void CScope::Update(float frameTime, uint32 frameId)
 			m_pWeapon->OnZoomOut();
 			m_pWeapon->GetScopeReticule().SetMaterial(0);
 		}
-
-		m_pWeapon->RequireUpdate(eIUS_Zooming);
 	}
 
 	if (m_hideTimer > 0.0f)
@@ -68,8 +66,6 @@ void CScope::Update(float frameTime, uint32 frameId)
 			}
 
 		}
-
-		m_pWeapon->RequireUpdate(eIUS_Zooming);
 	}
 }
 

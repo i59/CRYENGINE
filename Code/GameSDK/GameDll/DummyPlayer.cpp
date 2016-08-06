@@ -38,9 +38,9 @@ bool CDummyPlayer::Init( IGameObject * pGameObject )
 	return bResult;
 }
 
-void CDummyPlayer::Update(SEntityUpdateContext& ctx, int updateSlot)
+void CDummyPlayer::Update(SEntityUpdateContext& ctx)
 {
-	CPlayer::Update(ctx, updateSlot);
+	CPlayer::Update(ctx);
 
 	if(!gEnv->bServer)
 		return;

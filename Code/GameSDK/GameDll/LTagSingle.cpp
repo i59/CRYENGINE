@@ -338,7 +338,5 @@ void CLTagSingle::NetShootEx(const Vec3 &pos, const Vec3 &dir, const Vec3 &vel, 
 	{
 		pAmmo->GetGameObject()->BindToNetwork();
 	}
-
-	m_pWeapon->RequireUpdate(eIUS_FireMode);
 }
 

@@ -49,8 +49,7 @@ struct CPlant::MidPlantAction
 				pPlant->Plant(pos, dir, vel);
 		}
 
-		pPlant->m_pWeapon->HideItem(true);
-		pPlant->m_pWeapon->RequireUpdate(eIUS_FireMode);			
+		pPlant->m_pWeapon->HideItem(true);	
 	}
 };
 
@@ -261,8 +260,6 @@ void CPlant::StartFire()
 	{
 		ownerPlayer->StateMachineHandleEventMovement( PLAYER_EVENT_FORCEEXITSLIDE );
 	}
-
-	m_pWeapon->RequireUpdate(eIUS_FireMode);
 
 	m_planting = true;
 	m_pWeapon->SetBusy(true);

@@ -328,7 +328,7 @@ void CItem::AttachAccessory(IEntityClass* pAccessoryClass, bool attach, bool noa
 
 	if(pAccessory && (m_itemFlags & eIF_IgnoreHeat))
 	{
-		IEntityRenderProxy* pAccessoryRenderProxy = static_cast<IEntityRenderProxy*>(pAccessory->GetEntity()->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRenderComponent* pAccessoryRenderProxy = static_cast<IEntityRenderComponent*>(pAccessory->GetEntity()->QueryComponent<IEntityRenderComponent>());
 		if(pAccessoryRenderProxy)
 		{
 			pAccessoryRenderProxy->SetIgnoreHeatAmount(attach);
@@ -496,7 +496,7 @@ void CItem::RemoveOwnerAttachedAccessories()
 //------------------------------------------------------------------------
 void CItem::InitialSetup()
 {
-	if(!(GetISystem()->IsSerializingFile() && GetGameObject()->IsJustExchanging()))
+	/*if(!(GetISystem()->IsSerializingFile() && GetGameObject()->IsJustExchanging()))
 	{
 		if (IsServer())
 		{
@@ -505,7 +505,7 @@ void CItem::InitialSetup()
 				AttachAccessory(*it, true, true, true, true);
 			}
 		}
-	}
+	}*/
 }
 
 //------------------------------------------------------------------------
@@ -586,7 +586,7 @@ void CItem::SwitchAccessory(const ItemString& accessory)
 #endif
 
 	if(result)
-		GetGameObject()->InvokeRMI(SvRequestAttachAccessory(), AccessoryParams(classId), eRMI_ToServer);
+	GetGameObject()->InvokeRMI(SvRequestAttachAccessory(), AccessoryParams(classId), eRMI_ToServer);
 }
 
 //------------------------------------------------------------------------
@@ -670,7 +670,7 @@ void CItem::DetachAccessory(const ItemString& accessory)
 
 	if(result)
 	{
-		GetGameObject()->InvokeRMI(SvRequestDetachAccessory(), AccessoryParams(classId), eRMI_ToServer);
+	GetGameObject()->InvokeRMI(SvRequestDetachAccessory(), AccessoryParams(classId), eRMI_ToServer);
 	}
 }
 

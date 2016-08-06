@@ -108,7 +108,7 @@ void RadioChatterModule::PlayChatterOnEntity(IEntity& entity)
 {
 	/*IEntity* pEnt = &entity;
 
-	IEntityAudioProxy *pIEntityAudioProxy = static_cast<IEntityAudioProxy*>(GetOrMakeProxy(pEnt, ENTITY_PROXY_AUDIO));
+	IEntityAudioComponent *pIEntityAudioProxy = static_cast<IEntityAudioComponent*>(GetOrMakeProxy(pEnt, ENTITY_PROXY_AUDIO));
 	ISound* pSound = gEnv->pSoundSystem->CreateSound(m_chatterSoundName, FLAG_SOUND_DEFAULT_3D | FLAG_SOUND_VOICE);
 	if (pSound && pIEntityAudioProxy)
 	{

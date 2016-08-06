@@ -15,7 +15,6 @@
 #include "ItemSharedParams.h"
 #include "Game.h"
 #include "GameActions.h"
-#include "IGameObject.h"
 #include <CryNetwork/ISerialize.h>
 #include "IWorldQuery.h"
 #include <CryEntitySystem/IEntitySystem.h>
@@ -180,7 +179,8 @@ CItem::~CItem()
 		}
 	}
 
-	GetGameObject()->ReleaseProfileManager(this);
+	if(auto *pGameObject = GetGameObject())
+		pGameObject->ReleaseProfileManager(this);
 
 	if(IInventory *pInventory = GetActorInventory(GetOwnerActor()))
 	{
@@ -190,11 +190,6 @@ CItem::~CItem()
 	if (m_stats.selected)
 	{
 		UpdateActionControllerSelection(false);
-	}
-
-	if(!(GetISystem()->IsSerializingFile() && GetGameObject()->IsJustExchanging()))
-	{
-		RemoveAllAccessories();
 	}
 
 	if(m_pItemSystem)
@@ -450,13 +445,7 @@ void CItem::ResetOwner()
 //------------------------------------------------------------------------
 void CItem::PostInit( IGameObject * pGameObject )
 {
-	pGameObject->RegisterExtForEvents( this, NULL, 0 );
-
-	// prevent ai from automatically disabling weapons
-	for (int i=0; i<4;i++)
-	{
-		pGameObject->SetUpdateSlotEnableCondition(this, i, eUEC_WithoutAI);
-	}
+	GetGameObject()->SetUpdateSlotEnableCondition(this, 0, eUEC_WithoutAI);
 
 	Reset();
 	
@@ -468,7 +457,6 @@ void CItem::PostInit( IGameObject * pGameObject )
 bool CItem::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
 {
 	ResetGameObject();
-	pGameObject->RegisterExtForEvents( this, NULL, 0 );
 
 	CRY_ASSERT_MESSAGE(false, "CItem::ReloadExtension not implemented");
 	
@@ -490,70 +478,57 @@ void CItem::Release()
 }
 
 //------------------------------------------------------------------------
-void CItem::Update( SEntityUpdateContext& ctx, int slot )
+void CItem::Update( SEntityUpdateContext& ctx )
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 
 	if (!IsDestroyed())
 	{
-		switch (slot)
+		if(m_pItemActionController)
 		{
-		case eIUS_General:
+			m_pItemActionController->Update(ctx.fFrameTime);
+		}
+
+		if(IsServer() && m_deferPhysicalization != eIPhys_Max)
+		{
+			GetGameObject()->SetAspectProfile(eEA_Physics, m_deferPhysicalization);
+			m_deferPhysicalization = eIPhys_Max;
+		}
+
+		if (m_delayedUnhideCntr > 0)
+		{
+			//--- Reenable rendering of the char attachment
+			m_delayedUnhideCntr--;
+			if (m_delayedUnhideCntr == 0)
 			{
-				if(m_pItemActionController)
+				IAttachmentManager *pAttachmentManager = GetOwnerAttachmentManager();
+				if (pAttachmentManager)
 				{
-					m_pItemActionController->Update(ctx.fFrameTime);
-				}
-
-				if(IsServer() && m_deferPhysicalization != eIPhys_Max)
-				{
-					GetGameObject()->SetAspectProfile(eEA_Physics, m_deferPhysicalization);
-					m_deferPhysicalization = eIPhys_Max;
-				}
-
-				if (m_delayedUnhideCntr > 0)
-				{
-					//--- Reenable rendering of the char attachment
-					m_delayedUnhideCntr--;
-					if (m_delayedUnhideCntr == 0)
+					IAttachment *pAttachment = pAttachmentManager->GetInterfaceByName(m_sharedparams->params.attachment[m_stats.hand].c_str());
+					if (pAttachment)
 					{
-						IAttachmentManager *pAttachmentManager = GetOwnerAttachmentManager();
-						if (pAttachmentManager)
-						{
-							IAttachment *pAttachment = pAttachmentManager->GetInterfaceByName(m_sharedparams->params.attachment[m_stats.hand].c_str());
-							if (pAttachment)
-							{
-								pAttachment->HideAttachment(false);
+						pAttachment->HideAttachment(false);
 
-								if (m_stats.viewmode & eIVM_FirstPerson)
-								{
-									pAttachment->HideInRecursion(true);
-								}
-							}
+						if (m_stats.viewmode & eIVM_FirstPerson)
+						{
+							pAttachment->HideInRecursion(true);
 						}
-						ClearItemFlags(eIF_UseAnimActionUnhide);
 					}
 				}
-
-				CActor* pOwner = GetOwnerActor();
-				if ((pOwner == NULL) || !pOwner->IsClient())
-					break;
-
-				//Client only stuff
-
-				if (IsSelected() && pOwner->GetActorClass() == CPlayer::GetActorClassType())
-				{
-					UpdateLowerItem(static_cast<CPlayer*>(pOwner));
-				}
+				ClearItemFlags(eIF_UseAnimActionUnhide);
 			}
-			break;
-
-		case eIUS_Scheduler:
-			{
-				m_scheduler.Update(ctx.fFrameTime);
-			}
-			break;
 		}
+
+		CActor* pOwner = GetOwnerActor();
+		if ((pOwner != NULL) && pOwner->IsClient())
+		{
+			if (IsSelected() && pOwner->GetActorClass() == CPlayer::GetActorClassType())
+			{
+				UpdateLowerItem(static_cast<CPlayer*>(pOwner));
+			}
+		}
+		
+		m_scheduler.Update(ctx.fFrameTime);
 	}
 }
 
@@ -681,7 +656,7 @@ bool CItem::SetAspectProfile( EEntityAspects aspect, uint8 profile )
 			{
 				if(m_stats.physicalizedSlot != eIGS_Last)
 				{
-					IEntityPhysicalProxy *pPhysicsProxy = GetPhysicalProxy();
+					IEntityPhysicsComponent *pPhysicsProxy = GetPhysicalProxy();
 					if (pPhysicsProxy)
 					{
 						SEntityPhysicalizeParams params;
@@ -718,7 +693,7 @@ void CItem::HandleEvent( const SGameObjectEvent &evt )
 }
 
 //------------------------------------------------------------------------
-void CItem::ProcessEvent(SEntityEvent &event)
+void CItem::ProcessEvent(const SEntityEvent &event)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_GAME);
 
@@ -745,7 +720,7 @@ void CItem::ProcessEvent(SEntityEvent &event)
 				m_stats.flying = false;
 				
 				//Add an small impulse, sometimes item keeps floating in the air
-				IEntityPhysicalProxy *pPhysics = GetPhysicalProxy();
+				IEntityPhysicsComponent *pPhysics = GetPhysicalProxy();
 				if (pPhysics)
 					pPhysics->AddImpulse(-1, Vec3(0.0f,0.0f,0.0f), Vec3(0.0f,0.0f,-1.0f)*m_sharedparams->params.drop_impulse, false, 1.0f);
 				break;
@@ -847,7 +822,7 @@ bool CItem::NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile, 
 
 		NET_PROFILE_SCOPE("Physics", ser.IsReading());
 
-		IEntityPhysicalProxy * pEPP = (IEntityPhysicalProxy *) GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
+		IEntityPhysicsComponent * pEPP = (IEntityPhysicsComponent *) GetEntity()->QueryComponent<IEntityPhysicsComponent>();
 		if (ser.IsWriting())
 		{
 			if (!pEPP || !pEPP->GetPhysicalEntity() || pEPP->GetPhysicalEntity()->GetType() != type)
@@ -1118,7 +1093,7 @@ void CItem::PostSerialize()
 
 		if(m_serializeActivePhysics.len())	//this fixes objects being frozen in air because they were rephysicalized
 		{
-			IEntityPhysicalProxy *pPhysics = GetPhysicalProxy();
+			IEntityPhysicsComponent *pPhysics = GetPhysicalProxy();
 			if (pPhysics)
 				pPhysics->AddImpulse(-1, Vec3(0.0075f,0,0.0075f), m_serializeActivePhysics*m_sharedparams->params.drop_impulse, true, 1.0f);
 			m_serializeActivePhysics = Vec3(0,0,0);
@@ -1762,7 +1737,7 @@ void CItem::Drop(float impulseScale, bool selectNext, bool byDeath)
 			{
 				if ((pThisItemEntity->GetFlags()&(ENTITY_FLAG_CLIENT_ONLY|ENTITY_FLAG_SERVER_ONLY)) == 0)
 				{
-					pOwnerActor->GetGameObject()->InvokeRMI(CActor::ClDrop(), CActor::DropItemParams(thisItemEntityId, selectNext, byDeath), eRMI_ToAllClients|eRMI_NoLocalCalls);
+					pOwnerActor->InvokeRMI(CActor::ClDrop(), CActor::DropItemParams(thisItemEntityId, selectNext, byDeath), eRMI_ToAllClients|eRMI_NoLocalCalls);
 				}
 			}
 		}
@@ -2026,7 +2001,7 @@ void CItem::PickUp(EntityId pickerId, bool sound, bool select, bool keepHistory,
 		GetGameObject()->SetNetworkParent(pickerId);
 		if ((pThisItemEntity->GetFlags()&(ENTITY_FLAG_CLIENT_ONLY|ENTITY_FLAG_SERVER_ONLY)) == 0)
 		{
-			pPickerActor->GetGameObject()->InvokeRMIWithDependentObject(CActor::ClPickUp(), CActor::PickItemParams(thisItemEntityId, m_stats.selected, sound, false), eRMI_ToAllClients|eRMI_NoLocalCalls, thisItemEntityId);
+			pPickerActor->InvokeRMIWithDependentObject(CActor::ClPickUp(), CActor::PickItemParams(thisItemEntityId, m_stats.selected, sound, false), eRMI_ToAllClients|eRMI_NoLocalCalls, thisItemEntityId);
 		}
 	}
 
@@ -2092,8 +2067,6 @@ CItem::ePhysicalization CItem::FindPhysicalisationType(bool enable, bool rigid)
 void CItem::DeferPhysicalize(bool enable, bool rigid)
 {
 	m_deferPhysicalization = FindPhysicalisationType(enable, rigid);
-
-	RequireUpdate(eIUS_General);
 }
 
 //------------------------------------------------------------------------
@@ -2156,7 +2129,7 @@ void CItem::DisableCollisionWithPlayers()
 //----------------------------------------------------------------------
 void CItem::RegisterFPWeaponForRenderingAlways(bool registerRenderAlways)
 {
-	IEntityRenderProxy* pProxy = GetRenderProxy();
+	IEntityRenderComponent* pProxy = GetRenderProxy();
 	IRenderNode* pRenderNode = pProxy ? pProxy->GetRenderNode() : NULL;
 	if(pRenderNode)
 	{
@@ -2169,7 +2142,7 @@ void CItem::Impulse(const Vec3 &position, const Vec3 &direction, float impulse)
 	if (direction.len2() <= 0.001f)
 		return;
 
-	IEntityPhysicalProxy *pPhysicsProxy = GetPhysicalProxy();
+	IEntityPhysicsComponent *pPhysicsProxy = GetPhysicalProxy();
 	if (pPhysicsProxy)
 		pPhysicsProxy->AddImpulse(-1, position, direction.GetNormalized()*impulse, true, 1);
 }
@@ -2812,14 +2785,13 @@ void CItem::StartUse(EntityId userId)
 	ApplyViewLimit(userId, true);
 
 	EnableUpdate(true, eIUS_General);
-	RequireUpdate(eIUS_General);
 
 	pOwner->LockInteractor(entityId, true);
 
 	pOwner->LinkToMountedWeapon(entityId);
 
 	if (IsServer() && AreAnyItemFlagsSet(eIF_InformClientsAboutUse))
-		pOwner->GetGameObject()->InvokeRMI(CActor::ClStartUse(), CActor::ItemIdParam(entityId), eRMI_ToAllClients|eRMI_NoLocalCalls);
+		pOwner->InvokeRMI(CActor::ClStartUse(), CActor::ItemIdParam(entityId), eRMI_ToAllClients|eRMI_NoLocalCalls);
 
 	OnStartUsing();
 }
@@ -3132,36 +3104,15 @@ bool CItem::AttachToBack(bool attach)
 }
 
 //------------------------------------------------------------------------
-void CItem::RequireUpdate(int slot)
-{
-	if (slot==-1)
-		for (int i=0;i<4;i++)
-			GetGameObject()->ForceUpdateExtension(this, i);	
-	else
-		GetGameObject()->ForceUpdateExtension(this, slot);
-}
-
-//------------------------------------------------------------------------
 void CItem::EnableUpdate(bool enable, int slot)
 {
 	if (enable)
 	{
-		if (slot==-1)
-			for (int i=0;i<4;i++)
-				GetGameObject()->EnableUpdateSlot(this, i);
-		else
-			GetGameObject()->EnableUpdateSlot(this, slot);
-
+		GetGameObject()->EnableUpdateSlot(this, slot);
 	}
 	else
 	{
-		if (slot==-1)
-		{
-			for (int i=0;i<4;i++)
-				GetGameObject()->DisableUpdateSlot(this, i);
-		}
-		else
-			GetGameObject()->DisableUpdateSlot(this, slot);
+		GetGameObject()->DisableUpdateSlot(this, slot);
 	}
 }
 
@@ -3236,7 +3187,7 @@ void CItem::CloakSync(bool fade)
 	if(!pOwner)
 		return;
 
-	IEntityRenderProxy* pOwnerRP = (IEntityRenderProxy*)pOwner->GetProxy(ENTITY_PROXY_RENDER);
+	IEntityRenderComponent* pOwnerRP = (IEntityRenderComponent*)pOwner->QueryComponent<IEntityRenderComponent>();
 	if (pOwnerRP)
 	{
 		uint8 ownerMask = pOwnerRP->GetMaterialLayersMask();
@@ -3727,18 +3678,18 @@ void CItem::SetIgnoreHeat( bool ignoreHeat )
 		m_itemFlags &= ~eIF_IgnoreHeat;
 	}
 
-	IEntityRenderProxy* pItemRenderProxy = static_cast<IEntityRenderProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_RENDER));
+	IEntityRenderComponent* pItemRenderProxy = static_cast<IEntityRenderComponent*>(GetEntity()->QueryComponent<IEntityRenderComponent>());
 	if(pItemRenderProxy)
 	{
 		pItemRenderProxy->SetIgnoreHeatAmount(ignoreHeat);
 	}
 
 	const int numAccessories = m_accessories.size();
-	IEntityRenderProxy* pItemAccessoryRenderProxy(NULL);
+	IEntityRenderComponent* pItemAccessoryRenderProxy(NULL);
 	for(int i = 0; i < numAccessories; ++i)
 	{
 		IEntity* pAccessory = gEnv->pEntitySystem->GetEntity(m_accessories[i].accessoryId);
-		if(pAccessory && (pItemAccessoryRenderProxy = static_cast<IEntityRenderProxy*>(pAccessory->GetProxy(ENTITY_PROXY_RENDER))))
+		if(pAccessory && (pItemAccessoryRenderProxy = static_cast<IEntityRenderComponent*>(pAccessory->QueryComponent<IEntityRenderComponent>())))
 		{
 			pItemAccessoryRenderProxy->SetIgnoreHeatAmount(ignoreHeat);
 		}

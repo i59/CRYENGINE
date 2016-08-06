@@ -50,7 +50,7 @@ void CKVoltBullet::HandleEvent(const SGameObjectEvent& event)
 {
 	if(event.event == eGFE_OnCollision)
 	{
-		EventPhysCollision *pCollision = (EventPhysCollision* )event.ptr;
+		EventPhysCollision *pCollision = (EventPhysCollision* )event.param;
 		m_last = pCollision->pt;
 
 		// switch collision target id's to ensure target is not the bullet itself

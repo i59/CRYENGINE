@@ -28,6 +28,7 @@ class CBinocular :	public CWeapon
 	typedef CWeapon BaseClass;
 
 public:
+	DECLARE_COMPONENT("Binocular", 0xE4698164AC5144EF, 0x80E0469B370B2F58)
 
 	CBinocular();
 

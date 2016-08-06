@@ -352,7 +352,7 @@ void CVehicleMovementStdBoat::UpdateRunSound(const float deltaTime)
 		m_measureSpeedTimer = 0.f;
 	}
 
-	if (m_pVehicle->IsProbablyDistant())
+	if (!m_pVehicle->GetEntity()->WasInRangeLastFrame())
 		return;
 
   // rpm dropdown for waves
@@ -412,7 +412,7 @@ void CVehicleMovementStdBoat::UpdateSurfaceEffects(const float deltaTime)
   const Matrix34& worldTM = pEntity->GetWorldTM();
   
   float distSq = worldTM.GetTranslation().GetSquaredDistance(gEnv->pRenderer->GetCamera().GetPosition());
-  if (distSq > sqr(300.f) || (distSq > sqr(50.f) && !m_pVehicle->GetGameObject()->IsProbablyVisible()))
+  if (distSq > sqr(300.f) || (distSq > sqr(50.f) && !m_pVehicle->GetEntity()->WasVisibleLastFrame()))
     return;
 
   Matrix34 worldTMInv = worldTM.GetInverted();
@@ -819,13 +819,13 @@ void CVehicleMovementStdBoat::ProcessMovement(const float deltaTime)
   waveLoc.y += speedRatio*min(0.f, m_pushOffset.y-m_massOffset.y);
   waveLoc = wTM * waveLoc;
 
-  bool visible = m_pVehicle->GetGameObject()->IsProbablyVisible();
+  bool visible = m_pVehicle->GetEntity()->WasVisibleLastFrame();
   bool doWave = visible && submerged && physStatus->submergedFraction < 0.99f;
     
   if (doWave && !m_isEnginePowered)
     m_pVehicle->NeedsUpdate(IVehicle::eVUF_AwakePhysics);
   
-  if (m_isEnginePowered || (visible && !m_pVehicle->IsProbablyDistant()))
+  if (m_isEnginePowered || (visible && m_pVehicle->GetEntity()->WasInRangeLastFrame()))
   {
     if (doWave && (m_isEnginePowered || g_pGameCVars->v_rockBoats))
     { 

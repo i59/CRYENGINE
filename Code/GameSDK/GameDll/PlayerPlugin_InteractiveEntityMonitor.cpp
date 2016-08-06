@@ -66,7 +66,7 @@ void CPlayerPlugin_InteractiveEntityMonitor::Update( const float dt )
 				continue;
 			}
 
-			if (IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+			if (IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent *>(pEntity->QueryComponent<IEntityRenderComponent>()))
 			{
 				const Vec3& entityPos = pEntity->GetWorldTM().GetColumn3();
 				const float distSq = entityPos.GetSquaredDistance2D(playerPos);
@@ -186,7 +186,7 @@ void CPlayerPlugin_InteractiveEntityMonitor::Register( IEntity* pEntity, uint8 i
 	//Check if it should already be on
 	if(m_bEnabled && GetOwnerPlayer()->GetEntity()->GetWorldPos().GetSquaredDistance2D(pEntity->GetWorldPos()) < g_pGameCVars->g_highlightingMovementDistanceToUpdateSquared)
 	{
-		if(IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+		if(IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent *>(pEntity->QueryComponent<IEntityRenderComponent>()))
 		{
 			if( (initialFlags & EIES_ShootToInteract) == 0 )
 			{
@@ -212,7 +212,7 @@ void CPlayerPlugin_InteractiveEntityMonitor::Unregister( IEntity* pEntity )
 		{
 			if(it->second)
 			{
-				if(IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+				if(IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent *>(pEntity->QueryComponent<IEntityRenderComponent>()))
 				{
 					pRenderProxy->SetHUDSilhouettesParams(0.f, 0.f, 0.f, 0.0f);
 				}
@@ -246,7 +246,7 @@ void CPlayerPlugin_InteractiveEntityMonitor::EnableHighlighting(bool enable)
 			{
 				if(IEntity* pEntity = gEnv->pEntitySystem->GetEntity(iter->first))
 				{
-					if(IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+					if(IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent *>(pEntity->QueryComponent<IEntityRenderComponent>()))
 					{
 						if( (iter->second & EIES_ShootToInteract) == 0 )
 						{
@@ -271,7 +271,7 @@ void CPlayerPlugin_InteractiveEntityMonitor::EnableHighlighting(bool enable)
 			{
 				if(IEntity* pEntity = gEnv->pEntitySystem->GetEntity(iter->first))
 				{
-					if(IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy *>(pEntity->GetProxy(ENTITY_PROXY_RENDER)))
+					if(IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent *>(pEntity->QueryComponent<IEntityRenderComponent>()))
 					{
 						pRenderProxy->SetHUDSilhouettesParams(disableColor.r, disableColor.g, disableColor.b, disableColor.a);
 					}

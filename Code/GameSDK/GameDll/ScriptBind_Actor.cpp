@@ -24,7 +24,6 @@
 
 #include <CryGame/IGameFramework.h>
 #include <IVehicleSystem.h>
-#include <IGameObject.h>
 #include <CryMath/Cry_Geo.h>
 #include <CryMath/Cry_GeoDistance.h>
 #include <CryEntitySystem/IEntitySystem.h>
@@ -75,8 +74,6 @@ CScriptBind_Actor::CScriptBind_Actor(ISystem *pSystem)
 	SCRIPT_REG_TEMPLFUNC(SetMovementTarget,"pos,target,up,speed");
 	SCRIPT_REG_TEMPLFUNC(CameraShake,"amount,duration,frequency,pos");
 	SCRIPT_REG_TEMPLFUNC(SetViewShake,"shakeAngle, shakeShift, duration, frequency, randomness");
-
-	SCRIPT_REG_TEMPLFUNC(SetExtensionParams,"extension,params");
 
 	SCRIPT_REG_TEMPLFUNC(SvRefillAllAmmo, "refillType, refillAll, fragGrenadeCount, refillCurrentGrenadeType");
 	SCRIPT_REG_TEMPLFUNC(ClRefillAmmoResult, "ammoRefilled");
@@ -497,20 +494,6 @@ int CScriptBind_Actor::SetViewShake(IFunctionHandler *pH, Ang3 shakeAngle, Vec3 
 		pView->SetViewShake(shakeAngle, shakeShift, duration, frequency, randomness, SCRIPT_SHAKE_ID);
 	}
 
-	return pH->EndFunction();
-}
-
-//------------------------------------------------------------------------
-int CScriptBind_Actor::SetExtensionParams(IFunctionHandler* pH, const char *extension, SmartScriptTable params)
-{
-	CActor * pActor = GetActor(pH);
-	if (!pActor)
-		return pH->EndFunction();
-	bool ok = false;
-	if (pActor)
-		ok = pActor->GetGameObject()->SetExtensionParams(extension, params);
-	if (!ok)
-		pH->GetIScriptSystem()->RaiseError("Failed to set params for extension %s", extension);
 	return pH->EndFunction();
 }
 

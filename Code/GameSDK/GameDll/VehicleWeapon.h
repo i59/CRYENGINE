@@ -31,6 +31,7 @@ struct IVehicleSeat;
 class CVehicleWeapon: public CWeapon, public IVehicleEventListener
 {
 public:
+	DECLARE_COMPONENT("VehicleWeapon", 0x7857B6A1236E4419, 0xA6B40A1B4016ACD2)
 
   CVehicleWeapon();
   virtual ~CVehicleWeapon();
@@ -49,7 +50,7 @@ public:
 
   virtual void StartFire();
    
-  virtual void Update(SEntityUpdateContext& ctx, int update);
+  virtual void Update(SEntityUpdateContext& ctx);
 
   virtual void SetAmmoCount(IEntityClass* pAmmoType, int count);
   virtual void SetInventoryAmmoCount(IEntityClass* pAmmoType, int count);

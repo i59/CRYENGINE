@@ -166,6 +166,7 @@ protected:
   };
 
 public:
+	DECLARE_COMPONENT("GunTurret", 0xA1D12AF7353641C9, 0xAA807833334350A4)
 
 	static bool QueryDeployment(const Vec3 &pos, const Vec3 &direction, float radius, Vec3 &hitPos);
 
@@ -174,15 +175,15 @@ public:
 
 	void SetTeamNum(int num) { m_turretparams.team = num; }
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual void FullSerialize( TSerialize ser );
 	virtual bool NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile, int flags );
 	virtual NetworkAspectType GetNetSerializeAspects();
-	//~ IGameObjectExtension
+	// ~IEntityComponent
 
 	// IItem
 	virtual void OnAction(EntityId actorId, const ActionId& actionId, int activationMode, float value);
-	virtual void Update(SEntityUpdateContext& ctx, int update);
+	virtual void Update(SEntityUpdateContext& ctx);
 	virtual void OnReset();
 	virtual void OnHit(float damage, int hitType);
 	virtual void OnDestroyed();
@@ -278,7 +279,7 @@ private:	// For the time being, let subclasses (there's only 1 at time of writin
 
 	void    OnTargetLocked(IEntity* pTarget);
 	void    Activate(bool active);
-	void    ServerUpdate(SEntityUpdateContext& ctx, int update);
+	void    ServerUpdate(SEntityUpdateContext& ctx);
 	void		UpdateEntityProperties();
 	void    UpdateGoal(IEntity* pTarget, float deltaTime);
 	void    UpdateOrientation(float deltaTime);

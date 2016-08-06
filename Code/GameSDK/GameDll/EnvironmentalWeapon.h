@@ -29,15 +29,17 @@ struct IEnvironmentalWeaponEventListener
 	virtual ~IEnvironmentalWeaponEventListener() {};
 };
 
-class CEnvironmentalWeapon : public CGameObjectExtensionHelper<CEnvironmentalWeapon, IGameObjectExtension, 5>, 	public IGameRulesRevivedListener
+class CEnvironmentalWeapon : public CEntityComponentConversionHelper<CEnvironmentalWeapon>, 	public IGameRulesRevivedListener
 {
 public:
+	DECLARE_COMPONENT("EnvironmentalWeapon", 0x2EC75DA991B94B43, 0xAD98045DE145711A)
+
 	static const NetworkAspectType ASPECT_HEALTH_STATUS	= eEA_GameServerA;
 
 	CEnvironmentalWeapon();
 	~CEnvironmentalWeapon();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init(IGameObject *pGameObject);
 	virtual void InitClient(int channelId);
 	virtual void PostInit(IGameObject *pGameObject);
@@ -48,19 +50,19 @@ public:
 	virtual void PostSerialize() {}
 	virtual void SerializeSpawnInfo(TSerialize ser);
 	virtual ISerializableInfoPtr GetSpawnInfo();
-	virtual void Update(SEntityUpdateContext &ctx, int updateSlot);
+	virtual void Update(SEntityUpdateContext &ctx);
 	virtual void PostUpdate(float frameTime) {}
 	virtual void PostRemoteSpawn() {}
 	virtual void HandleEvent(const SGameObjectEvent& event);
 	
-	virtual void ProcessEvent(SEntityEvent& event);
+	virtual void ProcessEvent(const SEntityEvent& event);
 	virtual void SetChannelId(uint16 id) {}
 	virtual void SetAuthority(bool auth) {}
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
 	virtual bool ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params );
 	virtual void PostReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) {};
 	virtual bool GetEntityPoolSignature( TSerialize signature );
-	// IGameObjectExtension
+	// IEntityComponent
 
 	void  RequestUse(EntityId requesterId);
 	void	ForceDrop();

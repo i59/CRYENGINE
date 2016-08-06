@@ -19,8 +19,6 @@ History:
 
 #include <CryExtension/CryCreateClassInstance.h>
 
-#include <IGameObject.h>
-
 //////////////////////////////////////////////////////////////////////////
 #define MAN_BLENDRAGDOLL_FRAGMENTS( x ) \
 	x( BlendRagdoll )
@@ -96,9 +94,11 @@ void CAnimActionBlendFromRagdoll::OnFragmentStarted()
 #ifdef USE_BLEND_FROM_RAGDOLL
 	if( m_bSetAnimationFrag )
 	{
-		SGameObjectEvent event( eGFE_QueueBlendFromRagdoll, eGOEF_ToExtensions );
-		event.paramAsBool = true;
-		m_actor.GetGameObject()->SendEvent( event );
+		if (auto *pAnimatedCharacter = m_actor.GetEntity()->QueryComponent<IAnimatedCharacter>())
+		{
+			pAnimatedCharacter->SetBlendFromRagdollizeParams(true);
+		}
+
 		m_flags &= ~IAction::NoAutoBlendOut;
 	}
 #else
@@ -171,8 +171,7 @@ void CAnimActionBlendFromRagdollSleep::Enter()
 {
 	TBase::Enter();
 
-	SGameObjectEvent event( eGFE_EnableBlendRagdoll, eGOEF_ToExtensions );
-	event.ptr = &m_hitInfo;
+	SGameObjectEvent event( eGFE_EnableBlendRagdoll, eGOEF_ToExtensions,0, &m_hitInfo );
 	m_actor.GetGameObject()->SendEvent( event );
 
 	#ifdef USE_BLEND_FROM_RAGDOLL

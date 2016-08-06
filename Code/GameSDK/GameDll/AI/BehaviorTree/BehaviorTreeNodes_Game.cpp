@@ -471,7 +471,7 @@ namespace BehaviorTree
 							{
 								pActor->AddLocalHitImpulse(SHitImpulse(partId, -1, pos, impulse, 1.0f));
 							}
-							else if (IEntityPhysicalProxy* pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(pEntity->GetProxy(ENTITY_PROXY_PHYSICS)))
+							else if (IEntityPhysicsComponent* pPhysicsProxy = static_cast<IEntityPhysicsComponent*>(pEntity->QueryComponent<IEntityPhysicsComponent>()))
 							{
 								pPhysicsProxy->AddImpulse(partId, pos, impulse, true, 1.0f, 1.0f);
 							}
@@ -918,7 +918,7 @@ namespace BehaviorTree
 			static bool debug = false;
 #endif
 
-			if (IEntityPhysicalProxy* physicsProxy = (IEntityPhysicalProxy*)targetEntity->GetProxy(ENTITY_PROXY_PHYSICS))
+			if (IEntityPhysicsComponent* physicsProxy = (IEntityPhysicsComponent*)targetEntity->QueryComponent<IEntityPhysicsComponent>())
 			{
 				const Vec3 agentPos = agent.GetEntityPos();
 

@@ -154,8 +154,6 @@ bool CVehicleMovementHelicopter::Init(IVehicle* pVehicle, const CVehicleParams& 
 
 	ResetActions();
 
-	m_pVehicle->GetGameObject()->EnableUpdateSlot(m_pVehicle, IVehicle::eVUS_EnginePowered);
-
 	return true;
 }
 
@@ -231,8 +229,6 @@ void CVehicleMovementHelicopter::Reset()
   m_steeringDamage  = ZERO;
 
 	m_pNoise = &m_defaultNoise;
-
-  m_pVehicle->GetGameObject()->EnableUpdateSlot(m_pVehicle, IVehicle::eVUS_EnginePowered);
 
 	if(m_HoverAnim)
 		m_HoverAnim->Reset();
@@ -980,8 +976,6 @@ void CVehicleMovementHelicopter::OccupyWeaponSeats()
 		}
 
 	}
-
-	m_pVehicle->GetGameObject()->EnableUpdateSlot(m_pVehicle, IVehicle::eVUS_AIControlled);
 }
 
 //------------------------------------------------------------------------

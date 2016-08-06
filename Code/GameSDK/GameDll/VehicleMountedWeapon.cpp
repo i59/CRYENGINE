@@ -78,30 +78,27 @@ void CVehicleMountedWeapon::StartFire()
 }
 
 //------------------------------------------------------------------------
-void CVehicleMountedWeapon::Update( SEntityUpdateContext& ctx, int update)
+void CVehicleMountedWeapon::Update( SEntityUpdateContext& ctx)
 {
-	CHeavyMountedWeapon::Update(ctx, update);
+	CHeavyMountedWeapon::Update(ctx);
 
- 	if(update==eIUS_General)
- 	{ 
- 		if (m_fm && m_fm->IsFiring())
- 		{
- 			m_dtWaterLevelCheck -= ctx.fFrameTime;      
+ 	if (m_fm && m_fm->IsFiring())
+ 	{
+ 		m_dtWaterLevelCheck -= ctx.fFrameTime;      
  
- 			if (m_dtWaterLevelCheck <= 0.f)
- 			{ 
- 				if (!CheckWaterLevel())        
- 					StopFire();          
+ 		if (m_dtWaterLevelCheck <= 0.f)
+ 		{ 
+ 			if (!CheckWaterLevel())        
+ 				StopFire();          
  
- 				m_dtWaterLevelCheck = 2.0f;
- 			}
+ 			m_dtWaterLevelCheck = 2.0f;
  		}
+ 	}
 
-		// Perform position sync if necessary
-		if(IsRippingOff() && gEnv->bMultiplayer)
-		{
-			CorrectRipperEntityPosition(ctx.fFrameTime); 
-		}
+	// Perform position sync if necessary
+	if(IsRippingOff() && gEnv->bMultiplayer)
+	{
+		CorrectRipperEntityPosition(ctx.fFrameTime); 
 	}
 
 	m_usedThisFrame = false;

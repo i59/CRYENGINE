@@ -1187,7 +1187,7 @@ bool CEditorGame::BuildEntitySerializationList(XmlNodeRef output)
 	IEntityIt* pIt = gEnv->pEntitySystem->GetEntityIterator();
 	while(IEntity* pEntity = pIt->Next())
 	{
-		IEntityFlowGraphProxy* pFGProxy = static_cast<IEntityFlowGraphProxy*>(pEntity->GetProxy(ENTITY_PROXY_FLOWGRAPH));
+		auto* pFGProxy = pEntity->QueryComponent<IEntityFlowGraphComponent>();
 		if(pFGProxy)
 		{
 			flowGraphs.push_back(pFGProxy->GetFlowGraph());

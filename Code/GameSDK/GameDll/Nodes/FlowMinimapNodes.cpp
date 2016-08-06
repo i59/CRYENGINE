@@ -200,7 +200,7 @@ public:
 			return new CFlowMiniMapEntityPosInfo(pActInfo);
 	}
 
-	virtual void OnEntityEvent( IEntity *pEntity,SEntityEvent &event )
+	virtual void OnEntityEvent( IEntity *pEntity, const SEntityEvent &event )
 	{
 		assert(pEntity->GetId() == m_entityId);
 		if (event.event == ENTITY_EVENT_XFORM)

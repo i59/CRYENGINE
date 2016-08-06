@@ -199,7 +199,7 @@ float GenFactor(float time, float duration, bool &recovery)
 //////////////////////////////////////////////////////////////////////////
 void CActorImpulseHandler::AddLocalHitImpulse(const SHitImpulse& hitImpulse)
 {
-	IEntityPhysicalProxy *pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(m_actor.GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS));
+	IEntityPhysicsComponent *pPhysicsProxy = static_cast<IEntityPhysicsComponent*>(m_actor.GetEntity()->QueryComponent<IEntityPhysicsComponent>());
 
 	const bool applyImpulse = (pPhysicsProxy != NULL) && !m_actor.GetLinkedVehicle();
 

@@ -371,20 +371,8 @@ CActor::~CActor()
 
 		if (gEnv->bServer)
 			m_pInventory->Destroy();
-
-		GetGameObject()->ReleaseExtension("Inventory");
 	}
 	
-	if (!m_sLipSyncExtensionType.empty())
-	{
-		GetGameObject()->ReleaseExtension(m_sLipSyncExtensionType.c_str());
-	}
-
-	if (m_pAnimatedCharacter)
-	{
-		GetGameObject()->ReleaseExtension("AnimatedCharacter");
-		GetGameObject()->DeactivateExtension("AnimatedCharacter");
-	}
 	GetGameObject()->ReleaseView( this );
 	GetGameObject()->ReleaseProfileManager( this );
 
@@ -441,13 +429,13 @@ bool CActor::Init( IGameObject * pGameObject )
 	g_pGame->GetIGameFramework()->GetIActorSystem()->AddActor( GetEntityId(), this );
 
 	g_pGame->GetActorScriptBind()->AttachTo(this);
-	m_pAnimatedCharacter = static_cast<IAnimatedCharacter*>(pGameObject->AcquireExtension("AnimatedCharacter"));
+	m_pAnimatedCharacter = &pEntity->AcquireExternalComponent<IAnimatedCharacter>();
 	if (m_pAnimatedCharacter)
 	{
 		ResetAnimationState();
 	}
 
-	m_pInventory = static_cast<IInventory*>(pGameObject->AcquireExtension("Inventory"));
+	m_pInventory = &pEntity->AcquireExternalComponent<IInventory>();
 
 	if (!m_pGameFramework)
 	{
@@ -507,10 +495,10 @@ void CActor::Release()
 //----------------------------------------------------------------------
 void CActor::PostInit( IGameObject * pGameObject )
 {
-	GetGameObject()->EnablePrePhysicsUpdate( gEnv->bMultiplayer ? ePPU_Always : ePPU_WhenAIActivated );
+	EnablePrePhysicsUpdate( gEnv->bMultiplayer ? ePPU_Always : ePPU_WhenAIActivated );
 
-	pGameObject->EnableUpdateSlot( this, 0 );	
-	pGameObject->EnablePostUpdates( this );
+	GetGameObject()->EnableUpdateSlot( this, 0 );
+	GetGameObject()->EnablePostUpdates( this );
 
 	if (m_teamId)
 	{
@@ -578,7 +566,7 @@ void CActor::PostReloadExtension( IGameObject *pGameObject, const SEntitySpawnPa
 
 	ResetAnimationState();
 
-	GetGameObject()->EnablePrePhysicsUpdate( gEnv->bMultiplayer ? ePPU_Always : ePPU_WhenAIActivated );
+	EnablePrePhysicsUpdate( gEnv->bMultiplayer ? ePPU_Always : ePPU_WhenAIActivated );
 
 	GetEntity()->SetFlags(GetEntity()->GetFlags() |
 		(ENTITY_FLAG_CUSTOM_VIEWDIST_RATIO | ENTITY_FLAG_TRIGGER_AREAS));
@@ -602,13 +590,9 @@ void CActor::PostReloadExtension( IGameObject *pGameObject, const SEntitySpawnPa
 void CActor::RebindScript()
 {
 	IEntity* pEntity = GetEntity();
-	IEntityScriptProxy* pScript = static_cast<IEntityScriptProxy*>( pEntity->GetProxy( ENTITY_PROXY_SCRIPT ) );
+	IEntityScriptComponent* pScript = static_cast<IEntityScriptComponent*>( pEntity->QueryComponent<IEntityScriptComponent>());
 
 	g_pGame->GetActorScriptBind()->AttachTo(this);
-
-	SEntitySpawnParams params;
-	params.prevId = GetEntityId();
-	pScript->Init( pEntity, params );
 
 	CGameCache &gameCache = g_pGame->GetGameCache();
 	gameCache.RefreshActorInstance(GetEntityId(), GetEntity()->GetScriptTable());
@@ -803,8 +787,6 @@ void CActor::Revive( EReasonForRevive reasonForRevive )
 		pBodyDamageManager->GetBodyDestructibility(*GetEntity(), m_bodyDestructionInstance);
 	}
 
-	UpdateAutoDisablePhys(false);
-
 	ICharacterInstance* pCharacter = GetEntity()->GetCharacter(0);
 	IFacialInstance* pFacialInstance = (pCharacter) ? pCharacter->GetFacialInstance() : 0;
 	if (pFacialInstance)
@@ -821,21 +803,6 @@ void CActor::Revive( EReasonForRevive reasonForRevive )
 			pAI->Event(AIEVENT_ENABLE, NULL);
 		}
 	}
-}
-
-void CActor::UpdateAutoDisablePhys(bool bRagdoll)
-{
-	EAutoDisablePhysicsMode adpm = eADPM_Never;
-	if (bRagdoll)
-		adpm = eADPM_Never;
-	else if (gEnv->bMultiplayer)
-		adpm = eADPM_Never;
-	else if (IsClient())
-		adpm = eADPM_Never;
-	else
-		adpm = eADPM_WhenAIDeactivated;
-
-	GetGameObject()->SetAutoDisablePhysicsMode(adpm);
 }
 
 //------------------------------------------------------------------------
@@ -1270,7 +1237,7 @@ bool CActor::SetActorModelInternal(const SActorFileModelInfo &fileModelInfo)
 	if (modelVariationFileName.empty())
 	{
 		// Just create a render proxy for it
-		pEntity->CreateProxy(ENTITY_PROXY_RENDER);
+		pEntity->AcquireExternalComponent<IEntityRenderComponent>();
 	}
 	else if (strcmpi(m_currModel.c_str(), modelVariationFileName.c_str()) != 0)
 	{
@@ -1370,7 +1337,7 @@ void CActor::PostPhysicalize()
 	//set player lod always
 //	if (IsPlayer())
 	{
-		IEntityRenderProxy *pRenderProxy = static_cast<IEntityRenderProxy *>(GetEntity()->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRenderComponent *pRenderProxy = static_cast<IEntityRenderComponent *>(GetEntity()->QueryComponent<IEntityRenderComponent>());
 
 		if (pRenderProxy)
 		{
@@ -1677,7 +1644,7 @@ IEntity *CActor::LinkToEntity(EntityId entityId, bool bKeepTransformOnDetach)
 	return pLinked;
 }
 
-void CActor::ProcessEvent(SEntityEvent& event)
+void CActor::ProcessEvent(const SEntityEvent& event)
 {
 	switch (event.event)
 	{
@@ -1870,7 +1837,7 @@ void CActor::AddLocalHitImpulse(const SHitImpulse& hitImpulse)
 	}
 }
 
-void CActor::Update(SEntityUpdateContext& ctx, int slot)
+void CActor::Update(SEntityUpdateContext& ctx)
 {
 #ifdef DEBUG_ACTOR_STATE
 	if(g_pGameCVars && g_pGameCVars->g_displayDbgText_actorState)
@@ -2162,7 +2129,7 @@ void CActor::CloakSyncEntity(EntityId entityId, bool bFade)
 	
 	if (!isPickAndThrowEntity)
 	{
-		IEntityRenderProxy *pOwnerRP = (IEntityRenderProxy*)GetEntity()->GetProxy(ENTITY_PROXY_RENDER);
+		IEntityRenderComponent *pOwnerRP = (IEntityRenderComponent*)GetEntity()->QueryComponent<IEntityRenderComponent>();
 		if (pOwnerRP)
 		{
 			const uint8 ownerMask = pOwnerRP->GetMaterialLayersMask();
@@ -2925,7 +2892,7 @@ bool CActor::SetAspectProfile( EEntityAspects aspect, uint8 profile )
 										}
 									}
 
-									IEntityPhysicalProxy *pPhysicsProxy=static_cast<IEntityPhysicalProxy *>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS));
+									IEntityPhysicsComponent *pPhysicsProxy=static_cast<IEntityPhysicsComponent *>(GetEntity()->QueryComponent<IEntityPhysicsComponent>());
 									if (pPhysicsProxy)
 									{
 										GetEntity()->SetWorldTM(delta);
@@ -3042,7 +3009,7 @@ bool CActor::NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile,
 
 		NET_PROFILE_SCOPE("Physics", ser.IsReading());
 
-		IEntityPhysicalProxy * pEPP = (IEntityPhysicalProxy *) GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
+		IEntityPhysicsComponent * pEPP = (IEntityPhysicsComponent *) GetEntity()->QueryComponent<IEntityPhysicsComponent>();
 		if (ser.IsWriting())
 		{
 			if (!pEPP || !pEPP->GetPhysicalEntity() || pEPP->GetPhysicalEntity()->GetType() != type)
@@ -3111,7 +3078,7 @@ void CActor::HandleEvent( const SGameObjectEvent& event )
 		break;
 	case eGFE_EnableBlendRagdoll:
 		{
-			const HitInfo& hitInfo = *static_cast<const HitInfo*>(event.ptr);
+			const HitInfo& hitInfo = *static_cast<const HitInfo*>(event.param);
 
 			OnFall(hitInfo);
 		}
@@ -3686,7 +3653,7 @@ void CActor::AttemptToRecycleAIActor()
 		else
 		{
 			SetHealth( 0.0f );
-			IEntityPhysicalProxy *pPhysicsProxy = (IEntityPhysicalProxy*)GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS);
+			IEntityPhysicsComponent *pPhysicsProxy = (IEntityPhysicsComponent*)GetEntity()->QueryComponent<IEntityPhysicsComponent>();
 			if (pPhysicsProxy)
 			{
 				SEntityPhysicalizeParams params;
@@ -5570,11 +5537,8 @@ void CActor::EndInteractiveAction( EntityId entityId )
 
 void CActor::LockInteractor(EntityId lockId, bool lock)
 {
-	SmartScriptTable locker(gEnv->pScriptSystem);
-	locker->SetValue("locker", ScriptHandle(lockId));
-	locker->SetValue("lockId", ScriptHandle( lock ? lockId : 0));
-	locker->SetValue("lockIdx", lock ? 1 : 0);
-	GetGameObject()->SetExtensionParams("Interactor", locker);
+	auto &interactor = GetEntity()->AcquireExternalComponent<IInteractor>();
+	interactor.Lock(lockId, lock);
 }
 
 void CActor::AddHeatPulse( const float intensity, const float time )
@@ -5915,7 +5879,7 @@ void CActor::SetupLocalPlayer()
 		// Invalidate the matrix in order to force an update through the area manager
 		pEntity->InvalidateTM(ENTITY_XFORM_POS);
 
-		GetGameObject()->EnablePrePhysicsUpdate( ePPU_Always );
+		EnablePrePhysicsUpdate( ePPU_Always );
 
 		// always update client's character
 		if (ICharacterInstance * pCharacter = pEntity->GetCharacter(0))
@@ -5926,14 +5890,12 @@ void CActor::SetupLocalPlayer()
 		{
 			g_pGame->GetRecordingSystem()->StartRecording();
 		}
-
-		GetGameObject()->AttachDistanceChecker();
 	}
 	else
 	{
 		pEntity->SetFlags(pEntity->GetFlags() & ~ENTITY_FLAG_TRIGGER_AREAS);
 
-		GetGameObject()->EnablePrePhysicsUpdate( ePPU_Never );
+		EnablePrePhysicsUpdate( ePPU_Never );
 
 		if (ICharacterInstance * pCharacter = pEntity->GetCharacter(0))
 			pCharacter->SetFlags(pCharacter->GetFlags() & ~CS_FLAG_UPDATE_ALWAYS);
@@ -5995,17 +5957,6 @@ bool CActor::CanSwitchSpectatorStatus() const
 	}
 
 	return true;
-}
-
-IComponent::ComponentEventPriority CActor::GetEventPriority( const int eventID ) const
-{
-	switch( eventID )
-	{
-	case ENTITY_EVENT_PREPHYSICSUPDATE:
-		return( ENTITY_PROXY_LAST - ENTITY_PROXY_USER + EEntityEventPriority_Actor + (m_isClient ? EEntityEventPriority_Client : 0) );
-	}
-
-	return IGameObjectExtension::GetEventPriority( eventID );
 }
 
 void CActor::OnHostMigrationCompleted()
@@ -6187,7 +6138,7 @@ void CActor::AcquireOrReleaseLipSyncExtension()
 	// get rid of a possibly acquired lip-sync extension
 	if (!m_sLipSyncExtensionType.empty())
 	{
-		GetGameObject()->ReleaseExtension(m_sLipSyncExtensionType.c_str());
+		//GetGameObject()->ReleaseExtension(m_sLipSyncExtensionType.c_str());
 		m_sLipSyncExtensionType = "";
 	}
 
@@ -6209,10 +6160,11 @@ void CActor::AcquireOrReleaseLipSyncExtension()
 					const char* type = NULL;
 					if (pLipSyncTable->GetValue("esLipSyncType", type))
 					{
-						if (pGameObject->AcquireExtension(type) != NULL)
+						REINST("Lipsync extensions");
+						/*if (pGameObject->AcquireExtension(type) != NULL)
 						{
 							m_sLipSyncExtensionType = type;
-						}
+						}*/
 					}
 				}
 			}

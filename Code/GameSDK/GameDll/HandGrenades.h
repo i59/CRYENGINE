@@ -12,6 +12,8 @@ class CHandGrenades : public CWeapon
 {
 
 public:
+	DECLARE_COMPONENT("HandGrenades", 0x640DD7CE90C84D80, 0x9AA3278EA8ED26EE)
+
 	CHandGrenades();
 	virtual ~CHandGrenades();
 

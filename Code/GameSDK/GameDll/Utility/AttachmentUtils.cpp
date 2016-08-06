@@ -3,7 +3,6 @@
 #include "StdAfx.h"
 #include "Utility/AttachmentUtils.h"
 #include <CryEntitySystem/IEntity.h>
-#include <CryEntitySystem/IEntityProxy.h>
 #include <CryAnimation/ICryAnimation.h>
 #include <CryAnimation/IAttachment.h>
 #include "RecordingSystem.h"
@@ -58,7 +57,7 @@ namespace AttachmentUtils
 			}
 		}
 
-		if(IEntityRenderProxy* pProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
+		if(IEntityRenderComponent* pProxy = (IEntityRenderComponent*)pEntity->QueryComponent<IEntityRenderComponent>())
 		{
 			if(IRenderNode* pRenderNode = pProxy->GetRenderNode())
 			{

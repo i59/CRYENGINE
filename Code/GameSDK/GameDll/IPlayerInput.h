@@ -7,7 +7,6 @@
 
 #include <CryAISystem/IAgent.h> // for EStance
 #include <CryNetwork/ISerialize.h>
-#include "IGameObject.h"
 #include "Network/SerializeDirHelper.h"
 
 class CPlayer;

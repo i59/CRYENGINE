@@ -23,7 +23,6 @@ class CActor;
 struct IItemParamsNode;
 struct IAttachment;
 
-#include "IGameObject.h"
 #include <CryAction/IMaterialEffects.h>
 
 class CDamageEffectController

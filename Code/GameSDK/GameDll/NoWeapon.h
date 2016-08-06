@@ -12,6 +12,7 @@ class CNoWeapon: public CWeapon
 	typedef CWeapon BaseClass;
 
 public:
+	DECLARE_COMPONENT("NoWeapon", 0xF3C682A6F74F4FFA, 0xAD931D275D700E32)
 
 	CNoWeapon();
 	virtual ~CNoWeapon();

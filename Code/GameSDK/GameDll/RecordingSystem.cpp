@@ -32,7 +32,6 @@
 #include "HeavyMountedWeapon.h"
 #include "ReplayObject.h"
 #include "ReplayActor.h"
-#include "GameObjects/GameObject.h"
 #include "GameRulesModules/IGameRulesStateModule.h"
 #include "GameRulesModules/IGameRulesSpectatorModule.h"
 #include "GameRulesModules/IGameRulesRoundsModule.h"
@@ -2508,15 +2507,16 @@ void CRecordingSystem::HideEntityKeepingPhysics(IEntity *pEntity, bool hide)
 	RecSysLogDebug(eRSD_Visibility, "%s [%d: %s]", hide ? "HideKeepPhys" : "ShowKeepPhys", pEntity->GetId(), pEntity->GetName() );
 
 	SEntityEvent event(hide ? ENTITY_EVENT_INVISIBLE : ENTITY_EVENT_VISIBLE);
-	for (int i = 0; i < ENTITY_PROXY_LAST; i++)
+	pEntity->SendEvent(event);
+
+	// Everybody hide, but don't tell the physics.
+	if (hide)
 	{
-		EEntityProxy proxyType = (EEntityProxy)i;
-		// Everybody hide, but don't tell the physics.
-		if (proxyType != ENTITY_PROXY_PHYSICS)
+		event.event = ENTITY_EVENT_VISIBLE;
+
+		if (auto *pPhysicsComponent = pEntity->QueryComponent<IEntityPhysicsComponent>())
 		{
-			IEntityProxy *pProxy = pEntity->GetProxy(proxyType);
-			if (pProxy)
-				pProxy->ProcessEvent(event);
+			pPhysicsComponent->ProcessEvent(event);
 		}
 	}
 
@@ -2998,8 +2998,6 @@ void CRecordingSystem::OnPlaybackStart(void)
 							// [RW - 08/11/10]	All characters need to have the pre-physics event so that the head position can be
 							//									recorded (thread safe) - This is used for the HUD Tagnames.
 							// Hook into the pre-physics update event so the shadow character physics can be updated earlier in the frame
-							pCloneEntity->PrePhysicsActivate(true);
-
 							pCloneEntity->SetFlags(pCloneEntity->GetFlags() | (ENTITY_FLAG_CASTSHADOW));
 
 							{
@@ -3198,7 +3196,7 @@ void CRecordingSystem::SetPlayBackCameraView(bool bSetView)
 			IEntity* pKillerReplayEntity = pKillerReplayActor->GetEntity();
 			if(pKillerReplayEntity)
 			{
-				CGameObject* pKillerReplayGameObject = (CGameObject*) pKillerReplayEntity->GetProxy( ENTITY_PROXY_USER );
+				IGameObject* pKillerReplayGameObject = (IGameObject*) pKillerReplayEntity->QueryComponent<IGameObject>();
 				if(pKillerReplayGameObject)
 				{
 					if(bSetView)
@@ -3207,7 +3205,7 @@ void CRecordingSystem::SetPlayBackCameraView(bool bSetView)
 						IEntity* pGameCameraLinkedToEntity = gEnv->pEntitySystem->GetEntity(m_gameCameraLinkedToEntityId);
 						if(pGameCameraLinkedToEntity)
 						{
-							CGameObject* pGameCameraLinkedToGameObject = (CGameObject*)pGameCameraLinkedToEntity->GetProxy(ENTITY_PROXY_USER);
+							IGameObject* pGameCameraLinkedToGameObject = (IGameObject*)pGameCameraLinkedToEntity->QueryComponent<IGameObject>();
 							if(pGameCameraLinkedToGameObject)
 							{
 								pKillerReplayGameObject->CaptureView(pGameCameraLinkedToGameObject->GetViewDelegate());
@@ -3649,7 +3647,7 @@ void CRecordingSystem::RecordTPCharPacket(IEntity *pEntity, CActor *pActor)
 			chr.playerFlags |= eTPF_OnGround;
 		}
 	}
-	IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pEntity->GetProxy(ENTITY_PROXY_RENDER));
+	IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent*>(pEntity->QueryComponent<IEntityRenderComponent>());
 	if (pRenderProxy)
 	{
 		chr.layerEffectParams = pRenderProxy->GetEffectLayerParams();
@@ -5253,7 +5251,7 @@ void CRecordingSystem::UpdateThirdPersonPosition(const SRecording_TPChar *tpchar
 		bool isCloaked = ((tpchar->playerFlags & eTPF_Cloaked) != 0);
 		bool fade = true;
 
-		IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pReplayEntity->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent*>(pReplayEntity->QueryComponent<IEntityRenderComponent>());
 		if (pRenderProxy)
 		{
 			pRenderProxy->SetEffectLayerParams( tpchar->layerEffectParams );
@@ -5405,7 +5403,7 @@ void CRecordingSystem::UpdateThirdPersonPosition(const SRecording_TPChar *tpchar
 	}
 }
 
-void CRecordingSystem::CloakEnable(IEntityRenderProxy* pRenderProxy, bool enable, bool fade)
+void CRecordingSystem::CloakEnable(IEntityRenderComponent* pRenderProxy, bool enable, bool fade)
 {
 	// Code taken from CItem::CloakEnable
 	uint8 mask = pRenderProxy->GetMaterialLayersMask();
@@ -5493,16 +5491,11 @@ void CRecordingSystem::ApplyEntitySpawn(const SRecording_EntitySpawn *entitySpaw
 		}
 
 		CReplayObject* pReplayObject = NULL;
-		CGameObject* pGameObject = NULL;
+		IGameObject* pGameObject = NULL;
 		if (time > 0 && !entitySpawn->useOriginalClass)
 		{
-			if (pGameObject = (CGameObject*)pEntity->GetProxy(ENTITY_PROXY_USER))
-			{
-				if(pReplayObject = (CReplayObject*)pGameObject->QueryExtension(sClassType))
-				{
-					pReplayObject->SetTimeSinceSpawn(time);
-				}
-			}
+			if (pReplayObject = pEntity->QueryComponent<CReplayObject>())
+				pReplayObject->SetTimeSinceSpawn(time);
 		}
 
 		if(!entitySpawn->useOriginalClass)
@@ -5583,8 +5576,8 @@ void CRecordingSystem::ApplyEntitySpawn(const SRecording_EntitySpawn *entitySpaw
 					// Activate the Entity. Without this, the animation won't play or process.
 					if(pReplayObject && pGameObject)
 					{
-						pGameObject->EnableUpdateSlot(pReplayObject, 0);
-						pGameObject->SetUpdateSlotEnableCondition(pReplayObject, 0, eUEC_Always);
+						pReplayObject->GetGameObject()->EnableUpdateSlot(pReplayObject, 0);
+						pReplayObject->GetGameObject()->SetUpdateSlotEnableCondition(pReplayObject, 0, eUEC_Always);
 					}
 				}
 			}
@@ -5602,7 +5595,7 @@ void CRecordingSystem::ApplyEntitySpawn(const SRecording_EntitySpawn *entitySpaw
 
 		if (entitySpawn->subObjHideMask != 0)
 		{
-			IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
+			IEntityRenderComponent *pRenderProxy = (IEntityRenderComponent*)pEntity->QueryComponent<IEntityRenderComponent>();
 			if (pRenderProxy)
 			{
 				pRenderProxy->SetSubObjHideMask(0, entitySpawn->subObjHideMask);
@@ -6364,7 +6357,7 @@ bool CRecordingSystem::OnRemove(IEntity *pEntity)
 	return true;
 }
 
-void CRecordingSystem::OnEvent(IEntity *pEntity, SEntityEvent &event)
+void CRecordingSystem::OnEvent(IEntity *pEntity, const SEntityEvent &event)
 {
 	CRY_ASSERT_MESSAGE(false, "Shouldn't be getting these events");
 }
@@ -6374,7 +6367,7 @@ void CRecordingSystem::OnReused(IEntity *pEntity, SEntitySpawnParams &params)
 	CRY_ASSERT_MESSAGE(false, "CRecordingSystem::OnReused needs implementing");
 }
 
-void CRecordingSystem::OnEntityEvent( IEntity *pEntity,SEntityEvent &event )
+void CRecordingSystem::OnEntityEvent( IEntity *pEntity, const SEntityEvent &event )
 {
 	const EntityId entityId = pEntity->GetId();
 
@@ -7355,7 +7348,7 @@ void CRecordingSystem::ApplyPlaySound(const SRecording_PlaySound* pPlaySound, fl
 	//		pSound->SetSemantic(eSoundSemantic_Replay);
 	//		if (pEntity)
 	//		{
-	//			IEntityAudioProxyPtr pIEntityAudioProxy = crycomponent_cast<IEntityAudioProxyPtr>(pEntity->CreateProxy(ENTITY_PROXY_AUDIO));
+	//			IEntityAudioComponent* pIEntityAudioProxy = crycomponent_cast<IEntityAudioComponent>(pEntity->AcquireExternalComponent<IEntityAudioComponent>());
 	//			CRY_ASSERT_MESSAGE(pIEntityAudioProxy.get(), "Failed to create sound proxy");
 	//			if(pIEntityAudioProxy)
 	//			{
@@ -7577,7 +7570,7 @@ CReplayActor* CRecordingSystem::GetReplayActor(EntityId entityId, bool originalE
 			return NULL;
 		}
 	}
-	return (CReplayActor*)g_pGame->GetIGameFramework()->QueryGameObjectExtension(entityId, "ReplayActor");
+	return (CReplayActor*)gEnv->pEntitySystem->QueryComponent<CReplayActor>(entityId);
 }
 
 IEntity* CRecordingSystem::GetReplayEntity(EntityId originalEntityId)
@@ -7703,7 +7696,7 @@ void CRecordingSystem::ApplySubObjHideMask(const SRecording_SubObjHideMask* pHid
 {
 	if(IEntity* pEntity = GetReplayEntity(pHideMask->entityId))
 	{
-		if(IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER))
+		if(IEntityRenderComponent* pRenderProxy = (IEntityRenderComponent*)pEntity->QueryComponent<IEntityRenderComponent>())
 		{
 			pRenderProxy->SetSubObjHideMask(pHideMask->slot, pHideMask->subObjHideMask);
 		}
@@ -7787,7 +7780,7 @@ void CRecordingSystem::ApplyObjectCloakSync( const SRecording_ObjectCloakSync* p
 		IEntity* pCloakMaster = pCloakMasterActor->GetEntity();
 
 		// Grab render proxies
-		IEntityRenderProxy* pCloakSlaveRP	 = static_cast<IEntityRenderProxy*>(pCloakSlave->GetProxy(ENTITY_PROXY_RENDER));
+		IEntityRenderComponent* pCloakSlaveRP	 = static_cast<IEntityRenderComponent*>(pCloakSlave->QueryComponent<IEntityRenderComponent>());
 		if (!pCloakSlaveRP)
 		{
 			GameWarning("CRecordingSystem::ApplyObjectCloakSync() - cloak Master/Slave Render proxy ID invalid, aborting cloak sync");
@@ -7802,7 +7795,7 @@ void CRecordingSystem::ApplyObjectCloakSync( const SRecording_ObjectCloakSync* p
 		}
 		else
 		{
-			IEntityRenderProxy* pCloakMasterRP = static_cast<IEntityRenderProxy*>(pCloakMaster->GetProxy(ENTITY_PROXY_RENDER));
+			IEntityRenderComponent* pCloakMasterRP = static_cast<IEntityRenderComponent*>(pCloakMaster->QueryComponent<IEntityRenderComponent>());
 			const float cloakBlendSpeedScale		= pCloakMasterRP->GetCloakBlendTimeScale();
 			const bool  bFadeByDistance				= pCloakMasterRP->DoesCloakFadeByDistance();
 			const uint8 colorChannel			    = pCloakMasterRP->GetCloakColorChannel();
@@ -8748,7 +8741,7 @@ void CRecordingSystem::NotifyOnPlaybackEnd( const SPlaybackInfo& info )
 	entity.Physicalize(params);
 
 	// Set ViewDistRatio.
-	if(IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)entity.GetProxy(ENTITY_PROXY_RENDER))
+	if(IEntityRenderComponent* pRenderProxy = (IEntityRenderComponent*)entity.QueryComponent<IEntityRenderComponent>())
 	{
 		if(IRenderNode* pRenderNode = pRenderProxy->GetRenderNode())
 		{

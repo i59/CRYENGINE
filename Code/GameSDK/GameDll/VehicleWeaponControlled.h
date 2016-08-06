@@ -56,7 +56,7 @@ public:
   void StartUse(EntityId userId);
   void StopUse(EntityId userId);
 
-  virtual void Update(SEntityUpdateContext& ctx, int update);
+  virtual void Update(SEntityUpdateContext& ctx);
   void         Update3PAnim(CPlayer *player, float goalTime, float frameTime, const Matrix34 &mat);
 
 	virtual void GetMemoryUsage(ICrySizer * s) const
@@ -82,7 +82,7 @@ public:
   virtual void  StartFire();
   void SetDestination(const Vec3& pos);
 
-  virtual void Update(SEntityUpdateContext& ctx, int update);
+  virtual void Update(SEntityUpdateContext& ctx);
 
   virtual void GetMemoryUsage(ICrySizer * s) const
   {

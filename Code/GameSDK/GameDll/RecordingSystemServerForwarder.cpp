@@ -16,7 +16,7 @@ void CServerKillCamForwarder::Reset()
 	m_history.Clear();
 }
 
-void CServerKillCamForwarder::ReceivePacket(IActor *pActor, const CActor::KillCamFPData &packet)
+void CServerKillCamForwarder::ReceivePacket(CActor *pActor, const CActor::KillCamFPData &packet)
 {
 	if (packet.m_packetType==CClientKillCamSender::KCP_FORWARD)
 	{
@@ -99,7 +99,7 @@ void CServerKillCamForwarder::Update()
 void CServerKillCamForwarder::ForwardPacket(SForwardingPacket &forward, CActor::KillCamFPData *pPacket)
 {
 	IActor *pVictim=g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(forward.victim);
-	forward.pActor->GetGameObject()->InvokeRMI(CActor::ClKillFPCamData(), *pPacket, eRMI_ToClientChannel, pVictim->GetChannelId());
+	static_cast<CActor *>(forward.pActor)->GetGameObject()->InvokeRMI(CActor::ClKillFPCamData(), *pPacket, eRMI_ToClientChannel, pVictim->GetChannelId());
 	forward.m_sent++;
 	forward.m_lastPacketTime=gEnv->pTimer->GetCurrTime();
 }

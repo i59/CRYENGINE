@@ -29,13 +29,15 @@ private:
 	typedef CWeapon BaseClass;
 
 public:
+	DECLARE_COMPONENT("C4", 0xC67D79FA71FA48A3, 0xB0A6AE1169CF5138)
+
 	CC4();
 	virtual ~CC4();
 
 	static const EEntityAspects ASPECT_DETONATE = eEA_GameServerStatic;
 
 	virtual bool CanSelect() const;
-	virtual void Update(SEntityUpdateContext& ctx, int update);
+	virtual void Update(SEntityUpdateContext& ctx);
 	virtual void GetMemoryUsage(ICrySizer * s) const
 	{
 		s->AddObject(this, sizeof(*this));

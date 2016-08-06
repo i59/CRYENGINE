@@ -299,12 +299,6 @@ void CSlideController::GoToState( CPlayer& player, ESlideState newState )
 		{
 		case eSlideState_Sliding:
 			{
-				CWeapon * weapon = player.GetWeapon(player.GetCurrentItemId());
-				if (weapon)
-				{
-					weapon->RequireUpdate(eIUS_FireMode);
-				}
-
 				IActionController *actionController = player.GetAnimatedCharacter()->GetActionController();
 				if (!m_slideAction && actionController)
 				{

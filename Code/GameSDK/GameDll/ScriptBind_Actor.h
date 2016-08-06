@@ -63,8 +63,6 @@ public:
 	int CameraShake(IFunctionHandler *pH,float amount,float duration,float frequency,Vec3 pos);
 	int SetViewShake(IFunctionHandler *pH, Ang3 shakeAngle, Vec3 shakeShift, float duration, float frequency, float randomness);
 
-	int SetExtensionParams(IFunctionHandler* pH, const char *extension, SmartScriptTable params);
-
 	int SvRefillAllAmmo(IFunctionHandler* pH, const char* refillType, bool refillAll, int grenadeCount, bool bRefillCurrentGrenadeType);
 	int ClRefillAmmoResult(IFunctionHandler* pH, bool ammoRefilled);
 

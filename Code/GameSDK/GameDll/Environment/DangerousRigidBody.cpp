@@ -54,7 +54,7 @@ bool CDangerousRigidBody::NetSerialize( TSerialize ser, EEntityAspects aspect, u
 	return true;
 }
 
-void CDangerousRigidBody::ProcessEvent( SEntityEvent& event )
+void CDangerousRigidBody::ProcessEvent(const SEntityEvent& event )
 {
 	switch(event.event)
 	{

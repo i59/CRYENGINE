@@ -1889,8 +1889,8 @@ void CFeatureTester::Update(float dt)
 
 		if (m_localPlayerAutoAimSettings.m_entityId)
 		{
-			IActor * aimAtActor = gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_localPlayerAutoAimSettings.m_entityId);
-			IActor * localActor = gEnv->pGame->GetIGameFramework()->GetClientActor();
+			auto * aimAtActor = static_cast<CActor *>(gEnv->pGame->GetIGameFramework()->GetIActorSystem()->GetActor(m_localPlayerAutoAimSettings.m_entityId));
+			auto * localActor = static_cast<CActor *>(gEnv->pGame->GetIGameFramework()->GetClientActor());
 			if (aimAtActor != NULL && localActor != NULL && ! aimAtActor->IsDead() && ! localActor->IsDead())
 			{
 				Vec3 lookFromPos = localActor->GetGameObject()->GetWorldQuery()->GetPos();
@@ -2407,7 +2407,7 @@ const char * CFeatureTester::GetActorInfoString(IActor * iActor, CryFixedStringT
 			(pActor->IsPlayer() && ((SPlayerStats *)(stats))->flyMode) ? ", FLYMODE" : "",
 			stats->isRagDoll ? ", RAGDOLL" : "",
 			pEntity->GetPhysics() ? "" : ", NO PHYSICS",
-			gameObject->ShouldUpdate() ? "" : ", NOT UPDATING",
+			"",
 			pEntity->IsHidden() ? ", hidden" : "",
 			pEntity->IsActive() ? "" : ", inactive",
 			pEntity->IsInvisible() ? ", invisible" : "",

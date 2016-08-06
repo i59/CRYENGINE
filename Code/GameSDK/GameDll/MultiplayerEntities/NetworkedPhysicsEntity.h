@@ -16,10 +16,12 @@
 #ifndef __NETWORKEDPHYSICSENTITY_H__
 #define __NETWORKEDPHYSICSENTITY_H__
 
-class CNetworkedPhysicsEntity :	public CGameObjectExtensionHelper<CNetworkedPhysicsEntity, IGameObjectExtension, 2>,
+class CNetworkedPhysicsEntity :	public CEntityComponentConversionHelper<CNetworkedPhysicsEntity>,
 																public IGameObjectProfileManager
 {
 public:
+	DECLARE_COMPONENT("NetworkedPhysicsEntity", 0xCDB66942B2C64539, 0x999C1806AD9A7D03)
+
 	enum ePhysicalization
 	{
 		ePhys_NotPhysicalized,
@@ -30,7 +32,7 @@ public:
 	CNetworkedPhysicsEntity();
 	virtual ~CNetworkedPhysicsEntity();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init(IGameObject *pGameObject);
 	virtual void InitClient(int channelId) {}
 	virtual void PostInit(IGameObject *pGameObject) {}
@@ -44,15 +46,15 @@ public:
 	virtual void PostSerialize() {}
 	virtual void SerializeSpawnInfo(TSerialize ser) {}
 	virtual ISerializableInfoPtr GetSpawnInfo() { return 0; }
-	virtual void Update(SEntityUpdateContext &ctx, int updateSlot) {};
+	virtual void Update(SEntityUpdateContext &ctx) {};
 	virtual void PostUpdate(float frameTime) {}
 	virtual void PostRemoteSpawn() {}
 	virtual void HandleEvent(const SGameObjectEvent& event) {}
-	virtual void ProcessEvent(SEntityEvent& event) {}
+	virtual void ProcessEvent(const SEntityEvent& event) {}
 	virtual void SetChannelId(uint16 id) {}
 	virtual void SetAuthority(bool auth);
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
-	// ~IGameObjectExtension
+	// ~IEntityComponent
 
 	// IGameObjectProfileManager
 	virtual bool SetAspectProfile( EEntityAspects aspect, uint8 profile );

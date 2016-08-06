@@ -16,7 +16,6 @@ History:
 #ifndef _VICINITYDEPENDENTOBJECTMOVER_H_
 #define _VICINITYDEPENDENTOBJECTMOVER_H_
 
-#include <IGameObject.h>
 #include "../State.h"
 
 enum EObjectRangeMoverState
@@ -30,13 +29,15 @@ enum EObjectRangeMoverState
 //////////////////////////////////////////////////////////////////////////
 /// VICINITYDEPENDENTOBJECTMOVER
 
-class CVicinityDependentObjectMover : public CGameObjectExtensionHelper<CVicinityDependentObjectMover, IGameObjectExtension>
+class CVicinityDependentObjectMover : public CEntityComponentConversionHelper<CVicinityDependentObjectMover>
 {
 public:
+	DECLARE_COMPONENT("Projectile", 0xB033914195804A33, 0xB5061E3C1E8E0B13)
+
 	CVicinityDependentObjectMover();
 	virtual ~CVicinityDependentObjectMover();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init( IGameObject * pGameObject );
 	virtual void InitClient( int channelId ) {};
 	virtual void PostInit( IGameObject * pGameObject );
@@ -50,15 +51,15 @@ public:
 	virtual void PostSerialize() {};
 	virtual void SerializeSpawnInfo( TSerialize ser ) {}
 	virtual ISerializableInfoPtr GetSpawnInfo() {return 0;}
-	virtual void Update( SEntityUpdateContext& ctx, int slot );
+	virtual void Update( SEntityUpdateContext& ctx );
 	virtual void HandleEvent( const SGameObjectEvent& gameObjectEvent );
-	virtual void ProcessEvent( SEntityEvent& entityEvent );
+	virtual void ProcessEvent(const SEntityEvent& entityEvent );
 	virtual void SetChannelId( uint16 id ) {};
 	virtual void SetAuthority( bool auth ) {};
 	virtual void PostUpdate( float frameTime ) { CRY_ASSERT(false); }
 	virtual void PostRemoteSpawn() {};
 	virtual void GetMemoryUsage( ICrySizer *pSizer ) const;
-	// ~IGameObjectExtension
+	// ~IEntityComponent
 
 private:
 	DECLARE_STATE_MACHINE( CVicinityDependentObjectMover, Behavior );

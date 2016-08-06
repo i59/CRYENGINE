@@ -68,7 +68,7 @@ bool CLTag::OnActionSwitchFireMode(EntityId actorId, const ActionId& actionId, i
 	return true;
 }
 
-void CLTag::ProcessEvent(SEntityEvent& event)
+void CLTag::ProcessEvent(const SEntityEvent& event)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_GAME);
 

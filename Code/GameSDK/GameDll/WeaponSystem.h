@@ -138,7 +138,7 @@ class CWeaponSystem : public ILevelSystemListener
 	typedef std::map<const CGameTypeInfo*, void(*)(CFireMode*)>					TFireModeDestructionRegistry;
 	typedef std::map<const CGameTypeInfo*, void (*)(IFireModePlugin*)>	TFireModePluginDestructionRegistry;
 	typedef std::map<string, void(*)()>																	TWeaponComponentPoolFreeFunctions;
-	typedef std::map<string, IGameObjectExtensionCreatorBase *>					TProjectileRegistry;
+	typedef std::map<string, const CryInterfaceID>					TProjectileRegistry;
 	typedef std::map<EntityId, CProjectile *>														TProjectileMap;
 	typedef VectorMap<const IEntityClass*, SAmmoTypeDesc>								TAmmoTypeParams;
 	typedef std::vector<string>																					TFolderList;
@@ -207,7 +207,7 @@ public:
 	CProjectile *SpawnAmmo(IEntityClass* pAmmoType, bool isRemote=false);
 	const SAmmoParams* GetAmmoParams( const IEntityClass* pAmmoType );
 	bool IsServerSpawn(IEntityClass* pAmmoType) const;
-	void RegisterProjectile(const char *name, IGameObjectExtensionCreatorBase *pCreator);
+	void RegisterProjectile(const char *name, const CryInterfaceID&);
 	const SAmmoParams* GetAmmoParams( const IEntityClass* pAmmoType ) const;
 
 	void AddProjectile(IEntity *pEntity, CProjectile *pProjectile);

@@ -81,8 +81,6 @@ void CRapid::Update(float frameTime, uint32 frameId)
 	const bool isOwnerClient = pOwnerActor ? pOwnerActor->IsClient() : false;
 	const bool isOwnerPlayer = pOwnerActor ? pOwnerActor->IsPlayer() : false;
 
-	m_pWeapon->RequireUpdate(eIUS_FireMode);
-
 	m_speed = m_speed + m_acceleration*frameTime;
 
 	if (m_speed > m_fireParams->rapidparams.max_speed)

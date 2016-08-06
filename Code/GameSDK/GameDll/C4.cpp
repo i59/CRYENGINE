@@ -105,13 +105,10 @@ bool CC4::OnActionAttackSecondary(EntityId actorId, const ActionId& actionId, in
 }
 
 //------------------------------------------------------------------------
-void CC4::Update(SEntityUpdateContext& ctx, int update)
+void CC4::Update(SEntityUpdateContext& ctx)
 {
-	if(update == eIUS_FireMode)
-	{
-		IFireMode* pFM = GetFireMode(m_detonateFM);
-		pFM->Update(ctx.fFrameTime, ctx.nFrameID);
-	}
+	IFireMode* pFM = GetFireMode(m_detonateFM);
+	pFM->Update(ctx.fFrameTime, ctx.nFrameID);
 
 	//Update visuals on server
 	if(gEnv->bServer && m_pDetonatorArmedMaterial)
@@ -140,7 +137,7 @@ void CC4::Update(SEntityUpdateContext& ctx, int update)
 		}
 	}
 
-	BaseClass::Update(ctx, update);
+	BaseClass::Update(ctx);
 }
 
 //------------------------------------------------------------------------
@@ -290,7 +287,7 @@ void CC4::RequestDetonate()
 	if(!gEnv->bServer)
 	{
 		CCCPOINT(C4_ClientSendDetonateRequest);
-		GetGameObject()->InvokeRMI(CC4::SvRequestDetonate(), DefaultParams(), eRMI_ToServer);
+	GetGameObject()->InvokeRMI(CC4::SvRequestDetonate(), DefaultParams(), eRMI_ToServer);
 	}
 }
 

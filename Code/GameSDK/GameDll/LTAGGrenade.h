@@ -41,7 +41,7 @@ public:
 
 	virtual void HandleEvent(const SGameObjectEvent &) override;
 	virtual void Launch(const Vec3 &pos, const Vec3 &dir, const Vec3 &velocity, float speedScale) override;
-	virtual void Update(SEntityUpdateContext &ctx, int updateSlot) override;
+	virtual void Update(SEntityUpdateContext &ctx) override;
 	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int pflags) override;
 	virtual NetworkAspectType GetNetSerializeAspects() override;
 	// ~CProjectile

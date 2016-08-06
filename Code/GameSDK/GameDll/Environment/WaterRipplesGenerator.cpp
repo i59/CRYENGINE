@@ -55,17 +55,6 @@ void CWaterRipplesGenerator::SProperties::InitFromScript( const IEntity& entity 
 	}
 }
 
-
-namespace WRG
-{
-	void RegisterEvents( IGameObjectExtension& goExt, IGameObject& gameObject )
-	{
-		const int eventID = eGFE_ScriptEvent;
-		gameObject.UnRegisterExtForEvents( &goExt, NULL, 0 );
-		gameObject.RegisterExtForEvents( &goExt, &eventID, 1 );
-	}
-}
-
 //////////////////////////////////////////////////////////////////////////
 CWaterRipplesGenerator::CWaterRipplesGenerator()
 	: m_lastSpawnTime(0)
@@ -90,15 +79,11 @@ bool CWaterRipplesGenerator::Init(IGameObject *pGameObject)
 void CWaterRipplesGenerator::PostInit(IGameObject *pGameObject)
 {
 	Reset();
-
-	WRG::RegisterEvents( *this, *pGameObject );
 }
 
 bool CWaterRipplesGenerator::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
 {
 	ResetGameObject();
-
-	WRG::RegisterEvents( *this, *pGameObject );
 
 	CRY_ASSERT_MESSAGE(false, "CWaterRipplesGenerator::ReloadExtension not implemented");
 
@@ -122,10 +107,8 @@ void CWaterRipplesGenerator::FullSerialize(TSerialize ser)
 
 }
 
-void CWaterRipplesGenerator::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CWaterRipplesGenerator::Update(SEntityUpdateContext &ctx)
 {
-	CRY_ASSERT( updateSlot == WATER_RIPPLES_GENERATOR_UPDATE_SLOT );
-
 	float fFrequency = m_properties.m_frequency + cry_random(-1.0f, 1.0f)*m_properties.m_randFrequency;
 	bool allowHit = (gEnv->pTimer->GetCurrTime() - m_lastSpawnTime) > fFrequency;
 	if(m_properties.m_autoSpawn && allowHit)
@@ -190,7 +173,7 @@ void CWaterRipplesGenerator::HandleEvent( const SGameObjectEvent &gameObjectEven
 	}
 }
 
-void CWaterRipplesGenerator::ProcessEvent(SEntityEvent &event)
+void CWaterRipplesGenerator::ProcessEvent(const SEntityEvent &event)
 {
 	if (event.event == ENTITY_EVENT_XFORM)
 	{
@@ -251,17 +234,5 @@ void CWaterRipplesGenerator::Reset()
 
 void CWaterRipplesGenerator::ActivateGeneration( const bool activate )
 {
-	GetEntity()->Activate( activate );
-
-	if (activate && (gEnv->IsEditor() || m_properties.m_autoSpawn))
-	{
-		if (GetGameObject()->GetUpdateSlotEnables( this, WATER_RIPPLES_GENERATOR_UPDATE_SLOT) == 0)
-		{
-			GetGameObject()->EnableUpdateSlot( this, WATER_RIPPLES_GENERATOR_UPDATE_SLOT ) ;
-		}
-	}
-	else
-	{
-		GetGameObject()->DisableUpdateSlot( this, WATER_RIPPLES_GENERATOR_UPDATE_SLOT );
-	}
+	SetUpdatePolicy((activate && (gEnv->IsEditor() || m_properties.m_autoSpawn)) ? EEntityUpdatePolicy_InRange | EEntityUpdatePolicy_Visible : EEntityUpdatePolicy_Never);
 }

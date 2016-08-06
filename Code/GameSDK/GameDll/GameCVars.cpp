@@ -24,7 +24,6 @@ History:
 #include "ActorImpulseHandler.h"
 
 #include <CryNetwork/INetwork.h>
-#include <IGameObject.h>
 #include <IActorSystem.h>
 #include <IItemSystem.h>
 #include <IVehicleSystem.h>
@@ -86,14 +85,13 @@ static void OnGameRulesChanged( ICVar * pCVar )
 //------------------------------------------------------------------------
 static void BroadcastChangeSafeMode( ICVar * )
 {
-	SGameObjectEvent event(eCGE_ResetMovementController, eGOEF_ToExtensions);
 	IEntitySystem * pES = gEnv->pEntitySystem;
 	IEntityItPtr pIt = pES->GetEntityIterator();
 	while (!pIt->IsEnd())
 	{
 		if (IEntity * pEnt = pIt->Next())
 			if (IActor * pActor = g_pGame->GetIGameFramework()->GetIActorSystem()->GetActor(pEnt->GetId()))
-				pActor->HandleEvent( event );
+				pEnt->SendComponentEvent(eCGE_ResetMovementController);
 	}
 }
 
@@ -4357,7 +4355,7 @@ void CGame::CmdHideAllDummyPlayers(IConsoleCmdArgs* pCmdArgs)
 							if(pEntity && (pEntity->GetClass() == pDummyClass))
 							{
 								// Hide character
-								IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)pEntity->GetProxy(ENTITY_PROXY_RENDER);
+								IEntityRenderComponent* pRenderProxy = (IEntityRenderComponent*)pEntity->QueryComponent<IEntityRenderComponent>();
 								if(pRenderProxy)
 								{
 									IRenderNode* pRenderNode = pRenderProxy->GetRenderNode();

@@ -202,7 +202,7 @@ static float factor1 = 0.5f;
 static float factor2 = 1.0f;
 static float factor3 = 1.0f;
 
-void CVehicleWeaponControlled::Update(SEntityUpdateContext& ctx, int update)
+void CVehicleWeaponControlled::Update(SEntityUpdateContext& ctx)
 {
 	IVehicle *pVehicle = m_vehicleId ? gEnv->pGame->GetIGameFramework()->GetIVehicleSystem()->GetVehicle(m_vehicleId) : NULL; 
   if (!m_vehicleId && GetEntity()->GetParent())
@@ -377,8 +377,7 @@ void CVehicleWeaponControlled::Update(SEntityUpdateContext& ctx, int update)
 		} // pPart
 	} // pVehicle
 
-  Base::Update(ctx, update);
-  RequireUpdate(eIUS_General);
+  Base::Update(ctx);
 }
 
 
@@ -476,7 +475,7 @@ void CVehicleWeaponPulseC::SetDestination(const Vec3& pos)
   m_TargetPos = pos; 
 }
 
-void CVehicleWeaponPulseC::Update(SEntityUpdateContext& ctx, int update)
+void CVehicleWeaponPulseC::Update(SEntityUpdateContext& ctx)
 {
 	if(!m_vehicleId && GetEntity()->GetParent())
 	{
@@ -520,7 +519,7 @@ void CVehicleWeaponPulseC::Update(SEntityUpdateContext& ctx, int update)
 		}
 	}
 
-  Base::Update(ctx, update);
+  Base::Update(ctx);
 }
 
 

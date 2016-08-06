@@ -28,6 +28,8 @@ class CAIGrenade : public CWeapon, public IWeaponFiringLocator
 	typedef CWeapon BaseClass;
 
 public:
+	DECLARE_COMPONENT("AIGrenade", 0xBE0A5F1028E44465, 0x81D65E7A6391DF39)
+
 	CAIGrenade();
 	virtual ~CAIGrenade();
 

@@ -13,17 +13,6 @@ History:
 #include "StdAfx.h"
 #include "ScriptControlledPhysics.h"
 
-namespace SCP
-{
-	void RegisterEvents( IGameObjectExtension& goExt, IGameObject& gameObject )
-	{
-		const int eventID = eGFE_OnPostStep;
-		gameObject.UnRegisterExtForEvents( &goExt, NULL, 0 );
-		gameObject.RegisterExtForEvents( &goExt, &eventID, 1 );
-	}
-}
-
-
 //------------------------------------------------------------------------
 CScriptControlledPhysics::CScriptControlledPhysics()
 : m_moving(false)
@@ -78,7 +67,6 @@ bool CScriptControlledPhysics::Init(IGameObject * pGameObject )
 	CScriptableBase::Init(gEnv->pScriptSystem, gEnv->pSystem, 1);
 
 	SetGameObject(pGameObject);
-	pGameObject->EnablePhysicsEvent(true, eEPE_OnPostStepImmediate);
 
 	RegisterGlobals();
 	RegisterMethods();
@@ -120,8 +108,6 @@ void CScriptControlledPhysics::PostInit( IGameObject * pGameObject )
 {
 	if (IPhysicalEntity *pPE=GetEntity()->GetPhysics())
 	{
-		SCP::RegisterEvents(*this,*pGameObject);
-	
 		pe_params_flags fp;
 		fp.flagsOR = pef_monitor_poststep;
 
@@ -133,14 +119,6 @@ void CScriptControlledPhysics::PostInit( IGameObject * pGameObject )
 bool CScriptControlledPhysics::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
 {
 	ResetGameObject();
-	if (IPhysicalEntity *pPE=GetEntity()->GetPhysics())
-	{
-		SCP::RegisterEvents(*this,*pGameObject);
-	}
-	else
-	{
-		pGameObject->UnRegisterExtForEvents( this, NULL, 0 );
-	}
 
 	CRY_ASSERT_MESSAGE(false, "CScriptControlledPhysics::ReloadExtension not implemented");
 	
@@ -161,7 +139,7 @@ void CScriptControlledPhysics::HandleEvent(const SGameObjectEvent& event)
 	switch(event.event)
 	{
 	case eGFE_OnPostStep:
-		OnPostStep((EventPhysPostStep *)event.ptr);
+		OnPostStep((EventPhysPostStep *)event.param);
 		break;
 	}
 }

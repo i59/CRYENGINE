@@ -5,7 +5,6 @@
 #ifndef _AI_CORPSE_H_
 #define _AI_CORPSE_H_
 
-#include <IGameObject.h>
 #include <CryCore/CryFlags.h>
 
 #define AI_CORPSES_ENABLE_SERIALIZE 0
@@ -19,7 +18,7 @@
 struct IAttachment;
 struct CEntityAttachment;
 
-class CAICorpse : public CGameObjectExtensionHelper<CAICorpse, IGameObjectExtension>
+class CAICorpse : public CEntityComponentConversionHelper<CAICorpse>
 {
 	struct AttachedItem
 	{
@@ -41,11 +40,12 @@ class CAICorpse : public CGameObjectExtensionHelper<CAICorpse, IGameObjectExtens
 	};
 
 public:
+	DECLARE_COMPONENT("AICorpse", 0x4255A6DF22B549B1, 0xA6F44CB165E74240)
 
 	CAICorpse();
 	virtual ~CAICorpse();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init( IGameObject * pGameObject );
 	virtual void InitClient( int channelId ) {};
 	virtual void PostInit( IGameObject * pGameObject );
@@ -59,15 +59,15 @@ public:
 	virtual void PostSerialize();
 	virtual void SerializeSpawnInfo( TSerialize ser ) {}
 	virtual ISerializableInfoPtr GetSpawnInfo() {return 0;}
-	virtual void Update( SEntityUpdateContext& ctx, int slot ) {};
+	virtual void Update( SEntityUpdateContext& ctx ) {};
 	virtual void HandleEvent( const SGameObjectEvent& gameObjectEvent );
-	virtual void ProcessEvent( SEntityEvent& entityEvent ) {};
+	virtual void ProcessEvent(const SEntityEvent& entityEvent ) {};
 	virtual void SetChannelId( uint16 id ) {};
 	virtual void SetAuthority( bool auth ) {};
 	virtual void PostUpdate( float frameTime ) { CRY_ASSERT(false); }
 	virtual void PostRemoteSpawn() {};
 	virtual void GetMemoryUsage( ICrySizer *pSizer ) const;
-	// ~IGameObjectExtension
+	// ~IEntityComponent
 
 	void SetupFromSource( IEntity& sourceEntity, ICharacterInstance& characterInstance, const uint32 priority);
 	void AboutToBeRemoved();
@@ -113,10 +113,9 @@ private:
 
 		CAICorpse* GetCorpse()
 		{
-			IGameObject* pGameObject = g_pGame->GetIGameFramework()->GetGameObject(corpseId);
-			if(pGameObject != NULL)
+			if (auto *pEntity = GetCorpseEntity())
 			{
-				return static_cast<CAICorpse*>(pGameObject->QueryExtension("AICorpse"));
+				return pEntity->QueryComponent<CAICorpse>();
 			}
 
 			return NULL;

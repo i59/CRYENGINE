@@ -298,7 +298,7 @@ void CExactPositioning::UpdateAnimationTrigger()
 	//
 	// TODO: Investigate
 	//
-	//IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*) pEntity->GetProxy( ENTITY_PROXY_RENDER );
+	//IEntityRenderComponent* pRenderProxy = (IEntityRenderComponent*) pEntity->GetProxy( ENTITY_PROXY_RENDER );
 	//bool hasSplitUpdate = (pRenderProxy != NULL) && pRenderProxy->IsCharactersUpdatedBeforePhysics();
 	//if ( hasSplitUpdate && gEnv->pPhysicalWorld->GetPhysVars()->bMultithreaded )
 	//{

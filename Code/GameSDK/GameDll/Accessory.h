@@ -21,6 +21,7 @@ class CAccessory: public CItem
 	typedef CItem BaseClass;
 
 public:
+	DECLARE_COMPONENT("Accessory", 0x91C50A40831F4EB3, 0x8FF0DD3865EAB230)
 
 	CAccessory() {};
 	virtual			~CAccessory() {};

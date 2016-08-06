@@ -105,7 +105,6 @@ void CVehicleWeaponGuided::StartFire()
 	}
 
 	EnableUpdate(true, eIUS_General);
-	RequireUpdate(eIUS_General);
 }
 
 void CVehicleWeaponGuided::SetDestination(const Vec3& pos)
@@ -140,7 +139,7 @@ const Vec3& CVehicleWeaponGuided::GetDestination()
 //	return ZERO''
 //}
 
-void CVehicleWeaponGuided::Update(SEntityUpdateContext& ctx, int update)
+void CVehicleWeaponGuided::Update(SEntityUpdateContext& ctx)
 {
 	switch(m_State)
 	{
@@ -224,5 +223,5 @@ void CVehicleWeaponGuided::Update(SEntityUpdateContext& ctx, int update)
 		m_destination.SetLerp(m_destination, m_DesiredHomingTarget, ctx.fFrameTime);
 	}
 	
-	CVehicleWeapon::Update(ctx, update);
+	CVehicleWeapon::Update(ctx);
 }

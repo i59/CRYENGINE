@@ -24,14 +24,16 @@ struct IAttachment;
 class CCarryEntity :	public TParent
 {
 public:
+	DECLARE_COMPONENT("EntityRenderComponent", 0x88CB1353BF7C4AD0, 0x8019762F3A416EFF)
+
 	CCarryEntity();
 	virtual ~CCarryEntity() {}
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init(IGameObject *pGameObject);
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
 	virtual void PostInit(IGameObject *pGameObject);
-	// ~IGameObjectExtension
+	// ~IEntityComponent
 
 	void SetSpawnedWeaponId(EntityId weaponId);
 	void AttachTo(EntityId actorId);

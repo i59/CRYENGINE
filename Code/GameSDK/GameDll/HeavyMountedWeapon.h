@@ -31,6 +31,7 @@ private:
 	static const EEntityAspects ASPECT_RIPOFF = eEA_GameServerStatic;
 
 public:
+	DECLARE_COMPONENT("HeavyMountedWeapon", 0x7857B6A1236E4419, 0xA6B40A1B4016ACD2)
 
 	CHeavyMountedWeapon();
 	virtual ~CHeavyMountedWeapon();
@@ -38,7 +39,7 @@ public:
 	//Common functions
 	virtual void OnReset();
 	virtual void UpdateFPView(float frameTime);
-	virtual void Update(SEntityUpdateContext& ctx, int slot);
+	virtual void Update(SEntityUpdateContext& ctx);
 	virtual void FadeCrosshair(float to, float time, float delay = 0.0f);
 	
 	virtual bool NetSerialize(TSerialize ser, EEntityAspects aspect, uint8 profile, int flags);
@@ -80,7 +81,7 @@ public:
 	virtual bool UpdateAimAnims(SParams_WeaponFPAiming &aimAnimParams);
 	virtual void UpdateIKMounted(IActor* pActor, const Vec3& vGunXAxis);
 
-	virtual void ProcessEvent(SEntityEvent& event);
+	virtual void ProcessEvent(const SEntityEvent& event);
 
 	virtual void Select(bool select);
 

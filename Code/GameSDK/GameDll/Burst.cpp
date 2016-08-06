@@ -66,9 +66,6 @@ void CBurst::Update(float frameTime, uint32 frameId)
 		}
 	}
 
-	if (m_fireTriggerDown || m_bursting)
-		m_pWeapon->RequireUpdate(eIUS_FireMode);
-
 	m_next_burst -= frameTime;
 	if (m_next_burst <= 0.0f)
 		m_next_burst = 0.0f;

@@ -19,10 +19,12 @@ private:
 	typedef CGrenade BaseClass;
 
 public:
+	DECLARE_COMPONENT("EMPGrenade", 0x0B944D89A67C4BD9, 0x89BC9D8840035EC0)
+
 	CEMPGrenade();
 	virtual ~CEMPGrenade();
 
-	virtual void Update( SEntityUpdateContext &ctx, int updateSlot);
+	virtual void Update( SEntityUpdateContext &ctx);
 	virtual void HandleEvent(const SGameObjectEvent &event);
 
 private:

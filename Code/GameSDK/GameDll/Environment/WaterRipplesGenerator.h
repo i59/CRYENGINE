@@ -16,13 +16,10 @@ History:
 
 #pragma once
 
-#include <IGameObject.h>
-
-
 #define WATER_RIPPLES_EDITING_ENABLED 1
 
 
-class CWaterRipplesGenerator : public CGameObjectExtensionHelper<CWaterRipplesGenerator, IGameObjectExtension>
+class CWaterRipplesGenerator : public CEntityComponentConversionHelper<CWaterRipplesGenerator>
 {
 
 	struct SProperties
@@ -57,10 +54,12 @@ class CWaterRipplesGenerator : public CGameObjectExtensionHelper<CWaterRipplesGe
 	};
 
 public:
+	DECLARE_COMPONENT("WaterRipplesGenerator", 0x33703BD9E96C42BA, 0xBD36FAA3A2475C32)
+
 	CWaterRipplesGenerator();
 	virtual ~CWaterRipplesGenerator();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init(IGameObject *pGameObject);
 	virtual void InitClient(int channelId) {};
 	virtual void PostInit(IGameObject *pGameObject);
@@ -74,17 +73,17 @@ public:
 	virtual void PostSerialize() {}
 	virtual void SerializeSpawnInfo( TSerialize ser ) {}
 	virtual ISerializableInfoPtr GetSpawnInfo() {return 0;}
-	virtual void Update( SEntityUpdateContext &ctx, int updateSlot);
+	virtual void Update( SEntityUpdateContext &ctx);
 	virtual void PostUpdate(float frameTime ) {};
 	virtual void PostRemoteSpawn() {};
 	virtual void HandleEvent( const SGameObjectEvent &gameObjectEvent );
-	virtual void ProcessEvent(SEntityEvent &);
+	virtual void ProcessEvent(const SEntityEvent &);
 	virtual void ProcessHit(bool isMoving);
 	virtual void SetChannelId(uint16 id) {}
 	virtual void SetAuthority(bool auth){};
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const { pSizer->Add(*this); }
 
-	//~IGameObjectExtension
+	// ~IEntityComponent
 
 private:
 

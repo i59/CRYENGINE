@@ -177,7 +177,7 @@ void CFlock::DeleteEntities( bool bForceDeleteAll )
 {
 	if (m_pEntity)
 	{
-		IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)m_pEntity->GetProxy(ENTITY_PROXY_RENDER);
+		IEntityRenderComponent *pRenderProxy = (IEntityRenderComponent*)m_pEntity->QueryComponent<IEntityRenderComponent>();
 		if (pRenderProxy)
 			pRenderProxy->ClearSlots();
 	}
@@ -200,7 +200,7 @@ void CFlock::DeleteEntities( bool bForceDeleteAll )
 			IEntity *pBoidEntity = gEnv->pEntitySystem->GetEntity(boid->m_entity);
 			if (pBoidEntity)
 			{
-				CBoidObjectProxy *pBoidObjectProxy = static_cast<CBoidObjectProxy *>(pBoidEntity->GetProxy(ENTITY_PROXY_BOID_OBJECT));
+				CBoidObjectProxy *pBoidObjectProxy = static_cast<CBoidObjectProxy *>(pBoidEntity->QueryComponent<CBoidObjectProxy>());
 
 				if (pBoidObjectProxy)
 					pBoidObjectProxy->SetBoid(0);
@@ -272,7 +272,7 @@ void CFlock::SetPercentEnabled( int percent )
 //////////////////////////////////////////////////////////////////////////
 void CFlock::UpdateBoidsViewDistRatio()
 {
-	IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)m_pEntity->GetProxy(ENTITY_PROXY_RENDER);
+	IEntityRenderComponent *pRenderProxy = (IEntityRenderComponent*)m_pEntity->QueryComponent<IEntityRenderComponent>();
 	if (pRenderProxy)
 	{
 		m_nViewDistRatio = pRenderProxy->GetRenderNode()->GetViewDistRatio();
@@ -284,7 +284,7 @@ void CFlock::UpdateBoidsViewDistRatio()
 		IEntity *pBoidEntity = gEnv->pEntitySystem->GetEntity(boid->m_entity);
 		if (pBoidEntity)
 		{
-			pRenderProxy = (IEntityRenderProxy*)pBoidEntity->GetProxy(ENTITY_PROXY_RENDER);
+			pRenderProxy = (IEntityRenderComponent*)pBoidEntity->QueryComponent<IEntityRenderComponent>();
 			if (pRenderProxy)
 			{
 				pRenderProxy->GetRenderNode()->SetViewDistRatio(m_nViewDistRatio);
@@ -368,7 +368,7 @@ void CFlock::Update( CCamera *pCamera )
 	//////////////////////////////////////////////////////////////////////////
 
 	//////////////////////////////////////////////////////////////////////////
-	IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)m_pEntity->GetProxy(ENTITY_PROXY_RENDER);
+	IEntityRenderComponent *pRenderProxy = (IEntityRenderComponent*)m_pEntity->QueryComponent<IEntityRenderComponent>();
 	if (pRenderProxy)
 	{
 		if (pRenderProxy->GetRenderNode()->GetViewDistRatio() != m_nViewDistRatio)
@@ -659,8 +659,7 @@ bool CFlock::CreateEntities()
 		boid->m_noentity = false;
 		boid->m_entity = pBoidEntity->GetId();
 
-		CBoidObjectProxyPtr pBoidObjectProxy = ComponentCreateAndRegister_DeleteWithRelease<CBoidObjectProxy>( IComponent::SComponentInitializer(pBoidEntity), true );
-		pBoidEntity->SetProxy(ENTITY_PROXY_BOID_OBJECT,pBoidObjectProxy);
+		auto *pBoidObjectProxy = &pBoidEntity->AcquireComponent<CBoidObjectProxy>();
 		pBoidObjectProxy->SetBoid(boid);
 
 		// check if character.
@@ -713,7 +712,7 @@ bool CFlock::CreateEntities()
 
 		boid->Physicalize(m_bc);
 
-		IEntityRenderProxy *pRenderProxy = (IEntityRenderProxy*)pBoidEntity->GetProxy(ENTITY_PROXY_RENDER);
+		IEntityRenderComponent *pRenderProxy = (IEntityRenderComponent*)pBoidEntity->QueryComponent<IEntityRenderComponent>();
 		if (pRenderProxy != NULL && m_bc.fBoidRadius > 0)
 		{
 			float r = m_bc.fBoidRadius;

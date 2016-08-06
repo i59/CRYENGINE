@@ -297,7 +297,7 @@ void CBullet::HandleEvent(const SGameObjectEvent &event)
 		if (CheckAnyProjectileFlags(ePFlag_destroying))
 			return;
 
-		EventPhysCollision *pCollision = reinterpret_cast<EventPhysCollision *>(event.ptr);
+		EventPhysCollision *pCollision = reinterpret_cast<EventPhysCollision *>(event.param);
 		if (!pCollision)
 			return;
 

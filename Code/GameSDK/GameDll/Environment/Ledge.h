@@ -16,9 +16,8 @@ History:
 #ifndef _LEDGE_H_
 #define _LEDGE_H_
 
-#include <IGameObject.h>
 
-class CLedgeObject : public CGameObjectExtensionHelper<CLedgeObject, IGameObjectExtension>
+class CLedgeObject : public CEntityComponentConversionHelper<CLedgeObject>
 {
 	struct LedgeProperties
 	{
@@ -36,11 +35,12 @@ class CLedgeObject : public CGameObjectExtensionHelper<CLedgeObject, IGameObject
 	};
 
 public:
+	DECLARE_COMPONENT("LedgeObject", 0xDD114208F0434EF1, 0x954ADA24CBDD430A)
 
 	CLedgeObject();
 	virtual ~CLedgeObject();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init( IGameObject * pGameObject );
 	virtual void InitClient( int channelId ) {};
 	virtual void PostInit( IGameObject * pGameObject );
@@ -54,15 +54,15 @@ public:
 	virtual void PostSerialize() {};
 	virtual void SerializeSpawnInfo( TSerialize ser ) {}
 	virtual ISerializableInfoPtr GetSpawnInfo() {return 0;}
-	virtual void Update( SEntityUpdateContext& ctx, int slot ) { };
+	virtual void Update( SEntityUpdateContext& ctx ) { };
 	virtual void HandleEvent( const SGameObjectEvent& gameObjectEvent );
-	virtual void ProcessEvent( SEntityEvent& entityEvent );
+	virtual void ProcessEvent(const SEntityEvent& entityEvent );
 	virtual void SetChannelId( uint16 id ) {};
 	virtual void SetAuthority( bool auth ) {};
 	virtual void PostUpdate( float frameTime ) { CRY_ASSERT(false); }
 	virtual void PostRemoteSpawn() {};
 	virtual void GetMemoryUsage( ICrySizer *pSizer ) const;
-	// ~IGameObjectExtension
+	// ~IEntityComponent
 
 protected:
 

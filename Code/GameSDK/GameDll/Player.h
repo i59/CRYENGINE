@@ -589,10 +589,10 @@ public:
 	virtual bool ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) override;
 	virtual void PostReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params ) override;
 	virtual bool GetEntityPoolSignature( TSerialize signature ) override;
-	virtual void ProcessEvent(SEntityEvent& event) override;
+	virtual void ProcessEvent(const SEntityEvent& event) override;
 	virtual void SetAuthority( bool auth ) override;
-	virtual void SerializeXML( XmlNodeRef& node, bool bLoading ) override;
-	virtual void Update(SEntityUpdateContext& ctx, int updateSlot) override;
+	virtual void SerializeXML( XmlNodeRef& node, bool bLoading, bool bFromInit ) override;
+	virtual void Update(SEntityUpdateContext& ctx) override;
 	virtual void SerializeSpawnInfo( TSerialize ser ) override;
 	virtual ISerializableInfoPtr GetSpawnInfo() override;
 
@@ -1544,7 +1544,7 @@ protected:
 
 
 	IInteractor*         m_pInteractor;
-	IEntityAudioProxyPtr m_pIEntityAudioProxy;
+	IEntityAudioComponent* m_pIEntityAudioProxy;
 	AudioControlId      m_waterEnter;
 	AudioControlId      m_waterExit;
 	AudioControlId      m_waterDiveIn;

@@ -14,7 +14,6 @@
 #include "ScriptBind_Weapon.h"
 #include "Item.h"
 #include "Weapon.h"
-#include "IGameObject.h"
 #include "Actor.h"
 
 

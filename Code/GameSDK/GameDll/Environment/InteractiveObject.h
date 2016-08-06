@@ -17,7 +17,6 @@ History:
 #ifndef __CRYSIS2_INTERACTIVE_OBJECT_H__
 #define __CRYSIS2_INTERACTIVE_OBJECT_H__
 
-#include <IGameObject.h>
 #include "InteractiveObjectEnums.h"
 #include "ItemString.h"
 
@@ -25,7 +24,7 @@ History:
 
 #define INTERACTIVE_OBJECT_EX_ANIMATIONS_DEBUG	0
 
-class CInteractiveObjectEx : public CGameObjectExtensionHelper<CInteractiveObjectEx, IGameObjectExtension>
+class CInteractiveObjectEx : public CEntityComponentConversionHelper<CInteractiveObjectEx>
 {
 
 private:
@@ -51,10 +50,12 @@ private:
 	};
 
 public:
+	DECLARE_COMPONENT("InteractiveObjectEx", 0xCF378F21D95D4458, 0xA2C5D712D5444E70)
+
 	CInteractiveObjectEx();
 	virtual ~CInteractiveObjectEx();
 
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init(IGameObject *pGameObject);
 	virtual void InitClient(int channelId);
 	virtual void PostInit(IGameObject *pGameObject);
@@ -68,15 +69,15 @@ public:
 	virtual void PostSerialize();
 	virtual void SerializeSpawnInfo( TSerialize ser );
 	virtual ISerializableInfoPtr GetSpawnInfo();
-	virtual void Update( SEntityUpdateContext &ctx, int updateSlot);
+	virtual void Update( SEntityUpdateContext &ctx);
 	virtual void PostUpdate(float frameTime );
 	virtual void PostRemoteSpawn();
 	virtual void HandleEvent( const SGameObjectEvent &goEvent);
-	virtual void ProcessEvent(SEntityEvent &entityEvent);
+	virtual void ProcessEvent(const SEntityEvent &entityEvent);
 	virtual void SetChannelId(uint16 id);
 	virtual void SetAuthority(bool auth);
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
-	//~IGameObjectExtension
+	// ~IEntityComponent
 
 	//Script callbacks
 	int CanUse(EntityId entityId) const;

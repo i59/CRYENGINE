@@ -32,9 +32,6 @@ History:
 
 #include "Weapon.h"
 
-#include "IGameObject.h"
-
-
 void CPlayerStateUtil::CalculateGroundOrJumpMovement( const CPlayer& player, const SActorFrameMovementParams &movement, const bool bigWeaponRestrict, Vec3 &move )
 {
 	const bool isPlayer = player.IsPlayer();
@@ -323,23 +320,21 @@ void CPlayerStateUtil::UpdatePlayerPhysicsStats( CPlayer& player, SActorPhysics&
 		{
 			if( actorPhysics.groundColliderId )
 			{
-				if( IGameObject* pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject( actorPhysics.groundColliderId ) )
+				if(auto *pEntity = gEnv->pEntitySystem->GetEntity(actorPhysics.groundColliderId))
 				{
-					SGameObjectEvent event( eGFE_StoodOnChange, eGOEF_ToExtensions );
-					event.ptr = &player;
-					event.paramAsBool  = false;
-					pGameObject->SendEvent(event);
+					bool bEntered = false;
+
+					pEntity->SendComponentEvent(eGFE_StoodOnChange, &bEntered);
 				}
 			}
 
 			if( newGroundColliderId )
 			{
-				if( IGameObject* pGameObject = gEnv->pGame->GetIGameFramework()->GetGameObject( newGroundColliderId ) )
+				if (auto *pEntity = gEnv->pEntitySystem->GetEntity(newGroundColliderId))
 				{
-					SGameObjectEvent event( eGFE_StoodOnChange, eGOEF_ToExtensions );
-					event.ptr = &player;
-					event.paramAsBool  = true;
-					pGameObject->SendEvent(event);
+					bool bEntered = true;
+
+					pEntity->SendComponentEvent(eGFE_StoodOnChange, &bEntered);
 				}
 			}
 

@@ -100,7 +100,7 @@ void CClientKillCamSender::SendData()
 		}
 		void *pData=m_buffer.GetData(size);
 		CActor::KillCamFPData packet(m_inflightPacket.packetType, m_inflightPacket.packetID, (m_inflightPacket.dataOffset/k_packetDataSize)+m_inflightPacket.packetOffset, m_inflightPacket.victim, size, pData, bFinalPacket, m_inflightPacket.bToEveryone);
-		m_inflightPacket.pShooter->GetGameObject()->InvokeRMI(CActor::SvKillFPCamData(), packet, eRMI_ToServer);
+		m_inflightPacket.pShooter->InvokeRMI(CActor::SvKillFPCamData(), packet, eRMI_ToServer);
 		if (packet.m_bToEveryone) // Send to self
 		{
 			CRecordingSystem *pRecordingSystem = g_pGame->GetRecordingSystem();

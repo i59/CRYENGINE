@@ -59,7 +59,7 @@ namespace PlayerActor
 };
 
 class CActor :
-	public CGameObjectExtensionHelper<CActor, IActor, 40>,
+	public CEntityComponentConversionHelper<CActor, IActor, 40>,
 	public IGameObjectView,
 	public IGameObjectProfileManager
 {
@@ -75,6 +75,7 @@ protected:
 
 
 public:
+	DECLARE_COMPONENT("Actor", 0x55453D957DDA4BA6, 0xAC74D6E3E0F8359F)
 
 	struct ItemIdParam
 	{
@@ -520,8 +521,7 @@ public:
 	virtual ~CActor();
 
 	// IEntityEvent
-	virtual	void ProcessEvent( SEntityEvent &event );
-	virtual IComponent::ComponentEventPriority GetEventPriority( const int eventID ) const;
+	virtual	void ProcessEvent(const SEntityEvent &event );
 	// ~IEntityEvent
 
 	// IActor
@@ -546,7 +546,7 @@ public:
 	virtual bool ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params );
 	virtual void PostReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params );
 	virtual bool GetEntityPoolSignature( TSerialize signature );
-	virtual void Update(SEntityUpdateContext& ctx, int updateSlot);
+	virtual void Update(SEntityUpdateContext& ctx);
 	virtual void UpdateView(SViewParams &viewParams) {};
 	virtual void PostUpdateView(SViewParams &viewParams) {};
 	void UpdateBodyDestruction(float frameTime);
@@ -1050,8 +1050,6 @@ protected:
 	bool IsBodyDamageFlag(const HitInfo &hitInfo, EBodyDamagePIDFlags) const;
 
 	void SetupLocalPlayer();
-
-	void UpdateAutoDisablePhys(bool bRagdoll);
 
 	void RequestServerResync()
 	{

@@ -115,7 +115,7 @@ void CRain::FullSerialize(TSerialize ser)
 }
 
 //------------------------------------------------------------------------
-void CRain::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CRain::Update(SEntityUpdateContext &ctx)
 {
 	const IActor * pClient = g_pGame->GetIGameFramework()->GetClientActor();
 	if (pClient && Reset())
@@ -155,7 +155,7 @@ void CRain::HandleEvent(const SGameObjectEvent &event)
 }
 
 //------------------------------------------------------------------------
-void CRain::ProcessEvent(SEntityEvent &event)
+void CRain::ProcessEvent(const SEntityEvent &event)
 {
 	switch (event.event)
 	{

@@ -10,7 +10,6 @@
 #include "AI/AIBattleFront.h"
 #include "AI/AICorpse.h"
 #include "GunTurret.h"
-#include <GameObjects/GameObject.h>
 #include "Turret/Turret/Turret.h"
 
 void CFlowNode_BattleFrontControl::GetConfiguration( SFlowNodeConfig& config )
@@ -115,12 +114,8 @@ static CTurret* GetCTurret(IEntity& entity)
 
 	if (strcmp(entityClassName, "Turret") == 0)
 	{
-		if (IEntityProxy* pUserProxy = entity.GetProxy(ENTITY_PROXY_USER))
-		{
-			CGameObject* pGameObject = static_cast<CGameObject*>(pUserProxy);
-			CTurret* pTurret = static_cast<CTurret*>(pGameObject->QueryExtension("Turret"));
-			return pTurret;
-		}
+		CTurret* pTurret = static_cast<CTurret*>(entity.QueryComponent<CTurret>());
+		return pTurret;
 	}
 
 	return NULL;

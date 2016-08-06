@@ -18,8 +18,6 @@
 # pragma once
 #endif
 
-
-#include <IGameObject.h>
 #include <IGameRulesSystem.h>
 #include <IItemSystem.h>
 #include "Game.h"
@@ -30,6 +28,8 @@
 #include "Audio/AudioSignalPlayer.h"
 #include "Utility/CryHash.h"
 #include "Voting.h"
+
+#include "EntityComponentWrappers.h"
 
 #define MAX_CONCURRENT_EXPLOSIONS 64
 
@@ -377,7 +377,7 @@ struct SPathFollowingAttachToPathParameters
 
 
 
-class CGameRules :	public CGameObjectExtensionHelper<CGameRules, IGameRules, GAME_RULES_TOTAL_RMI_COUNT>, 
+class CGameRules :	public CEntityComponentConversionHelper<CGameRules, IWrappedGameRules, GAME_RULES_TOTAL_RMI_COUNT>, 
 										public IViewSystemListener,
 										public IGameFrameworkListener,
 										public IHostMigrationEventListener,
@@ -386,6 +386,7 @@ class CGameRules :	public CGameObjectExtensionHelper<CGameRules, IGameRules, GAM
 										public ISystemEventListener
 {
 public:
+	DECLARE_COMPONENT("GameRules", 0x805D256FC6014DEB, 0x828BE1727B0E065E)
 
 	typedef std::vector<EntityId>								TPlayers;
 	typedef std::vector<EntityId>								TSpawnLocations;
@@ -461,7 +462,7 @@ public:
 
 	CGameRules();
 	virtual ~CGameRules();
-	//IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init( IGameObject * pGameObject );
 	virtual void PostInit( IGameObject * pGameObject );
 	virtual void InitClient(int channelId);
@@ -475,16 +476,16 @@ public:
 	virtual void PostSerialize();
 	virtual void SerializeSpawnInfo( TSerialize ser ) {}
 	virtual ISerializableInfoPtr GetSpawnInfo() {return 0;}
-	virtual void Update( SEntityUpdateContext& ctx, int updateSlot );
-	virtual void HandleEvent( const SGameObjectEvent& );
-	virtual void ProcessEvent( SEntityEvent& );
+	virtual void Update(SEntityUpdateContext& ctx);
+	virtual void HandleEvent(const SGameObjectEvent&);
+	virtual void ProcessEvent(const SEntityEvent& );
 	virtual void SetChannelId(uint16 id) {};
 	virtual void SetAuthority( bool auth );
 	virtual void PostUpdate( float frameTime );
 	virtual void PostRemoteSpawn() {};
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
 	
-	//~IGameObjectExtension
+	// ~IEntityComponent
 
 	// IViewSystemListener
 	virtual bool OnBeginCutScene(IAnimSequence* pSeq, bool bResetFX);
@@ -590,7 +591,7 @@ public:
 	// ~IHostMigrationEventListener
 
 	// IEntityEventListener
-	virtual void OnEntityEvent(IEntity *pEntity, SEntityEvent &event);
+	virtual void OnEntityEvent(IEntity *pEntity, const SEntityEvent &event);
 	// ~IEntityEventListener
 
 	// IInputEventListener

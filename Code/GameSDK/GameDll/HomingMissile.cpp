@@ -105,7 +105,7 @@ void CHomingMissile::Launch(const Vec3 &pos, const Vec3 &dir, const Vec3 &veloci
 					INetContext *pNetContext = pFramework->GetNetContext();	
 					if(pNetContext)
 					{
-						pNetContext->DelegateAuthority(GetEntityId(), pActor->GetGameObject()->GetNetChannel()); 
+						pNetContext->DelegateAuthority(GetEntityId(), static_cast<CActor *>(pActor)->GetGameObject()->GetNetChannel());
 					}
 				}
 			}
@@ -114,12 +114,12 @@ void CHomingMissile::Launch(const Vec3 &pos, const Vec3 &dir, const Vec3 &veloci
 }
 
 //------------------------------------------------------------------------
-void CHomingMissile::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CHomingMissile::Update(SEntityUpdateContext &ctx)
 {
 
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 
-	CRocket::Update(ctx, updateSlot);
+	CRocket::Update(ctx);
 
 	if (m_controlLostTimer > 0.0f)
 	{

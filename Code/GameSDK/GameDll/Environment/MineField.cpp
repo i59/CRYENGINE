@@ -16,23 +16,7 @@ History:
 
 #include "../TacticalManager.h"
 #include "EntityUtility/EntityScriptCalls.h"
-#include <GameObjects/GameObject.h>
 #include "UI/HUD/HUDEventDispatcher.h"
-
-namespace MF
-{
-	void RegisterEvents( IGameObjectExtension& goExt, IGameObject& gameObject )
-	{
-		const int events[] = {	eGFE_ScriptEvent,
-
-														eMineEventListenerGameObjectEvent_Enabled, 
-														eMineEventListenerGameObjectEvent_Disabled, 
-														eMineEventListenerGameObjectEvent_Destroyed};
-
-		gameObject.UnRegisterExtForEvents( &goExt, NULL, 0 );
-		gameObject.RegisterExtForEvents( &goExt, events, (sizeof(events) / sizeof(int)) );
-	}
-}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -59,15 +43,12 @@ bool CMineField::Init( IGameObject * pGameObject )
 
 void CMineField::PostInit( IGameObject * pGameObject )
 {
-	MF::RegisterEvents( *this, *pGameObject );
-
 	Reset( !gEnv->IsEditor() );
 }
 
 bool CMineField::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
 {
 	ResetGameObject();
-	MF::RegisterEvents( *this, *pGameObject );
 
 	CRY_ASSERT_MESSAGE(false, "CMineField::ReloadExtension not implemented");
 
@@ -125,7 +106,7 @@ void CMineField::FullSerialize( TSerialize serializer )
 	}
 }
 
-void CMineField::Update( SEntityUpdateContext& ctx, int slot )
+void CMineField::Update( SEntityUpdateContext& ctx )
 {
 }
 
@@ -228,7 +209,7 @@ void CMineField::HandleEvent( const SGameObjectEvent& gameObjectEvent )
 	}
 }
 
-void CMineField::ProcessEvent( SEntityEvent& entityEvent )
+void CMineField::ProcessEvent(const SEntityEvent& entityEvent )
 {
 	switch(entityEvent.event)
 	{
@@ -337,12 +318,11 @@ void CMineField::NotifyMineEvent( const EntityId targetEntity, const EMineGameOb
 	IEntity* pEntity = gEnv->pEntitySystem->GetEntity( targetEntity );
 	if (pEntity)
 	{
-		CGameObject* pGameObject = static_cast<CGameObject*>(pEntity->GetProxy(ENTITY_PROXY_USER));
+		IGameObject* pGameObject = static_cast<IGameObject*>(pEntity->QueryComponent<IGameObject>());
 		if (pGameObject != NULL)
 		{
 			const EntityId thisEntityId = GetEntityId();
-			SGameObjectEvent goEvent( (uint32)event, eGOEF_ToExtensions, IGameObjectSystem::InvalidExtensionID, (void*)(&(thisEntityId)) ); // This entity's id is sent as parameter
-			pGameObject->SendEvent( goEvent );
+			pEntity->SendComponentEvent(event, (void*)(&(thisEntityId)));
 		}
 	}
 }

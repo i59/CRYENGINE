@@ -91,7 +91,7 @@ void CFlashLight::EnableLight(bool enable)
 
 		if (pOwner)
 		{
-			IEntityRenderProxy* pRenderProxy = static_cast<IEntityRenderProxy*>(pOwner->GetEntity()->GetProxy(ENTITY_PROXY_RENDER));
+			IEntityRenderComponent* pRenderProxy = static_cast<IEntityRenderComponent*>(pOwner->GetEntity()->QueryComponent<IEntityRenderComponent>());
 
 			if (pRenderProxy)
 			{
@@ -179,8 +179,6 @@ void CFlashLight::EnableFogVolume(CWeapon* pWeapon, int slot, bool enable)
 		}
 
 		EntityScripts::CallScriptFunction(pFogVolume, pFogVolume->GetScriptTable(), "OnPropertyChange");
-
-		pFogVolume->Activate(true);
 	}
 	else
 	{

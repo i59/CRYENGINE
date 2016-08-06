@@ -45,7 +45,7 @@ bool CMPPath::GetEntityPoolSignature( TSerialize signature )
 	return true;
 }
 
-void CMPPath::ProcessEvent( SEntityEvent& details )
+void CMPPath::ProcessEvent(const SEntityEvent& details )
 {
 	if(details.event == ENTITY_EVENT_LEVEL_LOADED)
 	{

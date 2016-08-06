@@ -42,13 +42,6 @@ namespace
 		return (pLightingGunClass == pItemClass);
 	}
 
-	void RegisterEvents( IGameObjectExtension& goExt, IGameObject& gameObject )
-	{
-		const int eventID = eCGE_ItemTakenFromCorpse;
-		gameObject.UnRegisterExtForEvents( &goExt, NULL, 0 );
-		gameObject.RegisterExtForEvents( &goExt, &eventID, 1 );
-	}
-
 	struct SCorpseRemovalScore
 	{
 		SCorpseRemovalScore( const EntityId _corpseId )
@@ -142,14 +135,11 @@ bool CAICorpse::Init( IGameObject * pGameObject )
 
 void CAICorpse::PostInit( IGameObject * pGameObject )
 {
-	RegisterEvents( *this, *pGameObject );
 }
 
 bool CAICorpse::ReloadExtension( IGameObject * pGameObject, const SEntitySpawnParams &params )
 {
 	ResetGameObject();
-
-	RegisterEvents( *this, *pGameObject );
 
 	CRY_ASSERT_MESSAGE(false, "CAICorpse::ReloadExtension not implemented");
 
@@ -200,7 +190,7 @@ void CAICorpse::FullSerialize( TSerialize ser )
 					ser.EndGroup();
 				}
 		
-				IEntityPhysicalProxy* pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS));
+				IEntityPhysicsComponent* pPhysicsProxy = static_cast<IEntityPhysicsComponent*>(GetEntity()->QueryComponent<IEntityPhysicsComponent>());
 				if(ser.BeginOptionalGroup("characterPhysics", pPhysicsProxy != NULL))
 				{
 					assert(pPhysicsProxy != NULL);
@@ -246,7 +236,7 @@ void CAICorpse::FullSerialize( TSerialize ser )
 				ser.EndGroup();
 			}
 	
-			IEntityPhysicalProxy* pPhysicsProxy = static_cast<IEntityPhysicalProxy*>(GetEntity()->GetProxy(ENTITY_PROXY_PHYSICS));
+			IEntityPhysicsComponent* pPhysicsProxy = static_cast<IEntityPhysicsComponent*>(GetEntity()->QueryComponent<IEntityPhysicsComponent>());
 			if(ser.BeginOptionalGroup("characterPhysics", pPhysicsProxy != NULL))
 			{
 				assert(pPhysicsProxy != NULL);
@@ -718,7 +708,7 @@ void CAICorpseManager::Update( const float frameTime )
 			}
 			else if(cullPhysics != corpseInfo.flags.AreAllFlagsActive( CorpseInfo::eFlag_PhysicsDisabled ))
 			{
-				IEntityPhysicalProxy* pCorpsePhysicsProxy = static_cast<IEntityPhysicalProxy*>(pCorpseEntity->GetProxy( ENTITY_PROXY_PHYSICS ));
+				IEntityPhysicsComponent* pCorpsePhysicsProxy = static_cast<IEntityPhysicsComponent*>(pCorpseEntity->QueryComponent<IEntityPhysicsComponent>());
 				if (pCorpsePhysicsProxy != NULL)
 				{
 					//Simulate entity event to enable/disable physics

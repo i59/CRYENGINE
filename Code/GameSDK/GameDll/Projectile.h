@@ -2,7 +2,6 @@
 
 #pragma once
 
-#include <IGameObject.h>
 #include "IGameRulesSystem.h"
 #include "IItemSystem.h"
 #include "TracerManager.h"
@@ -27,11 +26,12 @@ namespace Projectile
 typedef std::vector<EntityId> TActorIds;
 
 class CProjectile :
-	public CGameObjectExtensionHelper<CProjectile, IGameObjectExtension>,
+	public CEntityComponentConversionHelper<CProjectile>,
 	public IHitListener,	public IGameObjectProfileManager
 {
 public:
 	CRY_DECLARE_GTI_BASE(CProjectile);
+	DECLARE_COMPONENT("Projectile", 0xFBC660B253794D47, 0xAE4011996E6812C5)
 
 	enum ProjectileTimer
 	{
@@ -142,7 +142,7 @@ public:
 	CProjectile();
 	virtual ~CProjectile();
 	
-	// IGameObjectExtension
+	// IEntityComponent
 	virtual bool Init(IGameObject *pGameObject);
 	virtual void InitClient(int channelId) {};
 	virtual void PostInit(IGameObject *pGameObject);
@@ -157,16 +157,16 @@ public:
 	virtual void PostSerialize();
 	virtual void SerializeSpawnInfo( TSerialize ser );
 	virtual ISerializableInfoPtr GetSpawnInfo();
-	virtual void Update( SEntityUpdateContext &ctx, int updateSlot);	
+	virtual void Update( SEntityUpdateContext &ctx);	
 	virtual void PostUpdate(float frameTime ) {};
 	virtual void PostRemoteSpawn();
 	virtual void HandleEvent( const SGameObjectEvent &);
-	virtual void ProcessEvent(SEntityEvent &);
+	virtual void ProcessEvent(const SEntityEvent &);
 	virtual void SetChannelId(uint16 id) {};
 	virtual void SetAuthority(bool auth);
 	virtual void GetMemoryUsage(ICrySizer *pSizer) const;
 	virtual int  GetMemorySize() { return sizeof(*this); };
-	//~IGameObjectExtension
+	// ~IEntityComponent
 
 	// IGameObjectProfileManager
 	virtual bool SetAspectProfile( EEntityAspects aspect, uint8 profile );
@@ -299,7 +299,7 @@ protected:
 
 	virtual void SetUpParticleParams(IEntity* pOwnerEntity, uint8 pierceabilityModifier);
 
-	IEntityAudioProxy *GetAudioProxy();
+	IEntityAudioComponent *GetAudioProxy();
 
 	void DestroyImmediate();
 

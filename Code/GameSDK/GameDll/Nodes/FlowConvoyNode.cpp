@@ -367,7 +367,7 @@ void CFlowConvoyNode::DiscoverConvoyCoaches(IEntity *pEntity)
 		//for (int i = 0; i < pEntity->GetChildCount(); i++)
 		//	pEntity->GetChild(i)->SetConvoyEntity();
 
-		//tc.m_pEntitySoundsProxy = (IEntityAudioProxy*) tc.m_pEntity->CreateProxy(ENTITY_PROXY_AUDIO);
+		//tc.m_pEntitySoundsProxy = (IEntityAudioComponent*) tc.m_pEntity->AcquireExternalComponent<IEntityAudioComponent>();
 		//assert(tc.m_pEntitySoundsProxy);
 
 		m_coaches.push_back(tc);
@@ -750,7 +750,7 @@ void CFlowConvoyNode::SetSoundParams()
 
 //tSoundID CFlowConvoyNode::PlayLineSound(int coachIndex, const char *sGroupAndSoundName, const Vec3 &vStart, const Vec3 &vEnd)
 //{
-//	//IEntityAudioProxy* pIEntityAudioProxy = m_coaches[coachIndex].m_pEntitySoundsProxy;
+//	//IEntityAudioComponent* pIEntityAudioProxy = m_coaches[coachIndex].m_pEntitySoundsProxy;
 //	//EntityId SkipEntIDs[1];
 //	//SkipEntIDs[0] = m_coaches[coachIndex].m_pEntity->GetId();
 //

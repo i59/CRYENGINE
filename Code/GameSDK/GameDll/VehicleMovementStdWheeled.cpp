@@ -867,7 +867,7 @@ void CVehicleMovementStdWheeled::Update(const float deltaTime)
 	UpdateSuspensionSound(deltaTime);
 	UpdateBrakes(deltaTime);
 
-  bool distant = m_pVehicle->IsProbablyDistant();
+  bool distant = !m_pVehicle->GetEntity()->WasInRangeLastFrame();
      
   if (gEnv->IsClient() && !distant)
     UpdateSounds(deltaTime);    
@@ -1079,8 +1079,8 @@ void CVehicleMovementStdWheeled::UpdateSuspension(const float deltaTime)
   float dt = max( deltaTime, 0.005f);
 
   IPhysicalEntity* pPhysics = GetPhysics();
-  bool visible = m_pVehicle->GetGameObject()->IsProbablyVisible();
-  bool distant = m_pVehicle->IsProbablyDistant();
+  bool visible = m_pVehicle->GetEntity()->WasVisibleLastFrame();
+  bool distant = !m_pVehicle->GetEntity()->WasInRangeLastFrame();
   
   // update suspension and friction, if needed      
   float speed = m_PhysDyn.v.len();
@@ -1373,8 +1373,8 @@ void CVehicleMovementStdWheeled::UpdateSuspensionSound(const float deltaTime)
   if (m_pVehicle->GetStatus().health <= 0.f)
     return;
 
-  const bool visible = m_pVehicle->GetGameObject()->IsProbablyVisible();
-  const bool distant = m_pVehicle->IsProbablyDistant();
+  const bool visible = m_pVehicle->GetEntity()->WasVisibleLastFrame();
+  const bool distant = !m_pVehicle->GetEntity()->WasInRangeLastFrame();
 
   if ( distant || !visible )
 	return;
@@ -1859,7 +1859,7 @@ void CVehicleMovementStdWheeled::UpdateSurfaceEffects(const float deltaTime)
     return;
 
   float distSq = m_pVehicle->GetEntity()->GetWorldPos().GetSquaredDistance(gEnv->pRenderer->GetCamera().GetPosition());
-  if (distSq > sqr(300.f) || (distSq > sqr(50.f) && !m_pVehicle->GetGameObject()->IsProbablyVisible()))
+  if (distSq > sqr(300.f) || (distSq > sqr(50.f) && !m_pVehicle->GetEntity()->WasVisibleLastFrame()))
     return;
 
   IPhysicalEntity* pPhysics = GetPhysics();

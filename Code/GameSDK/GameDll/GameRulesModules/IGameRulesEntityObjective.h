@@ -20,7 +20,6 @@
 # pragma once
 #endif
 
-#include "IGameObject.h"
 #include <CryNetwork/SerializeFwd.h>
 
 class IGameRulesEntityObjective

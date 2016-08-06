@@ -16,8 +16,6 @@ History:
 #include <CryEntitySystem/IEntitySystem.h>
 #include <CryScriptSystem/IScriptSystem.h>
 #include <IActionMapManager.h>
-#include <IGameObject.h>
-#include <IGameObjectSystem.h>
 #include <IVehicleSystem.h>
 #include "WeaponSystem.h"
 #include "Weapon.h"
@@ -624,9 +622,6 @@ bool CWeapon::NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile
 				m_shootCounter += ammo_diff;
 				m_fireCounter = data.m_fireCounter; 
 
-				if(m_shootCounter > 0 || m_isFiring || m_doMelee)
-					RequireUpdate(eIUS_FireMode);	// force update
-
 				EZoomState zoomState = GetZoomState();
 				bool isZooming = (zoomState == eZS_ZoomingIn || zoomState == eZS_ZoomedIn);
 				if (isZooming != data.m_zoomState)
@@ -671,7 +666,6 @@ bool CWeapon::NetSerialize( TSerialize ser, EEntityAspects aspect, uint8 profile
 				m_doMelee = true;
 				m_shootCounter = 0;
 				m_netNextShot = 0.f;
-				RequireUpdate(eIUS_FireMode);	// force update
 			}
 		}
 	}
@@ -956,82 +950,63 @@ void CWeapon::SerializeLTL(TSerialize ser)
 }
 
 //------------------------------------------------------------------------
-void CWeapon::Update( SEntityUpdateContext& ctx, int update)
+void CWeapon::Update( SEntityUpdateContext& ctx)
 {
 	FUNCTION_PROFILER(GetISystem(), PROFILE_GAME);
 
 	if (!IsDestroyed())
 	{
-		switch (update)
-		{
-		case eIUS_General:
-			{
-				bool requiresUpdate = m_heatController.Update(ctx.fFrameTime);
+		bool requiresUpdate = m_heatController.Update(ctx.fFrameTime);
 
-				const bool needsDofUpdate = (fabsf(s_dofSpeed) > 0.001f);
-				const bool dofSpeedNegative = (s_dofSpeed < 0.0f);
+		const bool needsDofUpdate = (fabsf(s_dofSpeed) > 0.001f);
+		const bool dofSpeedNegative = (s_dofSpeed < 0.0f);
 
-				m_snapToTargetTimer = max(m_snapToTargetTimer - ctx.fFrameTime, 0.0f);
+		m_snapToTargetTimer = max(m_snapToTargetTimer - ctx.fFrameTime, 0.0f);
 				
-				if (needsDofUpdate)
-				{
-					const float newDofValue = s_dofValue + (s_dofSpeed*ctx.fFrameTime);
-					s_dofValue = clamp_tpl(newDofValue, 0.0f, 1.0f);
+		if (needsDofUpdate)
+		{
+			const float newDofValue = s_dofValue + (s_dofSpeed*ctx.fFrameTime);
+			s_dofValue = clamp_tpl(newDofValue, 0.0f, 1.0f);
 
-					gEnv->p3DEngine->SetPostEffectParam("Dof_BlurAmount", s_dofValue);
+			gEnv->p3DEngine->SetPostEffectParam("Dof_BlurAmount", s_dofValue);
 
-					//GameWarning("Actual DOF value = %f",m_dofValue);
-					if(dofSpeedNegative)
-					{
-						const float newFocusValue = s_focusValue =(s_dofSpeed*ctx.fFrameTime*150.0f);
-						s_focusValue = newFocusValue; 
-						gEnv->p3DEngine->SetPostEffectParam("Dof_FocusLimit", 20.0f + newFocusValue);
-					}
-				}
+			//GameWarning("Actual DOF value = %f",m_dofValue);
+			if(dofSpeedNegative)
+			{
+				const float newFocusValue = s_focusValue =(s_dofSpeed*ctx.fFrameTime*150.0f);
+				s_focusValue = newFocusValue; 
+				gEnv->p3DEngine->SetPostEffectParam("Dof_FocusLimit", 20.0f + newFocusValue);
+			}
+		}
 
-				if(m_weaponNextShotTimer > 0.f)
-				{
-					m_weaponNextShotTimer -= ctx.fFrameTime;
-					requiresUpdate = true;
-				} 
+		if(m_weaponNextShotTimer > 0.f)
+		{
+			m_weaponNextShotTimer -= ctx.fFrameTime;
+			requiresUpdate = true;
+		} 
 
-				if (requiresUpdate)
-				{
-					RequireUpdate(eIUS_General);
-				}
-
-				if (IsSelected())
-					m_scopeReticule.Update(this);
+		if (IsSelected())
+			m_scopeReticule.Update(this);
 
 #ifdef SHOT_DEBUG
-				if(m_pShotDebug)
-				{
-					m_pShotDebug->Update(gEnv->pTimer->GetFrameTime());
-				}
-#endif //SHOT_DEBUG
-			}
-			break;
-
-		case eIUS_Zooming:
-			{
-				if (m_zm && m_stats.selected)
-				{
-					m_zm->Update(ctx.fFrameTime, ctx.nFrameID);
-				}
-			}
-			break;
-
-		case eIUS_FireMode:
-			{
-				NetUpdateFireMode(ctx);
-
-				if (m_fm)
-					m_fm->Update(ctx.fFrameTime, ctx.nFrameID);
-				if (m_melee)
-					m_melee->Update(ctx.fFrameTime, ctx.nFrameID);
-			}
-			break;
+		if(m_pShotDebug)
+		{
+			m_pShotDebug->Update(gEnv->pTimer->GetFrameTime());
 		}
+#endif //SHOT_DEBUG
+
+		if (m_zm && m_stats.selected)
+		{
+			m_zm->Update(ctx.fFrameTime, ctx.nFrameID);
+		}
+
+
+		NetUpdateFireMode(ctx);
+
+		if (m_fm)
+			m_fm->Update(ctx.fFrameTime, ctx.nFrameID);
+		if (m_melee)
+			m_melee->Update(ctx.fFrameTime, ctx.nFrameID);
 
 #ifndef _RELEASE
 		if (m_fm && IsSelected() && g_pGameCVars->i_debug_zoom_mods)
@@ -1040,7 +1015,7 @@ void CWeapon::Update( SEntityUpdateContext& ctx, int update)
 		}
 #endif
 
-		BaseClass::Update(ctx, update);
+		BaseClass::Update(ctx);
 
 		if (!IsOwnerClient())
 			return;
@@ -1082,12 +1057,10 @@ void CWeapon::PostUpdate(float frameTime )
 void CWeapon::HandleEvent(const SGameObjectEvent &evt)
 {
 	BaseClass::HandleEvent(evt);
-	if (evt.event == eGFE_PauseGame)
-		CancelCharge();
 }
 
 //------------------------------------------------------------------------
-void CWeapon::ProcessEvent(SEntityEvent& event)
+void CWeapon::ProcessEvent(const SEntityEvent& event)
 {
 	FUNCTION_PROFILER(gEnv->pSystem, PROFILE_GAME);
 
@@ -4332,7 +4305,7 @@ void CWeapon::PickUpAmmo( EntityId pickerId )
 
 	if (IsServer() && ammoChanged)
 	{
-		pPickerActor->GetGameObject()->InvokeRMIWithDependentObject(CActor::ClPickUp(), CActor::PickItemParams(GetEntityId(), m_stats.selected, true, true), eRMI_ToAllClients|eRMI_NoLocalCalls, GetEntityId());
+		pPickerActor->InvokeRMIWithDependentObject(CActor::ClPickUp(), CActor::PickItemParams(GetEntityId(), m_stats.selected, true, true), eRMI_ToAllClients|eRMI_NoLocalCalls, GetEntityId());
 	}
 
 	if (ammoChanged && !collectedAmmo.empty())
@@ -4612,8 +4585,6 @@ void CWeapon::AddShootHeatPulse( CActor* pOwnerActor, const float heatWeapon, co
 {
 	m_heatController.AddHeatPulse(heatWeapon, weaponHeatTime);
 	
-	RequireUpdate(eIUS_General);
-
 	if (pOwnerActor)
 	{
 		pOwnerActor->AddHeatPulse(heatOwner, ownerHeatTime);

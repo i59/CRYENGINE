@@ -226,7 +226,7 @@ void CLTAGGrenade::Launch(const Vec3 &pos, const Vec3 &dir, const Vec3 &velocity
 			pe_params_flags flags;
 			flags.flagsOR = pef_monitor_poststep;
 			pent->SetParams(&flags);
-			GetGameObject()->EnablePhysicsEvent(true, eEPE_OnPostStepImmediate);
+			EnableEvent(ENTITY_EVENT_PHYS_POSTSTEP);
 
 			// Did we launch this?
 			m_wasLaunchedByLocalPlayer = (m_ownerId == g_pGame->GetIGameFramework()->GetClientActorId()) ? 1 : 0;
@@ -261,9 +261,9 @@ void CLTAGGrenade::Launch(const Vec3 &pos, const Vec3 &dir, const Vec3 &velocity
 
 
 //------------------------------------------------------------------------
-void CLTAGGrenade::Update(SEntityUpdateContext &ctx, int updateSlot)
+void CLTAGGrenade::Update(SEntityUpdateContext &ctx)
 {
-	inherited::Update(ctx, updateSlot);
+	inherited::Update(ctx);
 
 	if(!HasFailedDetonation())
 	{
@@ -489,7 +489,7 @@ void CLTAGGrenade::ChangeState(EState state)
 
 void CLTAGGrenade::OnCollision(const SGameObjectEvent &event)
 {
-	EventPhysCollision *pCollision = (EventPhysCollision *)event.ptr;
+	EventPhysCollision *pCollision = (EventPhysCollision *)event.param;
 
 	if (gEnv->bMultiplayer && m_wasLaunchedByLocalPlayer)
 	{

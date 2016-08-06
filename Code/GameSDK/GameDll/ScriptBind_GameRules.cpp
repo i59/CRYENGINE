@@ -1054,7 +1054,7 @@ int CScriptBind_GameRules::CanUsePowerStruggleNode( IFunctionHandler *pH, Script
 				}
 
 				const EntityId childId = pChildEntity->GetId();
-				CEnvironmentalWeapon* pEnvWeapon = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(childId, "EnvironmentalWeapon"));
+				CEnvironmentalWeapon* pEnvWeapon = static_cast<CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(childId));
 				if(pEnvWeapon && pEnvWeapon->CanBeUsedByPlayer(pUserPlayer))
 				{
 					return pH->EndFunction(childId);

@@ -508,7 +508,6 @@ bool CFlowNode_FeatureTest::StartNextTestRun()
 		if (pSeqEntity)
 		{
 			pSeqEntity->Hide(false);
-			pSeqEntity->Activate(true);
 
 			m_running = true;
 			m_timeRunning = 0;
@@ -954,7 +953,6 @@ public:
 		Log("ForwardDir", pEntity->GetForwardDir(), depth);
 		Log("Guid", pEntity->GetGuid(), depth);
 		Log("EntityID", pEntity->GetId(), depth);
-		Log("UpdatePolicy", pEntity->GetUpdatePolicy(), depth);
 		AABB worldBounds;
 		pEntity->GetWorldBounds(worldBounds);
 		Log("WorldBounds", worldBounds, depth);
@@ -1073,7 +1071,6 @@ void CFlowNode_FeatureTest::ActivateAllEntities(bool activate)
 		if (pEnt)
 		{
 			pEnt->Hide(!activate);
-			pEnt->Activate(activate);
 		}
 	}
 }

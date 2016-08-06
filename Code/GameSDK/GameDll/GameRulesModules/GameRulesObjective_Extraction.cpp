@@ -1011,7 +1011,7 @@ void CGameRulesObjective_Extraction::NewFallbackGunForPickup(EntityId pickupEnti
 			{
 				spawnedFallbackGun->Hide(true);
 
-				CCarryEntity *pTick = static_cast<CCarryEntity*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(pickup->m_spawnedPickupEntityId, pickup->m_entityClass->GetName()));
+				CCarryEntity *pTick = static_cast<CCarryEntity*>(gEnv->pEntitySystem->QueryComponent<CCarryEntity>(pickup->m_spawnedPickupEntityId));
 				if (pTick)
 				{
 					pTick->SetSpawnedWeaponId(spawnedFallbackGun->GetId());
@@ -1351,7 +1351,7 @@ IEntity *CGameRulesObjective_Extraction::SpawnEntity( EntityId spawnAt, IEntityC
 		pSpawnedEntity = gEnv->pEntitySystem->SpawnEntity(params, true);
 		if (pSpawnedEntity)
 		{
-			IGameObject *pGameObject = g_pGame->GetIGameFramework()->GetGameObject(pSpawnedEntity->GetId());
+			IGameObject *pGameObject = gEnv->pEntitySystem->QueryComponent<IGameObject>(pSpawnedEntity->GetId());
 			if (pGameObject != NULL && spawnAt)
 			{
 				pGameObject->SetNetworkParent(spawnAt);
@@ -1992,7 +1992,7 @@ void CGameRulesObjective_Extraction::PickupReturnsCommon(SPickup *pickup, IEntit
 	UpdateGameStateText(eGameStateUpdate_TickReturned, pickup);
 }
 
-void CGameRulesObjective_Extraction::OnEntityEvent( IEntity *pEntity, SEntityEvent &event )
+void CGameRulesObjective_Extraction::OnEntityEvent( IEntity *pEntity, const SEntityEvent &event )
 {
 	if (gEnv->IsClient() && event.event == ENTITY_EVENT_DONE)
 	{
@@ -2382,7 +2382,7 @@ void CGameRulesObjective_Extraction::OnPickupSpawned(EExtractionSuitMode suitMod
 		DbgLog("[icons] CGameRulesObjective_Extraction::OnPickupSpawned: calling SetIconForPickup(%p) [entityId=%d]", pickup, pickupEnt);
 		SetIconForPickup(pickup);		// shouldn't need to do a set icon for all here.. some will not be setup early on anyway
 
-		IGameObject *pGameObject = g_pGame->GetIGameFramework()->GetGameObject(pickupEnt);
+		IGameObject *pGameObject = gEnv->pEntitySystem->QueryComponent<IGameObject>(pickupEnt);
 		if (pGameObject != NULL && spawnAtEnt)
 		{
 			pGameObject->SetNetworkParent(spawnAtEnt);
@@ -3150,7 +3150,7 @@ void CGameRulesObjective_Extraction::PhysicalizeEntityForPickup( SPickup *pickup
 {
 	if ((m_physicsType == ePhysType_Networked) && pickup->m_entityClass)
 	{
-		CCarryEntity *pNetPhysEnt = static_cast<CCarryEntity*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(pickup->m_spawnedPickupEntityId, pickup->m_entityClass->GetName()));
+		CCarryEntity *pNetPhysEnt = static_cast<CCarryEntity*>(gEnv->pEntitySystem->QueryComponent<CCarryEntity>(pickup->m_spawnedPickupEntityId));
 		if (pNetPhysEnt)
 		{
 			pNetPhysEnt->Physicalize(bEnable ? CNetworkedPhysicsEntity::ePhys_PhysicalizedRigid : CNetworkedPhysicsEntity::ePhys_NotPhysicalized);

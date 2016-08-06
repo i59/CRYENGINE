@@ -994,7 +994,7 @@ public:
 			IEntity* pEntity = gEnv->pEntitySystem->GetEntity(m_EntityId);
 			if(pEntity)
 			{
-				CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(m_EntityId, "EnvironmentalWeapon"));
+				CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(m_EntityId));
 				if(pEnvWeapon)
 				{
 					pEnvWeapon->UnregisterListener(this); 
@@ -1051,7 +1051,7 @@ public:
 					{
 						if(m_EntityId)
 						{
-							CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(m_EntityId, "EnvironmentalWeapon"));
+							CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(m_EntityId));
 							if(pEnvWeapon)
 							{
 								pEnvWeapon->UnregisterListener(this); 
@@ -1063,7 +1063,7 @@ public:
 						// Register for new
 						if(m_EntityId)
 						{
-							CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(m_EntityId, "EnvironmentalWeapon"));
+							CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(m_EntityId));
 							if(pEnvWeapon)
 							{
 								pEnvWeapon->RegisterListener(this); 
@@ -1766,7 +1766,7 @@ public:
 		}
 	}
 
-	virtual void OnEntityEvent( IEntity *pEntity,SEntityEvent &event )
+	virtual void OnEntityEvent( IEntity *pEntity, const SEntityEvent &event )
 	{
 		if(event.event == ENTITY_EVENT_DONE)
 		{

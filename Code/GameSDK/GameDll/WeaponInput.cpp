@@ -474,7 +474,7 @@ bool CWeapon::OnActionModify(EntityId actorId, const ActionId& actionId, int act
 			SetItemFlags( eIF_Transitioning );
 			ClearItemFlags( eIF_Modifying );
 
-			GetGameObject()->InvokeRMI(CItem::SvRequestLeaveModify(), CItem::EmptyParams(), eRMI_ToServer);
+		GetGameObject()->InvokeRMI(CItem::SvRequestLeaveModify(), CItem::EmptyParams(), eRMI_ToServer);
 		}
 		else
 		{
@@ -509,7 +509,7 @@ bool CWeapon::OnActionModify(EntityId actorId, const ActionId& actionId, int act
 				pStats->bIgnoreSprinting = true;
 			}
 
-			GetGameObject()->InvokeRMI(CItem::SvRequestEnterModify(), CItem::EmptyParams(), eRMI_ToServer);
+		GetGameObject()->InvokeRMI(CItem::SvRequestEnterModify(), CItem::EmptyParams(), eRMI_ToServer);
 		}
 	}
 

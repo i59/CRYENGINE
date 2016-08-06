@@ -128,7 +128,7 @@ void CGameRules::ClientHit(const HitInfo &hitInfo)
 
 	SanityCheckHitInfo(hitInfo, "CGameRules::ClientHit");
 
-	CEnvironmentalWeapon* pEnvWeap = static_cast<CEnvironmentalWeapon*>(g_pGame->GetIGameFramework()->QueryGameObjectExtension(hitInfo.targetId, "EnvironmentalWeapon"));
+	CEnvironmentalWeapon* pEnvWeap = gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(hitInfo.targetId);
 
 	EGameRulesTargetType targetType = EGRTT_Neutral;
 
@@ -401,7 +401,7 @@ void CGameRules::ProcessServerHit(const HitInfo& hitInfo)
 			{
 				float strength = pMelee->GetImpulseStrength();
 				static_cast<CPlayer*>(pTarget)->ApplyMeleeImpulse(hitInfo.dir, strength);
-				pTarget->GetGameObject()->InvokeRMIWithDependentObject(CPlayer::ClApplyMeleeImpulse(), CPlayer::SPlayerMeleeImpulseParams(hitInfo.dir, strength), eRMI_ToRemoteClients, hitInfo.targetId);
+				pTarget->InvokeRMIWithDependentObject(CPlayer::ClApplyMeleeImpulse(), CPlayer::SPlayerMeleeImpulseParams(hitInfo.dir, strength), eRMI_ToRemoteClients, hitInfo.targetId);
 			}
 		}
 	}
@@ -719,7 +719,7 @@ void CGameRules::CullEntitiesInExplosion(const ExplosionInfo &explosionInfo)
 				}
 
 				// if there is a flowgraph attached, never remove!
-				if (pEntity->GetProxy(ENTITY_PROXY_FLOWGRAPH) != 0)
+				if (pEntity->QueryComponent<IEntityFlowGraphComponent>() != 0)
 					continue;
 
 				IEntityClass* pClass = pEntity->GetClass();
@@ -727,7 +727,7 @@ void CGameRules::CullEntitiesInExplosion(const ExplosionInfo &explosionInfo)
 					continue;
 
 				// get bounding box
-				if (IEntityPhysicalProxy* pPhysProxy = (IEntityPhysicalProxy*)pEntity->GetProxy(ENTITY_PROXY_PHYSICS))
+				if (IEntityPhysicsComponent* pPhysProxy = (IEntityPhysicsComponent*)pEntity->QueryComponent<IEntityPhysicsComponent>())
 				{
 					AABB aabb;
 					pPhysProxy->GetWorldBounds(aabb);
@@ -1248,28 +1248,10 @@ void CGameRules::RetrieveCurrentHealthAndDeathForTarget(
 			health = pVehicle->GetStatus().health;
 			dead = (health <= 0);
 		}
-		else
+		else if(auto *pTurret = pEntity->QueryComponent<CTurret>())
 		{
-			IEntityClass* pTargetClass = pEntity->GetClass();
-			if (pTargetClass == s_pTurretClass)
-			{
-				assert(g_pGame != NULL);
-
-				IGameFramework* pGameFramework = g_pGame->GetIGameFramework();
-				assert(pGameFramework != NULL);
-
-				IGameObject* pGameObject = pGameFramework->GetGameObject(pEntity->GetId());
-				if (pGameObject != NULL)
-				{
-					IGameObjectExtension* pTurretExtension = pGameObject->QueryExtension("Turret");
-					if (pTurretExtension != NULL)
-					{
-						CTurret* pTurret = static_cast<CTurret*>(pTurretExtension);
-						health = pTurret->GetHealth();
-						dead = pTurret->IsDead();					
-					}
-				}
-			}
+			health = pTurret->GetHealth();
+			dead = pTurret->IsDead();	
 		}
 	}
 
@@ -2139,7 +2121,7 @@ IMPLEMENT_RMI(CGameRules, SvHostMigrationRequestSetup)
 				pPlayer->ExitPickAndThrow(true);
 			}
 
-			CEnvironmentalWeapon *pEnvWeapon = static_cast<CEnvironmentalWeapon*>(m_pGameFramework->QueryGameObjectExtension(params.m_environmentalWeaponId ? params.m_environmentalWeaponId : playerPickAndThrowEntity, "EnvironmentalWeapon"));
+			CEnvironmentalWeapon *pEnvWeapon = gEnv->pEntitySystem->QueryComponent<CEnvironmentalWeapon>(params.m_environmentalWeaponId ? params.m_environmentalWeaponId : playerPickAndThrowEntity);
 			if(pEnvWeapon)
 			{
 				pEnvWeapon->OnHostMigration(params.m_environmentalWeaponRot, params.m_environmentalWeaponPos, params.m_environmentalWeaponVel);

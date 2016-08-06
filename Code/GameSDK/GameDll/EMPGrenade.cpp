@@ -13,7 +13,7 @@ CEMPGrenade::~CEMPGrenade()
 {
 }
 
-void CEMPGrenade::Update( SEntityUpdateContext &ctx, int updateSlot )
+void CEMPGrenade::Update( SEntityUpdateContext &ctx )
 {
 	if (m_bActive)
 	{
@@ -29,7 +29,7 @@ void CEMPGrenade::Update( SEntityUpdateContext &ctx, int updateSlot )
 		}
 	}
 
-	BaseClass::Update(ctx, updateSlot);
+	BaseClass::Update(ctx);
 }
 
 void CEMPGrenade::HandleEvent( const SGameObjectEvent &event )

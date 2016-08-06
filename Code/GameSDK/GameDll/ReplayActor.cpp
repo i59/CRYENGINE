@@ -77,7 +77,7 @@ void CReplayActor::PostInit(IGameObject *pGameObject)
 
 
 //------------------------------------------------------------------------
-void CReplayActor::ProcessEvent(SEntityEvent &event)
+void CReplayActor::ProcessEvent(const SEntityEvent &event)
 {
 	switch (event.event)
 	{
@@ -599,7 +599,7 @@ void SBasicReplayMovementParams::SetDesiredLocalLocation2( ISkeletonAnim* pSkele
 	pSkeletonAnim->SetDesiredMotionParam(eMotionParamID_TravelDist, travelDist, fDeltaTime);
 }
 
-void CReplayActor::GunRemovalListener::OnEntityEvent( IEntity *pEntity,SEntityEvent &event )
+void CReplayActor::GunRemovalListener::OnEntityEvent( IEntity *pEntity, const SEntityEvent &event )
 {
 	if(event.event == ENTITY_EVENT_DONE)
 	{
@@ -744,7 +744,7 @@ void CReplayActor::Physicalize()
 	}
 
 	// Set ViewDistRatio.
-	if(IEntityRenderProxy* pRenderProxy = (IEntityRenderProxy*)entity.GetProxy(ENTITY_PROXY_RENDER))
+	if(IEntityRenderComponent* pRenderProxy = (IEntityRenderComponent*)entity.QueryComponent<IEntityRenderComponent>())
 	{
 		if(IRenderNode* pRenderNode = pRenderProxy->GetRenderNode())
 		{
