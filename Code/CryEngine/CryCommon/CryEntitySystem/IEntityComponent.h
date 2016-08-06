@@ -37,48 +37,67 @@ struct IEntityComponent
 	IEntityComponent()
 		: m_pEntity(nullptr) {}
 
+	// Components are deleted using the delete operator, virtual destructors are required for all implementations!
+	// Keep in mind that components are destroyed in no particular order, do not use stored pointers to other components in your destructor!
 	virtual ~IEntityComponent() {}
 
 	// Implemented by DECLARE_COMPONENT
 	virtual const CryInterfaceID &GetInterfaceId() const = 0;
 
+	// Called after the component has been created to populate its entity and entity id
 	virtual void Initialize(IEntity &entity)
 	{
 		m_pEntity = &entity;
 		m_entityId = entity.GetId();
 	}
 
+	// Called almost immediately after Initialize, when it is safe to assume that all other components have been initialized.
 	virtual void PostInitialize() {}
 
+	// Enable (or disable) an event for use in ProcessEvent
 	void EnableEvent(EEntityEvent event, uint32 priority = 0, bool bEnable = true)
 	{
 		m_pEntity->EnableEvent(bEnable, *this, event, priority);
 	}
 
+	// Sets the update policies (see EEntityUpdatePolicy) to use, determines when Update is called
 	void SetUpdatePolicy(unsigned int updateFlags)
 	{
 		m_pEntity->SetComponentUpdatePolicy(*this, updateFlags);
 	}
 
+	// Called when entity events registered with EnableEvent are sent
 	virtual void ProcessEvent(const SEntityEvent& event) {}
+	// Function that handles component-specific events defined by each game
+	// An event can be sent either by calling this function or invoking IEntity::SendComponentEvent
 	virtual void OnComponentEvent(uint32 eventId, void *pUserData) {}
 
+	// Called when the entity is reloaded
 	virtual void OnEntityReload(SEntitySpawnParams& params, XmlNodeRef entityNode) {}
+	// Called when the entity is updated each frame, if the update policy flags were set
 	virtual void Update(SEntityUpdateContext& ctx) {}
 	
+	// Serialize the entity from an XML file on disk
 	virtual void SerializeXML(XmlNodeRef& entityNode, bool bLoading, bool bFromInit) {}
+	// Called to fully serialize the entity, for example to / from a save game
 	virtual void Serialize(TSerialize ser) {}
 
+	// Whether or not the Serialize function should be called
 	virtual bool NeedSerialize() { return false; }
 	
 	// Returns starting address of the remote messages for this component, if any
+	// This function is implemented in the networked entity component implementation
 	virtual void *GetRMIBase() { return nullptr; }
 
+	// Called when profiling memory usage
 	virtual void GetMemoryUsage(ICrySizer* pSizer) const {}
 
+	// Gets a pointer to the entity, is valid from the Initialize call
 	inline IEntity *GetEntity() const { return m_pEntity; }
+	// Gets the identifier belonging to our entity
 	inline EntityId GetEntityId() const { return m_entityId; }
 
+	// Helper function to activate a flow node output port on nodes belonging to this entity
 	void ActivateFlowNodeOutputPort(int port, const TFlowInputData& data)
 	{
 		SEntityEvent evnt;
@@ -90,11 +109,15 @@ struct IEntityComponent
 	}
 
 public:
+	// Used to register an entity that automatically creates an instance of the specified component
+	// The component has to have been registered with RegisterExternalComponent
 	inline static void RegisterEntityWithComponent(const char *name, const CryInterfaceID &componentInterfaceId, int flags = 0, const char *luaScriptPath = "");
 
+	// Used to register an entity that automatically creates an instance of the specified component without needing to register externally
 	template <typename T>
 	inline static void RegisterEntityWithComponent(const char *name, int flags = 0, const char *luaScriptPath = "");
 
+	// Used to provide a component creation factory to the entity system so that the specified component can be created by other modules
 	template <typename T>
 	inline static void RegisterExternalComponent();
 
@@ -103,11 +126,13 @@ protected:
 	EntityId m_entityId;
 };
 
+// Interface specifying a factory that creates an entity component instance
 struct IEntityComponentFactory
 {
 	virtual std::shared_ptr<IEntityComponent> CreateInstance() = 0;
 };
 
+// Default entity component factory template, returns a new shared pointer
 template <typename T>
 class CEntityComponentFactory
 	: public IEntityComponentFactory
@@ -120,6 +145,7 @@ class CEntityComponentFactory
 	// ~IEntityComponentFactory
 };
 
+// External component registration path for normal entity components
 template <typename T>
 inline static typename std::enable_if<!IEntityComponent::IsNetworkedComponent<T>::Check, void>::type
 RegisterExternalComponentImpl()
@@ -128,6 +154,8 @@ RegisterExternalComponentImpl()
 	gEnv->pEntitySystem->RegisterComponentFactory(cryiidof<T>(), &creator);
 }
 
+// External component registration path for networked entity components
+// This specialized template will only be called for entity components that implement the GetRMIData function
 template <typename T>
 inline static typename std::enable_if<IEntityComponent::IsNetworkedComponent<T>::Check, void>::type
 RegisterExternalComponentImpl()
@@ -200,6 +228,7 @@ inline void IEntityComponent::RegisterEntityWithComponent(const char *name, cons
 	gEnv->pEntitySystem->GetClassRegistry()->RegisterStdClass(entityClassDesc);
 }
 
+// Declares a component's name and GUID. This is required for Query and Acquire functions to work
 // Name is unused for now, but for future compatibility in case we want to instantiate components by name
 // This might be handy from scripts, serialization etc.
 #define DECLARE_COMPONENT(name, iidHigh, iidLow) \
