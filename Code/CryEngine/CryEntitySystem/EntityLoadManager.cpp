@@ -776,8 +776,15 @@ bool CEntityLoadManager::CreateEntity(SEntityLoadParams& loadParams, EntityId& o
 					pEventHandler->LoadEntityXMLEvents(pCSpawnedEntity, entityNode);
 
 				// Serialize script proxy.
-				if (auto *pScriptComponent = pCSpawnedEntity->QueryComponent<IEntityScriptComponent>())
-					pScriptComponent->SerializeXML(entityNode, true, false);
+				if(IEntityScript* pEntityScript = pSpawnedEntity->GetClass()->GetIEntityScript())
+				{
+					auto &scriptComponent = pCSpawnedEntity->AcquireComponent<CScriptComponent>();
+
+					scriptComponent.Initialize(*pCSpawnedEntity);
+					scriptComponent.InitializeScript(pEntityScript, spawnParams.pPropertiesTable);
+
+					scriptComponent.SerializeXML(entityNode, true, false);
+				}
 			}
 		}
 

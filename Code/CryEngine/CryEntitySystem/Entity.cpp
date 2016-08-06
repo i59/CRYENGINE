@@ -287,10 +287,17 @@ bool CEntity::Init(SEntitySpawnParams& params)
 
 	//////////////////////////////////////////////////////////////////////////
 	// Check if entity needs to create a script proxy.
+	auto *pScriptComponent = QueryComponent<CScriptComponent>();
 	IEntityScript* pEntityScript = m_pClass->GetIEntityScript();
 	if (pEntityScript)
 	{
-		auto &scriptComponent = AcquireComponent<CScriptComponent>();
+		if (pScriptComponent == nullptr)
+		{
+			pScriptComponent = &AcquireComponent<CScriptComponent>();
+
+			pScriptComponent->Initialize(*this);
+			pScriptComponent->InitializeScript(pEntityScript, params.pPropertiesTable);
+		}
 	}
 
 	if (IEntityPropertyHandler* pPropertyHandler = m_pClass->GetPropertyHandler())
@@ -315,14 +322,6 @@ bool CEntity::Init(SEntitySpawnParams& params)
 	tempComponentMap = m_entityComponentMap;
 
 	m_bInitialized = true;
-
-	auto *pScriptComponent = QueryComponent<CScriptComponent>();
-
-	if (pScriptComponent != nullptr)
-	{
-		pScriptComponent->Initialize(*this);
-		pScriptComponent->InitializeScript(pEntityScript, params.pPropertiesTable);
-	}
 
 	for (auto it = tempComponentMap.begin(); it != tempComponentMap.end(); ++it)
 	{
