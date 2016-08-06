@@ -3,6 +3,11 @@
 
 #include <CryAction/IGameObject.h>
 
+// Networked entity component template, assumes that T_Parent is directly or indirectly based on IEntityComponent
+// Use of this template allows for use of the entity over the network, such as to send / receive remote method invocations
+// The entity can store a maximum number of remote messages as specified by MAX_RMI_MESSAGES
+// Example:
+// class CMyEntityComponent : CNetworkedEntityComponent<CMyEntityComponent, IEntityComponent> {}
 template<class T_Derived, class T_Parent, size_t MAX_RMI_MESSAGES = 64>
 class CNetworkedEntityComponent 
 	: public T_Parent
@@ -14,12 +19,16 @@ public:
 	{
 		T_Parent::Initialize(entity);
 
+		// Automatically acquire a game object and bind the entity to the network
+		// This results in network id's and RMI's to be populated
 		auto &gameObject = entity.AcquireExternalComponent<IGameObject>();
 		gameObject.BindToNetwork();
 
+		// Make sure we get IGameObject network events
 		gameObject.AddListener(this);
 	}
 
+	// Override the IEntityComponent GetRMIBase implementation to return the specified messages
 	virtual void *GetRMIBase() override { return ms_statics.m_vMessages; }
 	// ~IEntityComponent
 
@@ -37,6 +46,7 @@ public:
 		}
 	}
 
+	// Used to invoke a method on a remote machine with a dependent entity, the RMI will be delayed until the other entity is spawned on the remote side.
 	// WARNING: there *MUST* be at least one frame between spawning ent and using this function to send an RMI if
 	// that RMI is _FAST, otherwise the dependent entity is ignored
 	template<class MI, class T>
@@ -46,6 +56,7 @@ public:
 			pGameObject->InvokeRMI_Primitive(method, params, where, 0, 0, channel, ent);
 	}
 
+	// Used to invoke a method on a remote machine
 	template<class MI, class T>
 	void InvokeRMI(const MI method, const T& params, unsigned where, int channel = -1) const
 	{
