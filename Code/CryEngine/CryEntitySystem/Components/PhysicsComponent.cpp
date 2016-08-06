@@ -142,7 +142,9 @@ void CPhysicsComponent::ReleaseColliders()
 	if (m_pColliders && m_pColliders->m_pPhysicalBBox)
 	{
 		PhysicalWorld()->DestroyPhysicalEntity(m_pColliders->m_pPhysicalBBox);
-		delete  m_pColliders;
+		delete  m_pColliders;	
+
+		SetUpdatePolicy(EEntityUpdatePolicy_Never);
 	}
 }
 
@@ -1917,6 +1919,8 @@ void CPhysicsComponent::SetTriggerBounds(const AABB& bbox)
 			PhysicalWorld()->DestroyPhysicalEntity(m_pColliders->m_pPhysicalBBox);
 			delete m_pColliders;
 			m_pColliders = 0;
+
+			SetUpdatePolicy(EEntityUpdatePolicy_Never);
 		}
 		return;
 	}
@@ -1924,6 +1928,8 @@ void CPhysicsComponent::SetTriggerBounds(const AABB& bbox)
 	{
 		m_pColliders = new Colliders;
 		m_pColliders->m_pPhysicalBBox = 0;
+
+		SetUpdatePolicy(EEntityUpdatePolicy_Always);
 	}
 
 	if (!m_pColliders->m_pPhysicalBBox)
