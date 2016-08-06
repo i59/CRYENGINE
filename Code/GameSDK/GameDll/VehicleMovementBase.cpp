@@ -1263,12 +1263,13 @@ void CVehicleMovementBase::ExecuteTrigger(EVehicleMovementSound eSID)
 
 void CVehicleMovementBase::StopTrigger(EVehicleMovementSound eSID)
 {
-	assert(m_pIEntityAudioProxy && eSID>=0 && eSID<eSID_Max);
+	assert(eSID>=0 && eSID<eSID_Max);
 
 	const AudioControlId id = m_audioControlIDs[eSID];
 	if (id != INVALID_AUDIO_CONTROL_ID)
 	{
-		m_pIEntityAudioProxy->StopTrigger(id);
+		if(auto *pAudioComponent = m_pEntity->QueryComponent<IEntityAudioComponent>())
+			pAudioComponent->StopTrigger(id);
 	}
 }
 

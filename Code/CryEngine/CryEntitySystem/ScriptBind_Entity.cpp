@@ -4252,6 +4252,9 @@ int CScriptBind_Entity::GetDefaultAuxAudioProxyID(IFunctionHandler* pH)
 {
 	GET_ENTITY;
 
+	if (pEntity->IsGarbage())
+		return pH->EndFunction();
+
 	// Get or create an AudioProxy on the entity if necessary.
 	auto &audioComponent = pEntity->AcquireComponent<CEntityAudioComponent>();
 

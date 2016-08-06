@@ -358,10 +358,17 @@ CActor::~CActor()
 	CRY_ASSERT(g_pGame);
 	PREFAST_ASSUME(g_pGame);
 
-	GetGameObject()->SetMovementController(NULL);
+	if (auto *pGameObject = GetGameObject())
+	{
+		pGameObject->ReleaseView(this);
+		pGameObject->ReleaseProfileManager(this);
+
+		pGameObject->SetMovementController(NULL);
+	}
+
 	SAFE_RELEASE(m_pMovementController);
 
-	if (m_pInventory)
+	if (auto *pInventory = GetEntity()->QueryComponent<IInventory>())
 	{
 		if (IItem* item = GetCurrentItem())
 		{
@@ -370,11 +377,8 @@ CActor::~CActor()
 		}
 
 		if (gEnv->bServer)
-			m_pInventory->Destroy();
+			pInventory->Destroy();
 	}
-	
-	GetGameObject()->ReleaseView( this );
-	GetGameObject()->ReleaseProfileManager( this );
 
 	if(g_pGame && g_pGame->GetIGameFramework() && g_pGame->GetIGameFramework()->GetIActorSystem())
 		g_pGame->GetIGameFramework()->GetIActorSystem()->RemoveActor( GetEntityId() );
