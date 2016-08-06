@@ -1001,16 +1001,21 @@ struct IEntity
 		return *static_cast<T *>(CreateComponentByTypeId(cryiidof<T>()));
 	}
 
+	// Queries if a component exists by GUID, returns a null pointer if no instance existed
 	virtual IEntityComponent *GetComponentByTypeId(const CryInterfaceID &interfaceID) const = 0;
 
 	// Creates a new instance of a component by name, assumes that its factory was registered via IEntitySystem::RegisterComponentFactory
 	// The component will be automatically registered as if RegisterComponent was called
 	virtual IEntityComponent *CreateComponentByTypeId(const CryInterfaceID &interfaceID) = 0;
 
+	// Registers a component in the entity implementation so that it can be queried and updated
 	virtual void RegisterComponent(const CryInterfaceID &interfaceID, std::shared_ptr<IEntityComponent> pComponent) = 0;
 
+	// Enables events sent to ProcessEvent
+	// Higher priority gets the event earlier
 	virtual void EnableEvent(bool bEnable, IEntityComponent &component, EEntityEvent event, uint32 priority) = 0;
 
+	// Goes through all current components to find one with the RMI base, used by the networked entity component
 	virtual IEntityComponent *GetComponentWithRMIBase(const void *pBase) const = 0;
 
 	//! Sends event to the entity and its components.
