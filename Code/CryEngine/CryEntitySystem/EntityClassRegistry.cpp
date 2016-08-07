@@ -15,6 +15,9 @@
 #include "EntityClassRegistry.h"
 #include "EntityClass.h"
 #include "EntityScript.h"
+
+#include "DefaultEntityPropertyHandler.h"
+
 #include <CrySystem/File/CryFile.h>
 
 //////////////////////////////////////////////////////////////////////////
@@ -92,7 +95,16 @@ IEntityClass* CEntityClassRegistry::RegisterStdClass(const SEntityClassDesc& ent
 	pClass->SetFlags(entityClassDesc.flags);
 	pClass->SetScriptFile(entityClassDesc.sScriptFile);
 	pClass->SetEntitySpawnCallback(entityClassDesc.pEntitySpawnCallback, entityClassDesc.pEntitySpawnCallbackData);
-	pClass->SetPropertyHandler(entityClassDesc.pPropertyHandler);
+	
+	if (entityClassDesc.pPropertyHandler != nullptr)
+	{
+		pClass->SetPropertyHandler(entityClassDesc.pPropertyHandler);
+	}
+	else if(entityClassDesc.pProperties)
+	{
+		pClass->SetPropertyHandler(new CDefaultEntityPropertyHandler(entityClassDesc.pProperties, entityClassDesc.numProperties, 0));
+	}
+
 	pClass->SetEventHandler(entityClassDesc.pEventHandler);
 	pClass->SetScriptFileHandler(entityClassDesc.pScriptFileHandler);
 	pClass->SetEditorClassInfo(entityClassDesc.editorClassInfo);

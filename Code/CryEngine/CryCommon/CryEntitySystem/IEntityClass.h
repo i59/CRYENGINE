@@ -82,6 +82,8 @@ struct IEntityPropertyHandler
 		const char*   description; //!< Description of the property.
 		uint32        flags;       //!< Property flags.
 
+		const char *defaultValue;  //!< Default value of the property if none was provided.
+
 		//! Limits.
 		struct SLimits
 		{
@@ -326,13 +328,15 @@ struct IEntityClassRegistry
 			: flags(0)
 			, sName("")
 			, sScriptFile("")
-			, pScriptTable(NULL)
+			, pScriptTable(nullptr)
 			, editorClassInfo()
-			, pEntitySpawnCallback(NULL)
-			, pEntitySpawnCallbackData(NULL)
-			, pPropertyHandler(NULL)
-			, pEventHandler(NULL)
-			, pScriptFileHandler(NULL)
+			, pEntitySpawnCallback(nullptr)
+			, pEntitySpawnCallbackData(nullptr)
+			, pPropertyHandler(nullptr)
+			, pEventHandler(nullptr)
+			, pScriptFileHandler(nullptr)
+			, pProperties(nullptr)
+			, numProperties(0)
 		{
 		};
 
@@ -346,7 +350,16 @@ struct IEntityClassRegistry
 		IEntityClass::EntitySpawnCallback pEntitySpawnCallback;
 		void*                             pEntitySpawnCallbackData;
 
+		// Custom property handler implementation, if any.
+		// Default property handler will be created if the override here is null
+		// Note that deletion of the property handler is automatically performed when the entity class is destroyed
 		IEntityPropertyHandler*           pPropertyHandler;
+		
+		// Properties to pass to the default property handler unless it was overridden above
+		// The entity class assumes that this is a dynamic array and calls 'delete[]' on it
+		IEntityPropertyHandler::SPropertyInfo *pProperties;
+		int numProperties;
+
 		IEntityEventHandler*              pEventHandler;
 		IEntityScriptFileHandler*         pScriptFileHandler;
 
