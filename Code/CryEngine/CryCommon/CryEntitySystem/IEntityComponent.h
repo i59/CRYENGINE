@@ -1,4 +1,4 @@
-// Copyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
+// Co1pyright 2001-2016 Crytek GmbH / Crytek Group. All rights reserved.
 #pragma once
 
 #include <CryEntitySystem/IEntityClass.h>
@@ -16,6 +16,10 @@
 #include <CryExtension/ICryUnknown.h>
 
 #include <CryMemory/CrySizer.h>
+
+#include <CryMath/Cry_Color.h>
+#include <CryMath/Cry_Vector3.h>
+#include <CryString/StringUtils.h>
 
 struct IEntityComponent
 {
@@ -97,6 +101,9 @@ struct IEntityComponent
 	// Gets the identifier belonging to our entity
 	inline EntityId GetEntityId() const { return m_entityId; }
 
+public:
+	// Begin helpers
+
 	// Helper function to activate a flow node output port on nodes belonging to this entity
 	void ActivateFlowNodeOutputPort(int port, const TFlowInputData& data)
 	{
@@ -106,6 +113,85 @@ struct IEntityComponent
 		evnt.nParam[1] = (INT_PTR)&data;
 
 		GetEntity()->SendEvent(evnt);
+	}
+
+	// Retrieves the current string value of a property
+	inline const char *GetEntityPropertyValue(int index) const
+	{
+		if (IEntityPropertyHandler *pPropertyHandler = GetEntity()->GetClass()->GetPropertyHandler())
+		{
+			return pPropertyHandler->GetProperty(GetEntity(), index);
+		}
+
+		return "";
+	}
+
+	// Sets the string value of a property
+	inline void SetEntityPropertyValue(int index, const char* format, ...) PRINTF_PARAMS(2, 3);
+
+	// Gets the converted float value of a property
+	inline float GetEntityPropertyFloat(int index) const
+	{
+		return (float)atof(GetEntityPropertyValue(index));
+	}
+
+	// Gets the converted integer value of a property
+	inline int GetEntityPropertyInt(int index) const
+	{
+		return atoi(GetEntityPropertyValue(index));
+	}
+
+	// Gets the converted ColorF value of a property
+	inline ColorF GetEntityPropertyColor(int index) const
+	{
+		return CryStringUtils::stringToColor(GetEntityPropertyValue(index), false);
+	}
+
+	// Gets the converted boolean value of a property
+	inline bool GetEntityPropertyBool(int index) const
+	{
+		return GetEntityPropertyInt(index) != 0;
+	}
+
+	// Gets the converted Vec3 value of a property
+	inline Vec3 GetEntityPropertyVec3(int index) const
+	{
+		return CryStringUtils::stringToVec3(GetEntityPropertyValue(index));
+	}
+
+	// Helper to set a property value as float
+	inline void SetEntityPropertyFloat(int index, float value)
+	{
+		SetEntityPropertyValue(index, "%f", value);
+	}
+
+	// Helper to set a property value as an integer
+	inline void SetEntityPropertyInt(int index, int value)
+	{
+		SetEntityPropertyValue(index, "%i", value);
+	}
+
+	// Helper to set a property value as a boolean
+	inline void SetEntityPropertyBool(int index, bool value)
+	{
+		SetEntityPropertyValue(index, (value ? "1" : "0"));
+	}
+
+	// Helper to set a property value as a vector
+	inline void SetEntityPropertyVec3(int index, Vec3 value)
+	{
+		SetEntityPropertyValue(index, "%f,%f,%f", value.x, value.y, value.z);
+	}
+
+private:
+	inline void SetEntityPropertyValueImpl(int index, const char *value)
+	{
+		if (IEntityPropertyHandler *pPropertyHandler = GetEntity()->GetClass()->GetPropertyHandler())
+		{
+			pPropertyHandler->SetProperty(GetEntity(), index, value);
+
+			pPropertyHandler->PropertiesChanged(GetEntity());
+		}
 	}
 
 public:
@@ -125,6 +211,18 @@ protected:
 	IEntity *m_pEntity;
 	EntityId m_entityId;
 };
+
+inline void IEntityComponent::SetEntityPropertyValue(int index, const char* format, ...)
+{
+	va_list args;
+	va_start(args, format);
+
+	char szBuffer[MAX_WARNING_LENGTH];
+	cry_vsprintf(szBuffer, format, args);
+	SetEntityPropertyValueImpl(index, szBuffer);
+
+	va_end(args);
+}
 
 // Interface specifying a factory that creates an entity component instance
 struct IEntityComponentFactory

@@ -121,6 +121,46 @@ inline string toString(const CryQuat& q)
 	cry_sprintf(szBuf, "{%g,{%g,%g,%g}}", q.w, q.v.x, q.v.y, q.v.z);
 	return szBuf;
 }
+
+inline Quat StringToQuat(const char *sQuat)
+{
+	Quat q(ZERO);
+	string quatString = sQuat;
+
+	for (int i = 0; i < 4; i++)
+	{
+		size_t pos = quatString.find_first_of(",");
+		if (pos == string::npos)
+			pos = quatString.size();
+
+		string sToken = quatString.substr(0, pos);
+
+		float fToken = (float)atof(sToken);
+
+		switch (i)
+		{
+			case 0:
+				q.w = fToken;
+				break;
+			case 1:
+				q.v.x = fToken;
+				break;
+			case 2:
+				q.v.y = fToken;
+				break;
+			case 3:
+				q.v.z = fToken;
+				break;
+		}
+
+		if (pos == quatString.size())
+			break;
+		else
+			quatString.erase(0, pos + 1);
+	}
+
+	return q;
+}
 #endif
 
 #ifdef VECTOR_H
@@ -129,6 +169,64 @@ inline string toString(const Vec3& v)
 	char szBuf[128];
 	cry_sprintf(szBuf, "{%g,%g,%g}", v.x, v.y, v.z);
 	return szBuf;
+}
+
+inline Vec3 stringToVec3(const char *sVector)
+{
+	Vec3 v(ZERO);
+	string vecString = sVector;
+
+	for (int i = 0; i < 3; i++)
+	{
+		size_t pos = vecString.find_first_of(",");
+		if (pos == string::npos)
+			pos = vecString.size();
+
+		string sToken = vecString.substr(0, pos);
+
+		float fToken = (float)atof(sToken);
+
+		v[i] = fToken;
+
+		if (pos == vecString.size())
+			break;
+		else
+			vecString.erase(0, pos + 1);
+	}
+
+	return v;
+}
+#endif
+
+#ifdef CRYTEK_CRYCOLOR_H
+inline ColorF stringToColor(const char *sColor, bool adjustGamma)
+{
+	ColorF color(1.f);
+	string colorString = sColor;
+
+	for (int i = 0; i < 4; i++)
+	{
+		size_t pos = colorString.find_first_of(",");
+		if (pos == string::npos)
+			pos = colorString.size();
+
+		string sToken = colorString.substr(0, pos);
+
+		float fToken = (float)atof(sToken);
+
+		// Convert to linear space
+		if (adjustGamma)
+			color[i] = powf(fToken / 255, 2.2f);
+		else
+			color[i] = fToken;
+
+		if (pos == colorString.size())
+			break;
+		else
+			colorString.erase(0, pos + 1);
+	}
+
+	return color;
 }
 #endif
 
