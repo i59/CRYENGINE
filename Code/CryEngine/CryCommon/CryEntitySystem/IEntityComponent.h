@@ -201,7 +201,7 @@ public:
 
 	// Used to register an entity that automatically creates an instance of the specified component without needing to register externally
 	template <typename T>
-	inline static void RegisterEntityWithComponent(const char *name, int flags = 0, const char *luaScriptPath = "");
+	inline static void RegisterEntityWithComponent(const char *name, int flags = 0, SEditorClassInfo editorInfo = SEditorClassInfo(), IEntityPropertyHandler::SPropertyInfo *pProperties = nullptr, int numProperties = 0, const char *luaScriptPath = "");
 
 	// Used to provide a component creation factory to the entity system so that the specified component can be created by other modules
 	template <typename T>
@@ -279,12 +279,17 @@ inline static void IEntityComponent::RegisterExternalComponent()
 }
 
 template <typename T>
-inline static void IEntityComponent::RegisterEntityWithComponent(const char *name, int flags, const char *luaScriptPath)
+inline static void IEntityComponent::RegisterEntityWithComponent(const char *name, int flags, SEditorClassInfo editorInfo, IEntityPropertyHandler::SPropertyInfo *pProperties, int numProperties, const char *luaScriptPath)
 {
 	IEntityClassRegistry::SEntityClassDesc entityClassDesc;
 	entityClassDesc.sName = name;
 	entityClassDesc.sScriptFile = luaScriptPath;
 	entityClassDesc.flags = flags;
+
+	entityClassDesc.editorClassInfo = editorInfo;
+
+	entityClassDesc.pProperties = pProperties;
+	entityClassDesc.numProperties = numProperties;
 
 	struct SSpawnCallback
 	{

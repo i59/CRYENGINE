@@ -87,6 +87,18 @@ inline bool IsStatObjFile(const char* filename)
 		return false;
 }
 
+//! Check if specified file name is a static geometry file.
+inline bool IsGeomCacheFile(const char* filename)
+{
+	const char* ext = CryGetExt(filename);
+	if (stricmp(ext, CRY_GEOM_CACHE_FILE_EXT) == 0)
+	{
+		return true;
+	}
+	else
+		return false;
+}
+
 struct ICryPak;
 
 //! Wrapper on file system.

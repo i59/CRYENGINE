@@ -6,6 +6,8 @@
 
 #include <CryCore/BitMask.h>
 
+#include <CrySystem/File/CryFile.h>
+
 // Forward declarations.
 struct IPhysicalEntity;
 struct IEntityClass;
@@ -1182,6 +1184,24 @@ struct IEntity
 	//! \return Slot id where the object was loaded, or -1 if loading failed.
 	virtual int LoadGeomCache(int nSlot, const char* sFilename) = 0;
 #endif
+
+	// Helper for loading geometry or characters
+	inline void LoadMesh(int slot, const char *path)
+	{
+		// Load the rifle geometry into the first slot
+		if (IsCharacterFile(path))
+		{
+			LoadCharacter(slot, path);
+		}
+		else if (IsGeomCacheFile(path))
+		{
+			LoadGeomCache(slot, path);
+		}
+		else
+		{
+			LoadGeometry(slot, path);
+		}
+	}
 
 	//! Loads a new particle emitter to the specified slot, or to next available slot.
 	//! If same character is already loaded in this slot, operation is ignored.

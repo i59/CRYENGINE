@@ -162,22 +162,22 @@ void InitGameFactory(IGameFramework *pFramework)
 {
 	assert(pFramework);
 
-	IEntityComponent::RegisterEntityWithComponent<CPlayer>("Player", VF_INVISIBLE, "Scripts/Entities/Actor/Player.lua");
-	IEntityComponent::RegisterEntityWithComponent<CPlayer>("PlayerHeavy", VF_INVISIBLE, "Scripts/Entities/Actor/PlayerHeavy.lua");
+	IEntityComponent::RegisterEntityWithComponent<CPlayer>("Player", VF_INVISIBLE, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Actor/Player.lua");
+	IEntityComponent::RegisterEntityWithComponent<CPlayer>("PlayerHeavy", VF_INVISIBLE, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Actor/PlayerHeavy.lua");
 
-	IEntityComponent::RegisterEntityWithComponent<CPlayer>("DamageTestEnt", 0, "Scripts/Entities/AI/DamageTestEnt.lua");
+	IEntityComponent::RegisterEntityWithComponent<CPlayer>("DamageTestEnt", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/AI/DamageTestEnt.lua");
 
 #if (USE_DEDICATED_INPUT)
-	IEntityComponent::RegisterEntityWithComponent<CDummyPlayer>("DummyPlayer", 0, "Scripts/Entities/AI/DummyPlayer.lua");
+	IEntityComponent::RegisterEntityWithComponent<CDummyPlayer>("DummyPlayer", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/AI/DummyPlayer.lua");
 #endif
 
 	//REGISTER_FACTORY(pFramework, "Civilian", CPlayer, true);
 
 	// Null AI for AI pool
-	IEntityComponent::RegisterEntityWithComponent<CPlayer>("NullAI", 0, "Scripts/Entities/AI/NullAI.lua");
+	IEntityComponent::RegisterEntityWithComponent<CPlayer>("NullAI", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/AI/NullAI.lua");
 
 	// Characters	
-	IEntityComponent::RegisterEntityWithComponent<CPlayer>("Human", 0, "Scripts/Entities/AI/Characters/Human.lua");
+	IEntityComponent::RegisterEntityWithComponent<CPlayer>("Human", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/AI/Characters/Human.lua");
 	
 	class CBasicItem : public CItem
 	{
@@ -259,19 +259,19 @@ void InitGameFactory(IGameFramework *pFramework)
 
 
 	// Custom GameObjects
-	IEntityComponent::RegisterEntityWithComponent<CTornado>("Tornado", 0, "Scripts/Entities/Environment/Tornado.lua");
-	IEntityComponent::RegisterEntityWithComponent<CShake>("Shake", 0, "Scripts/Entities/Environment/Shake.lua");
-	IEntityComponent::RegisterEntityWithComponent<CRain>("Rain", 0, "Scripts/Entities/Environment/Rain.lua");
-	IEntityComponent::RegisterEntityWithComponent<CSnow>("Snow", 0, "Scripts/Entities/Environment/Snow.lua");
-	IEntityComponent::RegisterEntityWithComponent<CInteractiveObjectEx>("InteractiveObjectEx", 0, "Scripts/Entities/PlayerInteractive/InteractiveObjectEx.lua");
-	IEntityComponent::RegisterEntityWithComponent<CDeployableBarrier>("DeployableBarrier", 0, "Scripts/Entities/PlayerInteractive/DeployableBarrier.lua");
-	IEntityComponent::RegisterEntityWithComponent<CReplayObject>("ReplayObject", 0, "");
-	IEntityComponent::RegisterEntityWithComponent<CReplayActor>("ReplayActor", 0, "");
-	IEntityComponent::RegisterEntityWithComponent<CDeflectorShield>("DeflectorShield", 0, "Scripts/Entities/Others/DeflectorShield.lua");
+	IEntityComponent::RegisterEntityWithComponent<CTornado>("Tornado", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Environment/Tornado.lua");
+	IEntityComponent::RegisterEntityWithComponent<CShake>("Shake", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Environment/Shake.lua");
+	IEntityComponent::RegisterEntityWithComponent<CRain>("Rain", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Environment/Rain.lua");
+	IEntityComponent::RegisterEntityWithComponent<CSnow>("Snow", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Environment/Snow.lua");
+	IEntityComponent::RegisterEntityWithComponent<CInteractiveObjectEx>("InteractiveObjectEx", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/PlayerInteractive/InteractiveObjectEx.lua");
+	IEntityComponent::RegisterEntityWithComponent<CDeployableBarrier>("DeployableBarrier", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/PlayerInteractive/DeployableBarrier.lua");
+	IEntityComponent::RegisterEntityWithComponent<CReplayObject>("ReplayObject");
+	IEntityComponent::RegisterEntityWithComponent<CReplayActor>("ReplayActor");
+	IEntityComponent::RegisterEntityWithComponent<CDeflectorShield>("DeflectorShield", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Others/DeflectorShield.lua");
 	HIDE_FROM_EDITOR("DeflectorShield");
-	IEntityComponent::RegisterEntityWithComponent<CEnvironmentalWeapon>("EnvironmentalWeapon", 0, "Scripts/Entities/Multiplayer/EnvironmentWeapon_Rooted.lua");
-	IEntityComponent::RegisterEntityWithComponent<CDangerousRigidBody>("DangerousRigidBody", 0, "Scripts/Entities/Multiplayer/DangerousRigidBody.lua");
-	IEntityComponent::RegisterEntityWithComponent<CAICorpse>("AICorpse", 0, "");
+	IEntityComponent::RegisterEntityWithComponent<CEnvironmentalWeapon>("EnvironmentalWeapon", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Multiplayer/EnvironmentWeapon_Rooted.lua");
+	IEntityComponent::RegisterEntityWithComponent<CDangerousRigidBody>("DangerousRigidBody", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Multiplayer/DangerousRigidBody.lua");
+	IEntityComponent::RegisterEntityWithComponent<CAICorpse>("AICorpse");
 	HIDE_FROM_EDITOR("ReplayObject");
 	HIDE_FROM_EDITOR("ReplayActor");
 	HIDE_FROM_EDITOR("AICorpse");
@@ -279,32 +279,32 @@ void InitGameFactory(IGameFramework *pFramework)
 
 	//////////////////////////////////////////////////////////////////////////
 	/// Shape/Volume objects
-	IEntityComponent::RegisterEntityWithComponent<CMPPath>("MPPath", 0, "Scripts/Entities/Multiplayer/MPPath.lua");
+	IEntityComponent::RegisterEntityWithComponent<CMPPath>("MPPath", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Multiplayer/MPPath.lua");
 	HIDE_FROM_EDITOR("MPPath");
 	REGISTER_EDITOR_VOLUME_CLASS( pFramework, "MPPath" );
 
-	IEntityComponent::RegisterEntityWithComponent<CLedgeObject>("LedgeObject", 0, "Scripts/Entities/ContextualNavigation/LedgeObject.lua");
+	IEntityComponent::RegisterEntityWithComponent<CLedgeObject>("LedgeObject", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/ContextualNavigation/LedgeObject.lua");
 	HIDE_FROM_EDITOR("LedgeObject");
 	REGISTER_EDITOR_VOLUME_CLASS( pFramework, "LedgeObject" );
-	IEntityComponent::RegisterEntityWithComponent<CLedgeObjectStatic>("LedgeObjectStatic", 0, "Scripts/Entities/ContextualNavigation/LedgeObjectStatic.lua");
+	IEntityComponent::RegisterEntityWithComponent<CLedgeObjectStatic>("LedgeObjectStatic", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/ContextualNavigation/LedgeObjectStatic.lua");
 	HIDE_FROM_EDITOR("LedgeObjectStatic");
 	REGISTER_EDITOR_VOLUME_CLASS( pFramework, "LedgeObjectStatic" );
 
-	IEntityComponent::RegisterEntityWithComponent<CWaterPuddle>("WaterPuddle", 0, "Scripts/Entities/Environment/WaterPuddle.lua");
+	IEntityComponent::RegisterEntityWithComponent<CWaterPuddle>("WaterPuddle", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Environment/WaterPuddle.lua");
 	HIDE_FROM_EDITOR("WaterPuddle");
 	REGISTER_EDITOR_VOLUME_CLASS(pFramework, "WaterPuddle");
 	//////////////////////////////////////////////////////////////////////////
 
 
-	IEntityComponent::RegisterEntityWithComponent<CSmartMine>("SmartMine", 0, "Scripts/Entities/Environment/SmartMine.lua");
-	IEntityComponent::RegisterEntityWithComponent<CMineField>("MineField", 0, "Scripts/Entities/Environment/MineField.lua");
-	IEntityComponent::RegisterEntityWithComponent<CDoorPanel>("DoorPanel", 0, "Scripts/Entities/Environment/DoorPanel.lua");
-	IEntityComponent::RegisterEntityWithComponent<CVicinityDependentObjectMover>("VicinityDependentObjectMover", 0, "Scripts/Entities/Environment/VicinityDependentObjectMover.lua");
-	IEntityComponent::RegisterEntityWithComponent<CWaterRipplesGenerator>("WaterRipplesGenerator", 0, "Scripts/Entities/Environment/WaterRipplesGenerator.lua");
-	IEntityComponent::RegisterEntityWithComponent<CLightningArc>("LightningArc", 0, "Scripts/Entities/Environment/LightningArc.lua");
+	IEntityComponent::RegisterEntityWithComponent<CSmartMine>("SmartMine", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Environment/SmartMine.lua");
+	IEntityComponent::RegisterEntityWithComponent<CMineField>("MineField", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Environment/MineField.lua");
+	IEntityComponent::RegisterEntityWithComponent<CDoorPanel>("DoorPanel", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Environment/DoorPanel.lua");
+	IEntityComponent::RegisterEntityWithComponent<CVicinityDependentObjectMover>("VicinityDependentObjectMover", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Environment/VicinityDependentObjectMover.lua");
+	IEntityComponent::RegisterEntityWithComponent<CWaterRipplesGenerator>("WaterRipplesGenerator", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Environment/WaterRipplesGenerator.lua");
+	IEntityComponent::RegisterEntityWithComponent<CLightningArc>("LightningArc", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Environment/LightningArc.lua");
 
-	IEntityComponent::RegisterEntityWithComponent<CCarryEntity>("CTFFlag", 0, "Scripts/Entities/Multiplayer/CTFFlag.lua");
-	IEntityComponent::RegisterEntityWithComponent<CTurret>("Turret", 0, "Scripts/Entities/Turret/Turret.lua");
+	IEntityComponent::RegisterEntityWithComponent<CCarryEntity>("CTFFlag", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Multiplayer/CTFFlag.lua");
+	IEntityComponent::RegisterEntityWithComponent<CTurret>("Turret", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Turret/Turret.lua");
 	
 	HIDE_FROM_EDITOR("CTFFlag");
 	IEntityClassRegistry::SEntityClassDesc stdClass;

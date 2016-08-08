@@ -2094,13 +2094,13 @@ bool CCryAction::CompleteInit()
 	if (m_pVehicleSystem)
 		m_pVehicleSystem->RegisterVehicles(this);
 
-	IEntityComponent::RegisterEntityWithComponent<CMannequinObject>("MannequinObject", 0, "Scripts/Entities/Anim/MannequinObject.lua");
+	IEntityComponent::RegisterEntityWithComponent<CMannequinObject>("MannequinObject", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Anim/MannequinObject.lua");
 
 	gs_lipSyncExtensionNamesForExposureToEditor.clear();
 	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_TransitionQueue");
 	gs_lipSyncExtensionNamesForExposureToEditor.push_back("LipSync_FacialInstance");
 
-	IEntityComponent::RegisterEntityWithComponent<CGameVolume_Water>("WaterVolume", 0, "Scripts/Entities/Environment/WaterVolume.lua");
+	IEntityComponent::RegisterEntityWithComponent<CGameVolume_Water>("WaterVolume", 0, SEditorClassInfo(), nullptr, 0, "Scripts/Entities/Environment/WaterVolume.lua");
 
 	// Hide WaterVolume from the Editor
 	IEntityClass* pItemClass = gEnv->pEntitySystem->GetClassRegistry()->FindClass("WaterVolume");

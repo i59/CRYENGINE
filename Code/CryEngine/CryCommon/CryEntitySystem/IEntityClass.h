@@ -453,3 +453,175 @@ private:
 
 	IEntityClassRegistry* m_pRegistry;
 };
+
+////////////////////////////////////////
+// Property registration helpers
+////////////////////////////////////////
+
+// Used to aid registration of property groups
+// Example use case:
+// {
+//		SEditorPropertyGroup group("MyGroup", groupIndexStart, groupIndexEnd, properties);
+
+//		RegisterEntityProperty<Vec3>(properties, myPropertyIndex, "MyPropertyName", "DefaultValue", "Description", 0, 1);
+// }
+struct SEditorPropertyGroup
+{
+	SEditorPropertyGroup(const char *name, int indexBegin, int indexEnd, IEntityPropertyHandler::SPropertyInfo *pProperties)
+	: m_name(name)
+	, m_indexEnd(indexEnd)
+	, m_pProperties(pProperties)
+	{
+		pProperties[indexBegin].name = name;
+		pProperties[indexBegin].type = IEntityPropertyHandler::FolderBegin;
+	}
+
+	~SEditorPropertyGroup()
+	{
+		m_pProperties[m_indexEnd].name = m_name;
+		m_pProperties[m_indexEnd].type = IEntityPropertyHandler::FolderEnd;
+	}
+
+protected:
+	string m_name;
+
+	int m_indexEnd;
+	IEntityPropertyHandler::SPropertyInfo *m_pProperties;
+};
+
+// Entity registration helpers
+template <typename T>
+inline void RegisterEntityProperty(IEntityPropertyHandler::SPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+{
+	CRY_ASSERT_MESSAGE(false, "Entity property of invalid type was not registered");
+}
+
+template <>
+inline void RegisterEntityProperty<Vec3>(IEntityPropertyHandler::SPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+{
+	pProperties[index].name = name;
+	pProperties[index].defaultValue = defaultVal;
+	pProperties[index].type = IEntityPropertyHandler::Vector;
+	pProperties[index].description = desc;
+	pProperties[index].editType = "";
+	pProperties[index].flags = 0;
+	pProperties[index].limits.min = min;
+	pProperties[index].limits.max = max;
+}
+
+template <>
+inline void RegisterEntityProperty<ColorF>(IEntityPropertyHandler::SPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+{
+	pProperties[index].name = name;
+	pProperties[index].defaultValue = defaultVal;
+	pProperties[index].type = IEntityPropertyHandler::Vector;
+	pProperties[index].description = desc;
+	pProperties[index].editType = "color";
+	pProperties[index].flags = 0;
+	pProperties[index].limits.min = min;
+	pProperties[index].limits.max = max;
+}
+
+template <>
+inline void RegisterEntityProperty<float>(IEntityPropertyHandler::SPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+{
+	pProperties[index].name = name;
+	pProperties[index].defaultValue = defaultVal;
+	pProperties[index].type = IEntityPropertyHandler::Float;
+	pProperties[index].description = desc;
+	pProperties[index].editType = "";
+	pProperties[index].flags = 0;
+	pProperties[index].limits.min = min;
+	pProperties[index].limits.max = max;
+}
+
+template <>
+inline void RegisterEntityProperty<int>(IEntityPropertyHandler::SPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+{
+	pProperties[index].name = name;
+	pProperties[index].defaultValue = defaultVal;
+	pProperties[index].type = IEntityPropertyHandler::Int;
+	pProperties[index].description = desc;
+	pProperties[index].editType = "";
+	pProperties[index].flags = 0;
+	pProperties[index].limits.min = min;
+	pProperties[index].limits.max = max;
+}
+
+template <>
+inline void RegisterEntityProperty<bool>(IEntityPropertyHandler::SPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+{
+	pProperties[index].name = name;
+	pProperties[index].defaultValue = defaultVal;
+	pProperties[index].type = IEntityPropertyHandler::Bool;
+	pProperties[index].description = desc;
+	pProperties[index].editType = "b";
+	pProperties[index].flags = 0;
+	pProperties[index].limits.min = 0;
+	pProperties[index].limits.max = 1;
+}
+
+template <>
+inline void RegisterEntityProperty<string>(IEntityPropertyHandler::SPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+{
+	pProperties[index].name = name;
+	pProperties[index].defaultValue = defaultVal;
+	pProperties[index].type = IEntityPropertyHandler::String;
+	pProperties[index].description = desc;
+	pProperties[index].editType = "";
+	pProperties[index].flags = 0;
+	pProperties[index].limits.min = min;
+	pProperties[index].limits.max = max;
+}
+
+inline void RegisterEntityPropertyTexture(IEntityPropertyHandler::SPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc)
+{
+	pProperties[index].name = name;
+	pProperties[index].defaultValue = defaultVal;
+	pProperties[index].type = IEntityPropertyHandler::String;
+	pProperties[index].description = desc;
+	pProperties[index].editType = "tex";
+	pProperties[index].flags = 0;
+}
+
+inline void RegisterEntityPropertyFlare(IEntityPropertyHandler::SPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc)
+{
+	pProperties[index].name = name;
+	pProperties[index].defaultValue = defaultVal;
+	pProperties[index].type = IEntityPropertyHandler::String;
+	pProperties[index].description = desc;
+	pProperties[index].editType = "flare_";
+	pProperties[index].flags = 0;
+}
+
+inline void RegisterEntityPropertyObject(IEntityPropertyHandler::SPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc)
+{
+	pProperties[index].name = name;
+	pProperties[index].defaultValue = defaultVal;
+	pProperties[index].type = IEntityPropertyHandler::String;
+	pProperties[index].description = desc;
+	pProperties[index].editType = "obj";
+	pProperties[index].flags = 0;
+}
+
+inline void RegisterEntityPropertyMaterial(IEntityPropertyHandler::SPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc)
+{
+	pProperties[index].name = name;
+	pProperties[index].defaultValue = defaultVal;
+	pProperties[index].type = IEntityPropertyHandler::String;
+	pProperties[index].description = desc;
+	pProperties[index].editType = "material";
+	pProperties[index].flags = 0;
+}
+
+inline void RegisterEntityPropertyEnum(IEntityPropertyHandler::SPropertyInfo *pProperties, int index, const char *name, const char *defaultVal, const char *desc, float min, float max)
+{
+	pProperties[index].name = name;
+	pProperties[index].defaultValue = defaultVal;
+	pProperties[index].type = IEntityPropertyHandler::String;
+	pProperties[index].description = desc;
+	pProperties[index].editType = "";
+	pProperties[index].flags = IEntityPropertyHandler::ePropertyFlag_UIEnum | IEntityPropertyHandler::ePropertyFlag_Unsorted;
+	pProperties[index].limits.min = min;
+	pProperties[index].limits.max = max;
+}
